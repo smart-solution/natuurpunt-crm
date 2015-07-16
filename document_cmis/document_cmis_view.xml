@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<openerp>
+    <data>
+
+   <!--
+       document_cmis Views 
+   -->
+
+    <record model="ir.ui.view" id="view_document_cmis_document_form">
+        <field name="name">view.document.cmis.document.form</field>
+        <field name="model">ir.attachment</field>
+	<field name="inherit_id" ref="base.view_attachment_form"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+		<field name="res_id" position="after">
+			<field name="cmis_object_id"/>
+		</field>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_document_cmis_directory_form">
+        <field name="name">view.document.cmis.directory.form</field>
+        <field name="model">document.directory</field>
+    	<field name="inherit_id" ref="document.view_document_directory_form"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <xpath expr="/form/notebook/page[@string='Security']" position="after">
+                <page string="CMIS">
+                    <group colspan="4" col="4">
+			            <field name="cmis_object_id"/>
+                        <button name="cmis_sync" string="Sync with DMS" type="object"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_company_cmis_directory_form">
+        <field name="name">view.company.cmis.directory.form</field>
+        <field name="model">res.company</field>
+	    <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <field name="rml_footer_readonly" position="after">
+			    <field name="cmis_base_dir"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_document_directoy_cmis_sync_form" model="ir.ui.view">
+        <field name="name">view.document.directoy.cmis.sync.form</field>
+        <field name="model">document.directory.cmis.sync</field>
+        <field name="arch" type="xml">
+            <form string="Synchronize with DMS" version="7.0">
+                <group colspan="4" col="4">
+                    <separator string="Synchronize these directories with the DMS ?" colspan="2" />
+                </group>
+
+                <footer>
+                    <button special="cancel" string="Cancel" name="action_cancel" type="object" icon='gtk-cancel'/>
+                    <button name="cmis_sync" string="Sync with DMS" type="object"/>
+                </footer>
+            </form>
+       </field>
+    </record>
+
+
+       <act_window id="action_directory_cmis_sync"
+            name="Sync directories with DMS"
+            src_model="document.directory"
+            res_model="document.directory.cmis.sync" 
+            view_mode="form" 
+            view_type="form"
+            key2="client_action_multi"
+            view_id="view_document_directoy_cmis_sync_form"
+            target="new" 
+        />
+
+    </data>
+</openerp>

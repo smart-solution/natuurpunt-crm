@@ -1,0 +1,111 @@
+<?xml version="1.0"?>
+<openerp>
+    <data>
+<!--
+   <menuitem
+       icon="terp-project" id="document_cmis_draft_invoice_main_menu"
+       name="document_cmis_draft_invoice" sequence="0"
+       web_icon="images/document_cmis_draft_invoice.png"
+       web_icon_hover="images/document_cmis_draft_invoice-hover.png"/>
+
+    <menuitem name="Configuration" id="document_cmis_draft_invoice_configuration_menu" parent="module_main_menu"/>
+    <menuitem name="document_cmis_draft_invoice" id="module_menu" parent="module_main_menu"  sequence="5"/>
+
+-->
+   <!--
+       document_cmis_draft_invoice Views 
+   -->
+<!--
+    <record model="ir.ui.view" id="view_document_cmis_draft_invoice_tree">
+        <field name="name">view.document_cmis_draft_invoice.tree</field>
+        <field name="model">document_cmis_draft_invoice</field>
+        <field name="type">tree</field>
+        <field name="arch" type="xml">
+            <tree string="document_cmis_draft_invoice">
+                <field name="name"/>
+                <field name="code"/>
+            </tree>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_document_cmis_draft_invoice_form">
+        <field name="name">view.document_cmis_draft_invoice.form</field>
+        <field name="model">document_cmis_draft_invoice</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="document_cmis_draft_invoice">
+		<field name="name"/>
+		<field name="code"/>
+            </form>
+        </field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_document_cmis_draft_invoice">
+        <field name="name">All document_cmis_draft_invoice</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">document_cmis_draft_invoice</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_document_cmis_draft_invoice_tree"/>
+    </record>
+
+    <record model="ir.actions.act_window.view" id="action_document_cmis_draft_invoice_tree_view">
+        <field name="sequence">10</field>
+        <field name="view_mode">tree</field>
+        <field name="view_id" ref="view_document_cmis_draft_invoice_tree"/>
+        <field name="act_window_id" ref="action_document_cmis_draft_invoice"/>
+    </record>
+
+    <record model="ir.actions.act_window.view" id="action_document_cmis_draft_invoice_form_view">
+        <field name="sequence">20</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_document_cmis_draft_invoice_form"/>
+        <field name="act_window_id" ref="action_document_cmis_draft_invoice"/>
+    </record>
+
+    <menuitem name="All document_cmis_draft_invoice" id="menu_module" parent="module_menu" action="action_module" sequence="5"/>
+
+    <record model="ir.ui.view" id="view_campaign_proposition_segment_segmentation_form_inherit">
+        <field name="name">view.campaign.proposition.segment.segmentation.form</field>
+        <field name="model">dm.campaign.proposition</field>
+        <field name="type">form</field>
+        <field name="inherit_id" ref="dm.view_campaign_proposition_form"/>        
+        <field name="arch" type="xml">
+            <xpath expr="/form/notebook/page/field[@name='segment_ids']/form/notebook" position="inside">
+                <page string="Extraction">
+                    <field name="segmentation_id" string="Segmentation"/>
+                    <field name="use_census"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+        <record id="view_product_search_nineit" model="ir.ui.view">
+            <field name="name">product.product.search.nineit</field>
+            <field name="model">product.product</field>
+            <field name="inherit_id" ref="product.product_search_form_view" />
+            <field name="type">search</field>
+            <field name="arch" type="xml">
+                <xpath expr="/search/field[@name='categ_id']" position='after'>
+                        <field name="nineit_sku"/>
+                        <field name="nineit_barcode"/>
+                        <field name="nineit_import_file_id" string="Supplier"/>
+                </xpath>
+            </field>
+        </record>
+
+    <act_window name="Ship Sale Orders"
+    res_model="sale.order"
+    src_model="res.partner"
+    view_type="form"
+    view_mode="tree,form"
+    id="act_tresco_ship_sale_orders"
+    context="{'ship_id':active_id}"
+    domain="[('ship_id','=',active_id)]"
+    />
+
+
+-->
+
+    </data>
+</openerp>
