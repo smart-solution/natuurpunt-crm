@@ -107,7 +107,7 @@ class res_partner(osv.osv):
         update_partner = False
 
         if partner.free_member:
-            membership_date_field = 'free'
+            membership_state_field = 'free'
         else:
             today = date.today()
             year_today = today.year
@@ -119,7 +119,7 @@ left outer join account_invoice_line on (account_invoice_line.id = account_invoi
 left outer join account_invoice on (account_invoice.id = invoice_id)
 left outer join res_partner on (res_partner.id = account_invoice.partner_id)
 where membership_membership_line.partner = %d
-order by date_from
+order by date_from, date_to
 ''' % (partner.id, )
             cr.execute(sql_stat)
             for sql_res in cr.dictfetchall():
@@ -136,8 +136,8 @@ order by date_from
                 abo_company = sql_res['abo_company']
                 company_deal = sql_res['company_deal']
                 organisation_type_id = sql_res['organisation_type_id']
-                year_from_membership = sql_res['year_from']
-                year_to_membership = sql_res['year_to']
+                year_from_membership = int(sql_res['year_from'])
+                year_to_membership = int(sql_res['year_to'])
                 cancel_state = sql_res['cancel_state']
                 npca_migrated = sql_res['npca_migrated']
 
@@ -187,6 +187,8 @@ order by date_from
                         membership_state_field = 'waiting'
                     else:
                         membership_state_field = 'wait_member'
+                if state == 'waiting':
+                    membership_state_field = 'waiting'
 
         if membership_state_field != partner.membership_state_b:
             update_partner = True

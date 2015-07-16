@@ -59,6 +59,8 @@ class res_partner(osv.osv):
                 sql_res = cr.dictfetchone()
                 if sql_res['create_date']:
                     res[partner.id] = sql_res['create_date']
+                else:
+                    res[partner.id] = None
         return res
 
     def _function_write_date(self, cr, uid, ids, name, arg, context=None):
@@ -70,6 +72,8 @@ class res_partner(osv.osv):
                 sql_res = cr.dictfetchone()
                 if sql_res['write_date']:
                     res[partner.id] = sql_res['write_date']
+                else:
+                    res[partner.id] = None
         return res
 
     def _function_name_disp(self, cr, uid, ids, name, arg, context=None):
