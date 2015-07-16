@@ -1,0 +1,354 @@
+<?xml version="1.0"?>
+<openerp>
+    <data>
+
+        <record id="natuurpunt_membership_product_form" model="ir.ui.view">
+            <field name='name'>natuurpunt.membership.product.form</field>
+            <field name='model'>product.product</field>
+            <field name="inherit_id" ref="membership.membership_products_form"/>
+            <field name='arch' type='xml'>
+		<field name="active" position="after">
+		    <field name="membership_product"/>
+		    <field name="magazine_product"/>
+		</field>
+		<field name="property_account_income" position="after">
+		    <field name="analytic_dimension_1_id" context="{'account_id':property_account_income,'dimension':1,'dimension2':analytic_dimension_2_id,'dimension3':analytic_dimension_3_id, 'search_default_dimension1':1}"/>
+		    <field name="analytic_dimension_2_id" context="{'account_id':property_account_income,'dimension':2,'dimension1':analytic_dimension_1_id,'dimension3':analytic_dimension_3_id, 'search_default_dimension2':1}"/>
+		    <field name="analytic_dimension_3_id" context="{'account_id':property_account_income,'dimension':3,'dimension1':analytic_dimension_1_id,'dimension2':analytic_dimension_2_id, 'search_default_dimension3':1}"/>
+		</field>
+                <field name="description_sale" position="after">
+                    <label for="included_product_ids"/>
+                    <field name="included_product_ids">
+			<tree string="Membership products">
+                    	    <field name="code"/>
+                    	    <field name="name"/>
+                	    <field name="membership_date_from"/>
+                	    <field name="membership_date_to"/>
+                	    <field name="list_price" string="Membership Fee"/>
+                	    <field name="categ_id" invisible="1"/>
+                	    <field name="uom_id" invisible="1"/>
+                	    <field name="type" invisible="1"/>
+                	</tree>
+		    </field>
+                </field>
+            </field>
+        </record>
+
+        <record id="natuurpunt_membership_partner_form" model="ir.ui.view">
+            <field name='name'>natuurpunt.membership.partner.form</field>
+            <field name='model'>res.partner</field>
+            <field name="inherit_id" ref="membership.view_partner_form"/>
+            <field name='arch' type='xml'>
+		<field name="free_member" position="before">
+		    <field name="membership_renewal_product_id"/>
+		</field>
+		<field name="free_member" position="after">
+		    <field name="free_membership_class_id" attrs="{'invisible': [('free_member', '!=', True)]}"/>
+		    <field name="free_member_comment" attrs="{'invisible': [('free_member', '!=', True)]}"/>
+		</field>
+		<field name="free_member" position="attributes">
+		    <attribute name="on_change">onchange_free_member(name, free_member, membership_nbr)</attribute>
+		</field>
+                <page string="Membership" position="attributes">
+                    <attribute name="groups">natuurpunt_membership.group_natuurpunt_membership_user</attribute>
+                </page>
+				<field name="membership_state" position="attributes">
+					<attribute name="invisible">True</attribute>
+				</field>
+				<field name="membership_state" position="after">
+					<field name="membership_state_f"/>
+				</field>
+				<field name="membership_start" position="attributes">
+					<attribute name="invisible">True</attribute>
+				</field>
+				<field name="membership_start" position="after">
+					<field name="membership_start_f"/>
+				</field>
+				<field name="membership_cancel" position="attributes">
+					<attribute name="invisible">True</attribute>
+				</field>
+				<field name="membership_cancel" position="after">
+					<field name="membership_cancel_f" attrs="{'invisible': [('membership_cancel_f', '==', False)]}"/>
+				</field>
+				<field name="membership_stop" position="attributes">
+					<attribute name="invisible">True</attribute>
+				</field>
+				<field name="membership_stop" position="after">
+					<field name="membership_stop_f"/>
+				    <field name="membership_renewal_date" readonly="True"/>
+				    <field name="membership_end_f" readonly="True"/>
+				</field>
+                <page string="Membership" position="before">
+		    <page string="3de Betaler" groups="natuurpunt_membership.group_natuurpunt_membership_user">
+			<group colspan="4" col="2">
+			    <group>
+			    	<field name="third_payer_flag"/>
+			    	<field name="third_payer_id" attrs="{'invisible': [('third_payer_flag', '==', True)]}"/>
+			    	<field name="abo_company"/>
+			    	<field name="company_deal"/>
+			    </group>
+			    <group>
+				<field name="third_payer_invoice" attrs="{'invisible': [('third_payer_flag', '==', True)]}"/>
+				<field name="third_payer_processed" readonly="True" attrs="{'invisible': [('third_payer_flag', '==', True)]}"/>
+			    	<field name="third_payer_one_time" attrs="{'invisible': [('third_payer_flag', '==', False)]}"/>
+			    	<field name="third_payer_amount" attrs="{'invisible': [('third_payer_flag', '==', False),('third_payer_invoice', '==', True)]}"/>
+			    </group>
+			</group>
+	                <label for="third_payer_action_ids" attrs="{'invisible': [('third_payer_flag', '==', False)]}"/>
+        	        <field name="third_payer_action_ids" attrs="{'invisible': [('third_payer_flag', '==', False)]}">
+			    <tree string="3de Betaler Acties" context="{'default_partner_id':active_id}">
+        	                <field name="partner_id" invisible="True"/> 
+        	            	<field name="name"/>
+        	        	<field name="amount"/>
+        	        	<field name="date_from"/>
+        	        	<field name="date_to"/>
+        	            </tree>
+			    <form string="3de Betaler Acties" context="{'default_partner_id':active_id}">
+				<group>
+        	                    <field name="partner_id" invisible="True"/> 
+        	            	    <field name="name" required="True"/>
+        	        	    <field name="amount" required="True"/>
+				</group>
+				<group>
+        	        	    <field name="date_from" required="True"/>
+        	        	    <field name="date_to" required="True"/>
+				</group>
+        	            </form>
+			</field> 
+		    </page> 
+                </page>
+ 		<button name="%(membership.action_membership_invoice_view)d" position="replace"/> 
+                <xpath expr="//div[@name='buttons']" position="inside">
+   	            <button name="%(membership.action_membership_invoice_view)d" type="action" string="Buy Membership" attrs="{'invisible':[('free_member','=',True)]}"
+                            groups="natuurpunt_crm.group_natuurpunt_crm_user"/>
+		</xpath>
+            </field>
+        </record>
+
+    <record id="view_membership_cancel_search" model="ir.ui.view">
+	<field name="name">view.membership.cancel.search</field>
+	<field name="model">membership.cancel.reason</field>
+	<field name="arch" type="xml">
+	    <search string="Reden Annulatie">
+		<group expand="0" string="Selection...">
+		    <field name="ref"/>
+		    <field name="name"/>
+		</group>
+	    </search>
+	</field>
+    </record>
+
+    <record id="view_membership_cancel_tree" model="ir.ui.view">
+        <field name='name'>view.membership.cancel.tree</field>
+        <field name='model'>membership.cancel.reason</field>
+        <field name='arch' type='xml'>
+	    <tree string="Reden Annulatie">
+		<field name="ref"/>
+		<field name="name"/>
+   	    </tree>
+	</field>
+    </record>
+
+    <record id="view_membership_cancel_form" model="ir.ui.view">
+        <field name='name'>view.membership.cancel.form</field>
+        <field name='model'>membership.cancel.reason</field>
+        <field name='arch' type='xml'>
+	    <form string="Reden Annulatie">
+		<group colspan="4" col="2">
+		    <group>
+ 		        <field name="ref"/>
+		    </group>
+		    <group>
+		        <field name="name"/>
+		    </group>
+		</group>
+	    </form>
+	</field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_membership_cancel_form">
+        <field name="name">Reden Annulatie</field>
+        <field name="res_model">membership.cancel.reason</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_type">form</field>
+	<field name="search_view_id" ref="view_membership_cancel_search"/>
+    </record>
+
+    <menuitem name="Reden Annulatie Lidmaatschap" parent="base.menu_marketing_config_association" id="menu_membership_cancel" sequence="200" action="action_membership_cancel_form"/>
+
+    <record model="ir.ui.view" id="view_natuurpunt_crm_membership_form">
+        <field name="name">view.natuurpunt.crm.membership.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="membership.view_partner_form"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+	            <xpath expr="//page[@string='Membership']/field[@name='member_lines']" position="replace">
+                        <field name="member_lines" nolabel="1" colspan="4">
+                            <tree string="Memberships">
+                                <field name="date" readonly="True"/>
+                                <field name="membership_id" domain="['|',('membership_product','=',True),('magazine_product','=',True)]"/>
+								<field name="date_from" readonly="False"/>
+								<field name="date_to" readonly="False"/>
+                                <field name="member_price" readonly="True"/>
+                                <field name="account_invoice_id" readonly="True"/>
+								<field name="payment_method"/>
+                                <field name="state" readonly="True"/>
+								<field name="membership_cancel_id" readonly="False" on_change="onchange_cancel(membership_cancel_id, date_cancel)"/>
+				 				<field name="date_cancel" readonly="False" attrs="{'required': [('membership_cancel_id', '!=', False)]}" string="Datum Stopzetting"/>
+								<field name="remarks"/>
+                           </tree>
+                            <form string="Memberships">
+                                <field name="date" readonly="True"/>
+                                <field name="membership_id" domain="['|',('membership_product','=',True),('magazine_product','=',True)]"/>
+								<field name="date_from" readonly="False"/>
+								<field name="date_to" readonly="False"/>
+                                <field name="member_price" readonly="True"/>
+                                <field name="account_invoice_id" readonly="True" context="{'form_view_ref': 'account.invoice_form'}"/>
+								<field name="payment_method"/>
+                                <field name="state" readonly="True"/>
+								<field name="membership_cancel_id" readonly="False" on_change="onchange_cancel(membership_cancel_id, date_cancel)"/>
+				 				<field name="date_cancel" readonly="False" attrs="{'required': [('membership_cancel_id', '!=', False)]}" string="Datum Stopzetting"/>
+								<field name="remarks"/>
+                            </form>
+                        </field>
+			    </xpath>
+        </field>
+    </record>
+  
+    <record model="ir.ui.view" id="view_natuurpunt_membership_tree">
+        <field name="name">view.natuurpunt.membership.tree</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="membership.membership_members_tree"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+				<field name="associate_member" position="replace">
+					<field name="associate_member" attrs="{'invisible':[('membership_state_b', '!=', 'none')]}"/>
+				</field>
+               <field name="membership_state" position="replace">
+                    <field name="membership_state_b"/>
+                </field>
+               <field name="membership_start" position="replace">
+                    <field name="membership_start_b"/>
+                </field>
+               <field name="membership_stop" position="replace">
+                    <field name="membership_stop_b"/>
+                    <field name="membership_end_b"/>
+                </field>
+        </field>
+    </record>
+    <record model="ir.ui.view" id="view_natuurpunt_membership_partner_filter">
+        <field name="name">view.natuurpunt.membership.partner.filter</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="membership.view_res_partner_member_filter"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+               <filter name="all_non_members" position="replace">
+                    <filter icon="terp-personal" name="all_non_members" domain="[('membership_state_b', 'in', ['none','canceled','old','waiting'])]" string="All non Members" help="None/Canceled/Old/Waiting"/>
+                </filter>
+               <filter name="all_members" position="replace">
+                    <filter icon="terp-personal" name="all_members" domain="[('membership_state_b', 'in', ['invoiced','paid','free','wait_member'])]" string="All Members" help="Invoiced/Paid/Free"/>
+                </filter>
+				<filter string=" Membership State" position="attributes">
+					<attribute name="context">{'group_by':'membership_state_b'}</attribute>
+				</filter>
+				<filter string="Start Date" position="attributes">
+					<attribute name="context">{'group_by':'membership_start_b'}</attribute>
+				</filter>
+				<filter string="End Date" position="attributes">
+					<attribute name="context">{'group_by':'membership_end_b'}</attribute>
+				</filter>
+<!--               <field name="membership_start" position="replace">
+                    <field name="membership_start_b" invisible="1"/>
+                </field> -->
+               <field name="membership_stop" position="replace">
+                    <field name="membership_stop_b" string="End Membership Date"/>
+                </field> 
+        </field>
+    </record> -->
+
+    <record model="ir.ui.view" id="view_natuurpunt_membership_mandate_form">
+        <field name="name">view.natuurpunt.membership.mandate.form</field>
+        <field name="model">sdd.mandate</field>
+        <field name="inherit_id" ref="account_banking_sepa_direct_debit.sdd_mandate_form"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+               <field name="original_mandate_identification" position="attributes">
+                    <attribute name="invisible">False</attribute>
+                </field>
+        </field>
+    </record>
+ 
+    <record model="ir.ui.view" id="view_natuurpunt_account_customer_invoice2_form">
+        <field name="name">view.natuurpunt_account.customer.invoice2.form</field>
+        <field name="model">account.invoice</field>
+         <field name="priority">1</field>
+        <!--        <field name="inherit_id" ref="natuurpunt_account.view_np_invoice_customer"/>-->
+        <field name="inherit_id" ref="account_voucher.view_invoice_customer"/>
+        <field name="arch" type="xml">
+<!--		<field name="journal_id" position="after">
+			<field name="membership_invoice"/>
+		</field> -->
+		<xpath expr="//button[@name='invoice_pay_customer'][last()]" position="replace">
+            <!--			<button name="invoice_pay_customer" attrs="{'invisible': [('membership_invoice', '!=', True)]}"/>-->
+            <!--			<button name="invoice_pay_customer" invisible="1"/>-->
+		</xpath>
+		<button name="invoice_pay_customer" position="replace">
+			<field name="membership_invoice" invisible="True"/>
+			<button name="invoice_pay_customer" type="object" string="Cash Betaling" attrs="{'invisible': [('membership_invoice', '!=', True)]}"/>
+		</button>
+        </field>
+    </record> 
+
+
+    <record id="view_free_membership_search" model="ir.ui.view">
+	<field name="name">view.free.membership.search</field>
+	<field name="model">res.partner.free.class</field>
+	<field name="arch" type="xml">
+	    <search string="Gratis Lid Categoriën">
+		<group expand="0" string="Selection...">
+		    <field name="ref"/>
+		    <field name="name"/>
+		</group>
+	    </search>
+	</field>
+    </record>
+
+    <record id="view_free_membership_tree" model="ir.ui.view">
+        <field name='name'>view.free.membership.tree</field>
+        <field name='model'>res.partner.free.class</field>
+        <field name='arch' type='xml'>
+	    <tree string="Gratis Lid Categoriën">
+		<field name="ref"/>
+		<field name="name"/>
+   	    </tree>
+	</field>
+    </record>
+
+    <record id="view_free_membership_form" model="ir.ui.view">
+        <field name='name'>view.free.membership.form</field>
+        <field name='model'>res.partner.free.class</field>
+        <field name='arch' type='xml'>
+	    <form string="Gratis Lid Categorie">
+		<group colspan="4" col="2">
+		    <group>
+ 		        <field name="ref"/>
+		        <field name="name"/>
+		    </group>
+		</group>
+	    </form>
+	</field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_free_membership_form">
+        <field name="name">Gratis Lid Categoriën</field>
+        <field name="res_model">res.partner.free.class</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_type">form</field>
+	<field name="search_view_id" ref="view_free_membership_search"/>
+    </record>
+
+    <menuitem name="Gratis Lid Categoriën" parent="base.menu_marketing_config_association" id="menu_free_membership" sequence="17" action="action_free_membership_form" groups="natuurpunt_membership.group_natuurpunt_membership_manager"/>
+
+    </data>
+</openerp>
+

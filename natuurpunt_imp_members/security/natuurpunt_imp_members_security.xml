@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<openerp>
+    <data>
+        <record id="group_natuurpunt_crm_import_contacts_user" model="res.groups">
+            <field name="name">Natuurpunt CRM Import Contacts User</field>
+            <field name="category_id" ref="base.module_category_customer_relationship_management"/>
+        </record>
+        
+        <record id="group_natuurpunt_crm_import_contacts_manager" model="res.groups">
+            <field name="name">Natuurpunt CRM Import Contacts Manager</field>
+            <field name="implied_ids" eval="[(4, ref('group_natuurpunt_crm_import_contacts_user'))]"/>
+            <field name="category_id" ref="base.module_category_customer_relationship_management"/>
+        </record>
+
+    </data>
+</openerp>

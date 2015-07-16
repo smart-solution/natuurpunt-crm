@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<openerp>
+    <data>
+        <record id="group_organisation_structure_user" model="res.groups">
+            <field name="name">Organisation Structure User</field>
+            <field name="category_id" ref="base.module_category_customer_relationship_management"/>
+        </record>
+        
+        <record id="group_organisation_structure_manager" model="res.groups">
+            <field name="name">Organisation Structure Manager</field>
+            <field name="implied_ids" eval="[(4, ref('group_organisation_structure_user'))]"/>
+            <field name="category_id" ref="base.module_category_customer_relationship_management"/>
+        </record>
+
+    </data>
+</openerp>

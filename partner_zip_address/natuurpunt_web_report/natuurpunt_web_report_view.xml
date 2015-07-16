@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<openerp>
+    <data>
+    
+        <record id="view_web_report_tree" model="ir.ui.view">
+            <field name='name'>view.web.report.tree</field>
+            <field name='model'>web.report</field>
+            <field name='arch' type='xml'>
+                <tree string="Web rapporten">
+                        <field name="name"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_web_report_form" model="ir.ui.view">
+            <field name='name'>view.web.report.form</field>
+            <field name='model'>web.report</field>
+            <field name='arch' type='xml'>
+                <form string="Web rapporten">
+                        <group colspan="2" col="2">
+                                <field name="name"/>
+                                <field name="organisation_type_id"/>
+                                <field name="format"/>
+                        </group>
+                        <group colspan="2" col="2">
+                                <field name="url"/>
+                                <field name="param"/>
+                                <field name="jasper_url"/>
+                        </group>
+                </form>
+            </field>
+        </record>
+        
+        <record model="ir.actions.act_window" id="action_web_report_form">
+            <field name="name">Web rapporten</field>
+            <field name="res_model">web.report</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_type">form</field>
+        </record>
+
+        <menuitem name="Web rapporten" parent="base.menu_organisation_configuration" id="base.organisation_web_report" sequence="10" action="action_web_report_form"/>
+
+        <record id="view_function_type_natuurpunt_web_report_form" model="ir.ui.view">
+            <field name="name">view.function.type.natuurpunt.web.report.form</field>
+            <field name="model">res.function.type</field>
+            <field name="type">form</field> 
+            <field name="inherit_id" ref="organisation_structure.view_function_type_form"/>
+            <field name="arch" type="xml">
+              <data> 
+                <field name="organisation_type_ids" position="after">
+			<group colspan="4">
+				<separator string="Rapporten" colspan="4"/>
+				<field name="web_report_ids" nolabel="1">
+				  <form string="Rapport">
+				    <field name="name"/>
+				  </form>
+				</field>
+			</group>
+		</field>
+              </data>
+	    </field>
+        </record>
+
+    </data>
+</openerp>

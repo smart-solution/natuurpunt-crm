@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<openerp>
+    <data>
+
+   <!--
+       partner_inactive Views 
+   -->
+    <record model="ir.ui.view" id="view_partner_inactive_tree">
+        <field name="name">view.partner_inactive.tree</field>
+        <field name="model">partner.inactive</field>
+        <field name="type">tree</field>
+        <field name="arch" type="xml">
+            <tree string="Partner Inactivity Reasons">
+                <field name="name"/>
+                <field name="show_active_partner"/>
+            </tree>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_partner_inactive_form">
+        <field name="name">view.partner_inactive.form</field>
+        <field name="model">partner.inactive</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="Partner Inactivity Reason">
+		        <field name="name"/>
+                <field name="show_active_partner"/>
+            </form>
+        </field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_partner_inactive">
+        <field name="name">Partner Inactivity Reasons</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">partner.inactive</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem name="Partner Inactivity Reasons" id="menu_partner_inactive" parent="base.menu_marketing_config_association" action="action_partner_inactive" groups="base.group_partner_manager" sequence="5"/>
+
+    <record model="ir.ui.view" id="view_res_partner_inactive_form">
+        <field name="name">view.res_partner_inactive.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+		    <field name="active" position="after">
+                <field name="inactive_id" attrs="{'invisible':[('active','=',True)]}" on_change="onchange_inactive(inactive_id)"/>
+                <field name="show_active_partner" invisible="1"/>
+                <field name="active_partner_id" attrs="{'invisible':['|',('active','=',True),('show_active_partner','=',False)]}"/>
+            </field>
+        </field>
+    </record>
+
+    </data>
+</openerp>

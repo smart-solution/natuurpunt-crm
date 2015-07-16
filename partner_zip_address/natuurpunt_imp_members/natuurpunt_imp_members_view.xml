@@ -1,0 +1,201 @@
+<?xml version="1.0" ?>
+<openerp>
+    <data>
+
+    <record id="natuurpunt_import_members_view" model="ir.ui.view">
+      <field name="name">Import Members File</field>
+      <field name="model">member.import</field>
+      <field name="priority">1</field>
+      <field name="arch" type="xml">
+        <form string="Import Member File" version="7.0">
+            <group col="2">
+                <field name="member_data" filename="member_fname"/>
+                <field name="member_fname"/>
+            </group>
+            <footer>
+                <button name="member_parsing" string="_Import" type="object" class="oe_highlight"/>
+                or
+                <button string="Cancel" class="oe_link" special="cancel"/>
+            </footer>
+        </form>
+      </field>
+    </record>
+
+    <record id="action_import_members" model="ir.actions.act_window">
+      <field name="name">Import Member File</field>
+      <field name="type">ir.actions.act_window</field>
+      <field name="res_model">member.import</field>
+      <field name="view_type">form</field>
+      <field name="view_mode">form</field>
+      <field name="target">new</field>
+      <field name="view_id" ref="natuurpunt_import_members_view"/>
+    </record>
+    
+    <record model="ir.ui.view" id="view_member_file_tree">
+        <field name="name">view.member.file.tree</field>
+        <field name="model">member.file</field>
+        <field name="type">tree</field>
+        <field name="arch" type="xml">
+            <tree string="Member files">
+                <field name="name"/>
+            </tree>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_member_line_tree">
+        <field name="name">view.member.line.tree</field>
+        <field name="model">member.lines</field>
+        <field name="type">tree</field>
+        <field name="arch" type="xml">
+            <tree string="Member files">
+            	<field name="file_id" readonly="True"/>
+				<field name="to_import"/>
+				<field name="last_name"/>
+				<field name="first_name"/>
+				<field name="city"/>
+				<field name="duplicate_ids"/>
+            </tree>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_member_file_form">
+        <field name="name">view.member.file.form</field>
+        <field name="model">member.file</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml"> 
+            <form string="Import Member File" version="7.0">
+            <header>
+				<button name="process_file" string="Process Import File" attrs="{'invisible': [('imported', '=', True)]}" type="object" class="oe_highlight"/> 
+			</header>
+			<sheet>
+				<group colspan="4" col="2">
+					<group>
+			    		<field name="name"/>
+					    <field name="recruiting_organisation_id" domain="[('organisation_type_id','=',1)]"/>
+					    <field name="membership_origin_id"/>
+					    <field name="address_origin_id"/>
+					    <field name="imported" invisible="True"/>
+					</group>
+				</group>
+                <field name="lines_ids" context="{'default_mailing_id':active_id}">
+                	<tree string="Members in File">
+                		<field name="to_import"/>
+						<field name="last_name"/>
+						<field name="first_name"/>
+						<field name="city"/>
+						<field name="duplicate_ids"/>
+          			</tree>
+          		</field>
+            </sheet>
+            </form>
+		</field>
+    </record>
+
+    <record model="ir.ui.view" id="view_member_line_form">
+        <field name="name">view.member.line.form</field>
+        <field name="model">member.lines</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="Member to import">
+				<group colspan="4" col="2">
+					<group>
+						<field name="file_id" readonly="True"/>
+						<field name="to_import"/>
+	                </group>
+					<group>
+						<field name="recruiting_member" readonly="True"/>
+						<field name="recruiting_member_id"/>
+					</group>
+	                <group>
+		                <field name="first_name"/>
+		                <field name="last_name"/>
+		                <field name="gender"/>
+		                <field name="birthdate"/>
+		                <field name="birthyear"/>
+		                <field name="email"/>
+		                <field name="phone"/>
+		                <field name="mobile"/>
+		                <field name="email_work"/>
+		                <field name="phone_work"/>
+	                </group>
+	                <group>
+		                <field name="street" readonly="True"/>
+		                <field name="street_id" domain="[('city_id','=',zip_id)]"/>
+		                <field name="street_nbr"/>
+		                <field name="street_bus"/>
+		                <field name="zip" readonly="True"/>
+		                <field name="zip_id"/>
+		                <field name="city" readonly="True"/>
+		                <field name="country_id" readonly="True"/>
+					</group>
+				</group>
+				<group colspan="4" col="1">
+					<separator string="Mogelijke dubbels"/>
+					<field name="duplicate_ids" nolabel="1" readonly="True">
+	                	<tree string="Mogelijke dubbels">
+							<field name="name"/>
+							<field name="street"/>
+							<field name="zip"/>
+							<field name="city"/>
+							<field name="id"/>
+							<field name="membership_nbr"/>
+	          			</tree>
+	          		</field>
+          		</group>
+            </form>
+        </field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_member_file">
+        <field name="name">Member Files</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">member.file</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_member_file_tree"/>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_member_line">
+        <field name="name">Member Lines</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">member.lines</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_member_line_tree"/>
+    </record>
+
+    <record model="ir.actions.act_window.view" id="action_member_file_tree_view">
+        <field name="sequence">10</field>
+        <field name="view_mode">tree</field>
+        <field name="view_id" ref="view_member_file_tree"/>
+        <field name="act_window_id" ref="action_member_file"/>
+    </record>
+
+    <record model="ir.actions.act_window.view" id="action_member_file_form_view">
+        <field name="sequence">20</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_member_file_form"/>
+        <field name="act_window_id" ref="action_member_file"/>
+    </record>
+
+    <record model="ir.actions.act_window.view" id="action_member_file_tree_view">
+        <field name="sequence">30</field>
+        <field name="view_mode">tree</field>
+        <field name="view_id" ref="view_member_line_tree"/>
+        <field name="act_window_id" ref="action_member_line"/>
+    </record>
+
+    <record model="ir.actions.act_window.view" id="action_member_file_form_view">
+        <field name="sequence">40</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_member_line_form"/>
+        <field name="act_window_id" ref="action_member_line"/>
+    </record>
+
+	<menuitem name="Import" parent="base.menu_association" id="menu_import" sequence="13"/>
+    <menuitem name="Import Members" id="menu_import_members" action="action_import_members" parent = "natuurpunt_imp_members.menu_import" sequence="5"/>
+    <menuitem name="Import Files" id="menu_import_members_form" action="action_member_file" parent = "natuurpunt_imp_members.menu_import" sequence="10"/>
+    <menuitem name="Import Lines" id="menu_import_line_form" action="action_member_line" parent = "natuurpunt_imp_members.menu_import" sequence="15"/>
+    
+  </data> 
+</openerp>

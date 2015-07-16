@@ -1,0 +1,840 @@
+<?xml version="1.0"?>
+<openerp>
+    <data>
+
+    <!-- Top menu item -->
+    <menuitem name="Association"
+              id="base.menu_association"
+              groups="natuurpunt_crm.group_natuurpunt_crm_user"
+              sequence="45"/>
+
+    <record model="ir.ui.view" id="view_natuurpunt_crm_partner_form">
+        <field name="name">view.natuurpunt.crm.partner.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="partner_zip_address.icy_partner_address_form"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+		<field name="name" position="after">
+		    <field name="name_disp" attrs="{'invisible': [('first_name', '=', False),('last_name', '=', False)]}"/>
+		</field> 
+		<field name="phone" position="attributes">
+		    <attribute name="on_change">onchange_phone(phone)</attribute>
+		</field>
+                <field name="fax" position="before">
+                    <field name="phone_work" on_change="onchange_phone(phone_work)"/>
+                    <field name="email_work" on_change="onchange_email(email_work)"/>
+                </field>
+		<field name="mobile" position="attributes">
+		    <attribute name="on_change">onchange_mobile(mobile)</attribute>
+		</field>
+		<field name="email" position="attributes">
+		    <attribute name="on_change">onchange_email(email)</attribute>
+		</field>
+		<field name="ref" position="replace"/>
+                <field name="title" position="after">
+		    		<field name="id" readonly="True" string="Database ID"/>
+                    <field name="membership_nbr_set" invisible="True"/>
+                    <field name="membership_nbr" attrs="{'readonly': [('membership_nbr_set', '=', True)]}" widget="char"/>
+                    <field name="ref" readonly="True"/>
+	            	<field name="npca_id" widget="char"/>
+                    <field name="relation_partner_id" on_change="onchange_relation_id(relation_partner_id, street_id, street_nbr, street_bus)"/>
+                    <field name="department_id" readonly="True" context="{'form_view_ref' : 'organisation_structure.organisation_partner_form'}"/>
+                    <field name="department_choice_id" domain="[('organisation_type_id','=','Afdeling')]" attrs="{'invisible': [('no_department', '=', True)]}" context="{'form_view_ref' : 'organisation_structure.organisation_partner_form'}"/>
+                    <field name="no_department"/>
+		    <field name="organisation_type_id" on_change="onchange_organisation_type(organisation_type_id)"/>
+                </field>
+                <xpath expr="//page[@string='Sales &amp; Purchases']" position="attributes">
+                    <attribute name="groups">base.group_partner_manager</attribute>
+                </xpath>
+
+                <xpath expr="//page[@string='Accounting']" position="attributes">
+                     <attribute name="groups">base.group_partner_manager</attribute>
+                </xpath>
+                <field name="category_id" position="attributes">
+                     <attribute name="groups">base.group_partner_manager</attribute>
+                </field>
+		<page string="Contacts" position="before">
+		    <page string="Persoonsgegevens" groups="natuurpunt_crm.group_natuurpunt_crm_user">
+			<group colspan="4" col="2">
+		        <group>
+			    <separator string="Aanbrenginfo"/>
+			    <newline/>
+                    	    <field name="membership_origin_id" on_change="onchange_membership_origin(membership_origin_id)"/>
+			    <field name="member_recruit_member" invisible="True"/>
+                    	    <field name="recruiting_member_id" attrs="{'invisible': [('member_recruit_member','!=',True)]}" domain="[('organisation_type_id','=',False)]"/>
+                    	    <field name="recruiting_organisation_id" domain="[('organisation_type_id','=','Afdeling')]"/>
+                    	    <field name="address_origin_id"/>
+			    <field name="address_origin_date" on_change="onchange_future_date(address_origin_date)"/>
+		        </group>
+		        <group>
+			    <separator string="Persoonsgegevens"/>
+			    <newline/>
+                    	    <field name="corporation_type_id"/>
+	                    <field name="partner_state_id"/>
+                    	    <field name="national_id_nbr"/>
+<!--                    	    <field name="person"/> -->
+                    	    <field name="vip"/>
+			    <field name="gender"/>
+			    <field name="birthday" on_change="onchange_future_date(birthday)"/>
+			    <field name="year_birth" attrs="{'readonly': [('birthday', '!=', False)]}" widget="char"/>
+			    <field name="deceased" on_change="onchange_deceased(deceased, relation_partner_id)"/>
+			    <field name="deceased_partner_id" attrs="{'invisible': [('deceased', '=', False)]}"/>
+		        </group>
+		        <group>
+			    <separator string="Documenten"/>
+			    <newline/>
+			    <field name="tax_certificate"/>
+			    <field name="no_magazine"/> 
+<!--			    <field name="thanks_letter"/> -->
+<!--			    <field name="expense_note"/> -->
+		        </group>
+		        <group>
+			    <separator string="Data"/>
+			    <newline/>
+			    <field name="np_create_date" readonly="True"/>
+			    <field name="np_write_date" readonly="True"/>
+	                    <field name="modulas_id" widget="char"/>
+	                    <field name="address_id" invisible="True" readonly="True"/>
+		        </group>
+		        </group>
+		    </page>
+		    <page string="Functions">
+                        <group colspan="1" col="2">
+			    <field name="organisation_function_child_ids" nolabel="1" context="{'default_person_id':active_id, 'default_name':active_id}"/>
+                        </group>
+                    </page>	
+                    <page string="Adreshistorie" groups="natuurpunt_crm.group_natuurpunt_crm_user">
+			<field name="address_history_ids" readonly="True" nolabel="1" context="{'default_partner_id':active_id}">
+			    <tree string="Adreshistory" readonly="True">
+				<field name="date_move"/>
+				<field name="user_id"/>
+				<field name="name"/>
+				<field name="street"/>
+				<field name="zip"/>
+				<field name="city"/>
+				<field name="country_id"/>
+			    </tree>
+			</field>
+		    </page>
+		    <page string="Interessegebieden" groups="natuurpunt_crm.group_natuurpunt_crm_user">
+			<field name="interest_ids" nolabel="1" context="{'default_partner_id':active_id}">
+			    <tree string="Interessegebieden">
+				<field name="name"/>
+			    </tree>
+			</field>
+		    </page>
+		    <page string="CRM Betalingen" groups="natuurpunt_crm.group_natuurpunt_crm_user">
+			<field name="crm_payment_ids" readonly="True" nolabel="1" domain="[('crm_account','!=',False)]" context="{'default_partner_id':active_id}">
+			    <tree string="CRM Betalingen" readonly="True" domain="[('crm_account','!=',False)]">
+				<field name="date"/>
+				<field name="partner_id" invisible="True"/>
+				<field name="statement_id"/>
+				<field name="ref"/>
+				<field name="amount"/>
+				<field name="name"/>
+				<field name="account_id"/>
+				<field name="analytic_dimension_1_id"/>
+				<field name="analytic_dimension_2_id"/>
+				<field name="analytic_dimension_3_id"/>
+				<field name="state"/>
+<!--				<field name="structcomm_message"/> -->
+				<field name="note"/>
+				<field name="company_id"/> 
+				<field name="crm_account" invisible="True"/>
+			    </tree>
+			</field>
+		    </page> 
+		    <page string="CRM Boekingen" groups="natuurpunt_crm.group_natuurpunt_crm_user">
+			<field name="crm_move_ids" readonly="True" nolabel="1" domain="[('account_id','in',(1914,2556,3308,3934,4100,1222,1836,2513,3285,3917,4036,4039,4114,4204))]" context="{'default_partner_id':active_id}">
+			    <tree string="CRM Betalingen" readonly="True" domain="[('account_id','in',(1914,2556,3308,3934,4100,1222,1836,2513,3285,3917,4036,4039,4114,4204))]">
+				<field name="date"/>
+				<field name="partner_id" invisible="True"/>
+				<field name="journal_id"/>
+				<field name="statement_id"/>
+				<field name="ref"/> 
+				<field name="debit"/>
+				<field name="credit"/>
+				<field name="name"/>
+				<field name="account_id"/>
+				<field name="analytic_dimension_1_id"/>
+				<field name="analytic_dimension_2_id"/>
+				<field name="analytic_dimension_3_id"/>
+				<field name="state"/> 
+<!--				<field name="structcomm_message"/> -->
+<!--				<field name="note"/> -->
+				<field name="company_id"/> 
+<!--				<field name="crm_account" invisible="True"/> -->
+				<field name="reconcile_id"/>
+			    </tree>
+			</field>
+		    </page>
+		    <page string="NPCA Betalingen" groups="natuurpunt_crm.group_natuurpunt_crm_user">
+			<field name="payment_history_ids" readonly="True" nolabel="1" context="{'default_partner_id':active_id}">
+			    <tree string="NPCA Betalingen" readonly="True">
+				<field name="date"/>
+				<field name="partner_id" invisible="True"/>
+				<field name="description"/>
+				<field name="amount"/>
+				<field name="nbr_payment"/>
+				<field name="sequence" widget="char"/>
+				<field name="payment_method"/>
+				<field name="mandate_nbr"/>
+				<field name="project_nbr"/>
+				<field name="cost_center"/>
+				<field name="refused"/>
+				<field name="acc_number"/>
+			    </tree>
+			</field>
+		    </page>
+		</page>
+            <xpath expr="//page[@string='Address']/group/group/field[@name='street2']" position="replace"/>
+            <xpath expr="//page[@string='Address']/group/group/field[@name='street']" position="replace"/>
+            <xpath expr="//page[@string='Address']/group/group/field[@name='zip']" position="replace"/>
+            <xpath expr="//page[@string='Address']/group/group/field[@name='city']" position="replace"/>
+            <xpath expr="//page[@string='Address']/group/group/field[@name='country_id']" position="replace"/> 
+            <field name="zip_id" position="before">
+                <field name="crab_used" on_change="onchange_crab_used(crab_used)"/>
+                <field name="no_address" attrs="{'invisible': [('crab_used', '=', True)]}" on_change="onchange_no_address(no_address, country_id)"/>
+                <field name="first_name" on_change="onchange_name(first_name, last_name)" attrs="{'readonly': [('organisation_type_id','!=',False)]}"/>
+                <field name="last_name" on_change="onchange_name(first_name, last_name)" attrs="{'readonly': [('organisation_type_id','!=',False)]}"/>
+				<field name="street2" string="Huisnaam" attrs="{'invisible': ['|', ('no_address', '=', True), ('postbus_nbr', '!=', False)]}"/>
+            </field>
+            <field name="zip_id" position="replace">
+                <field name="zip_id" attrs="{'invisible': [('crab_used', '=', False)], 'required': [('crab_used', '=', True)]}" on_change="onchange_zip_id(zip_id)" context="{'search_view_ref':'partner_zip.view_country_city_search'}"/>
+            </field>
+            <field name="street_id" position="replace">
+                <field name="street_id" attrs="{'invisible': ['|',('crab_used', '=', False),('postbus_nbr', '!=', False)], 'required': [('crab_used', '=', True),('postbus_nbr','=',False)]}" domain="[('city_id','=',zip_id)]" on_change="onchange_street_id(zip_id, street_id, street_nbr, street_bus)"/>
+            </field>
+            <field name="street_nbr" position="replace">
+                <field name="street_nbr" attrs="{'invisible': ['|',('crab_used', '=', False),('postbus_nbr', '!=', False)]}" on_change="onchange_street_id(zip_id, street_id, street_nbr, street_bus)"/>
+            </field>
+            <field name="street_bus" position="replace">
+                <field name="street_bus" string="Bus" attrs="{'invisible': ['|',('crab_used', '=', False),('postbus_nbr', '!=', False)]}" on_change="onchange_street_id(zip_id, street_id, street_nbr, street_bus)"/>
+            </field>
+	    <field name="street_bus" position="after">
+		<field name="street" attrs="{'invisible': ['|', ('no_address', '=', True), ('crab_used', '=', True)]}"/>
+                <field name="postbus_nbr" attrs="{'invisible': ['|', ('no_address', '=', True), ('crab_used', '=', False)]}" on_change="onchange_postbus_nbr(postbus_nbr)"/>
+		<field name="zip" attrs="{'invisible': ['|', ('no_address', '=', True), ('crab_used', '=', True)]}"/>
+		<field name="city" attrs="{'invisible': ['|', ('no_address', '=', True), ('crab_used', '=', True)]}"/>
+		<field name="country_id" required="True" on_change="onchange_country(country_id, no_address)"/>
+		<field name="address_state_id"/>
+	    </field>
+            <xpath expr="//page[@string='Address']/group/group[@name='addressgroup']" position="attributes">
+		<attribute name="invisible">True</attribute>
+	    </xpath>
+            <xpath expr="//page[@string='Address']" position="attributes">
+		<attribute name="string">Contactgegevens</attribute>
+	    </xpath> 
+ 	    <field name="name" position="attributes">
+		<attribute name="attrs">{'invisible': ['|',('first_name', '!=', False),('last_name', '!=', False)], 'required': True, 'readonly': [('organisation_type_id','!=',False)]}</attribute>
+	    </field> 
+<!-- 	    <field name="name" position="attributes">
+		<attribute name="invisible">['|',('first_name', '!=', False),('last_name', '!=', False)]</attribute>
+	    </field> -->
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_natuurpunt_partner_optout_form">
+        <field name="name">view.natuurpunt.partner.optout.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="email_template.res_partner_opt_out_form"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+	    <field name="opt_out" position="after">
+		<field name="opt_out_letter"/>
+	    </field> 
+	    <field name="opt_out" position="attributes">
+		<attribute name="string">Uitschrijven email</attribute>
+	    </field>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_natuurpunt_base_partner_tree">
+        <field name="name">view.natuurpunt.base.partner.tree</field>
+        <field name="model">res.partner</field>
+            <field name="priority" eval="50"/>
+        <field name="inherit_id" ref="base.view_partner_tree"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+<!-- 			<field name="organisation_type_id" position="attributes"> -->
+<!-- 				<attribute name="invisible">True</attribute> -->
+<!-- 			</field> -->
+            <field name="name" position="after">
+            	<field name="last_name"/>
+           	</field>
+<!--           	<field name="city" position="after">
+		    	<field name="id"/>
+            </field> 
+            <field name="active" position="after">
+		    	<field name="active_partner_id"/>
+            </field> -->
+			<field name="membership_state" position="attributes">
+				<attribute name="invisible">True</attribute>
+			</field>
+        </field>
+    </record>
+
+        <record id="view_np_partner_search_crm" model="ir.ui.view">
+            <field name="name">view.np.partner.search.crm</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_res_partner_filter"/>
+            <field name="arch" type="xml">
+                <field name="name" position="after">
+                    <field name="last_name"/>
+                    <field name="id" string="Database ID"/>
+                </field>
+            </field>
+        </record>
+
+	<record model="ir.ui.view" id="view_natuurpunt_crm_partner_tree">
+        <field name="name">view.natuurpunt.crm.partner.tree</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="membership.membership_members_tree"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+			<field name="name" position="after">
+				<field name="last_name"/>
+				<field name="street"/>
+				<field name="zip"/>
+				<field name="city"/>
+				<field name="id"/>
+				<field name="membership_nbr_num" widget="char"/>
+				<field name="npca_id" widget="char"/>
+				<field name="ref" invisible="True"/>
+				<field name="relation_partner_id"/>
+				<field name="deceased"/>
+			</field>
+			<field name="associate_member" position="attributes">
+				<attribute name="invisible">True</attribute>
+			</field>
+		</field>
+	</record>
+
+    <record model="ir.ui.view" id="view_natuurpunt_crm_partner_search">
+        <field name="name">view.natuurpunt.crm.partner.search</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="membership.view_res_partner_member_filter"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+               <field name="membership_start" position="before">
+                    <field name="name"/>
+                    <field name="last_name"/>
+                    <field name="first_name"/>
+                    <field name="street"/>
+                    <field name="street_nbr"/>
+                    <field name="zip"/>
+                    <field name="city"/>
+                    <field name="id"/>
+                    <field name="membership_nbr"/>
+                    <field name="ref"/>
+                    <field name="npca_id"/>
+                    <field name="email"/>
+                    <field name="email_work"/>
+                </field>
+        </field>
+    </record>
+
+    <record model="ir.actions.act_window" id="membership.action_membership_members">
+        <field name="view_mode">tree,form,kanban</field>
+    </record>
+    <record model="ir.actions.act_window.view" id="membership.action_membership_members_view_kanban">
+        <field name="sequence" eval="5"/>
+    </record>
+
+    <record id="view_address_state_search" model="ir.ui.view">
+	<field name="name">view.address.state.search</field>
+	<field name="model">res.partner.address.state</field>
+	<field name="arch" type="xml">
+	    <search string="Address State">
+		<group expand="0" string="Selection...">
+		    <field name="ref"/>
+		    <field name="name"/>
+		</group>
+	    </search>
+	</field>
+    </record>
+
+    <record id="view_address_state_tree" model="ir.ui.view">
+        <field name='name'>view.address.state.tree</field>
+        <field name='model'>res.partner.address.state</field>
+        <field name='arch' type='xml'>
+	    <tree string="State">
+		<field name="ref"/>
+		<field name="name"/>
+   	    </tree>
+	</field>
+    </record>
+
+    <record id="view_address_state_form" model="ir.ui.view">
+        <field name='name'>view.address.state.form</field>
+        <field name='model'>res.partner.address.state</field>
+        <field name='arch' type='xml'>
+	    <form string="State">
+		<group colspan="4" col="2">
+		    <group>
+ 		        <field name="ref"/>
+		        <field name="name"/>
+		    </group>
+		    <group>
+			<field name="valid_address"/>
+		    </group>
+		</group>
+	    </form>
+	</field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_address_state_form">
+        <field name="name">Address State</field>
+        <field name="res_model">res.partner.address.state</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_type">form</field>
+	<field name="search_view_id" ref="view_address_state_search"/>
+    </record>
+
+    <menuitem name="Address States" parent="base.menu_marketing_config_association" id="menu_address_state" sequence="15" action="action_address_state_form" groups="natuurpunt_crm.group_natuurpunt_crm_manager"/>
+
+    <record id="view_partner_state_search" model="ir.ui.view">
+	<field name="name">view.partner.state.search</field>
+	<field name="model">res.partner.state</field>
+	<field name="arch" type="xml">
+	    <search string="Partner Status">
+		<group expand="0" string="Selection...">
+		    <field name="ref"/>
+		    <field name="name"/>
+		</group>
+	    </search>
+	</field>
+    </record>
+
+    <record id="view_partner_state_tree" model="ir.ui.view">
+        <field name='name'>view.partner.state.tree</field>
+        <field name='model'>res.partner.state</field>
+        <field name='arch' type='xml'>
+	    <tree string="Partner Status">
+		<field name="ref"/>
+		<field name="name"/>
+   	    </tree>
+	</field>
+    </record>
+
+    <record id="view_partner_state_form" model="ir.ui.view">
+        <field name='name'>view.partner.state.form</field>
+        <field name='model'>res.partner.state</field>
+        <field name='arch' type='xml'>
+	    <form string="Partner Status">
+		<group colspan="4" col="2">
+		    <group>
+ 		        <field name="ref"/>
+		    </group>
+		    <group>
+		        <field name="name"/>
+		    </group>
+		</group>
+	    </form>
+	</field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_partner_state_form">
+        <field name="name">Partner Status</field>
+        <field name="res_model">res.partner.state</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_type">form</field>
+	<field name="search_view_id" ref="view_partner_state_search"/>
+    </record>
+
+    <menuitem name="Partner Status" parent="base.menu_marketing_config_association" id="menu_partner_state" sequence="80" action="action_partner_state_form" groups="natuurpunt_crm.group_natuurpunt_crm_manager"/>
+
+    <record id="view_membership_origin_category_search" model="ir.ui.view">
+	<field name="name">view.membership.origin.category.search</field>
+	<field name="model">res.partner.membership.origin.category</field>
+	<field name="arch" type="xml">
+	    <search string="Membership Origin Category">
+		<group expand="0" string="Selection...">
+		    <field name="ref"/>
+		    <field name="name"/>
+		</group>
+	    </search>
+	</field>
+    </record>
+
+    <record id="view_membership_origin_category_tree" model="ir.ui.view">
+        <field name='name'>view.membership.origin.category.tree</field>
+        <field name='model'>res.partner.membership.origin.category</field>
+        <field name='arch' type='xml'>
+	    <tree string="Membership Origin Category">
+		<field name="ref"/>
+		<field name="name"/>
+   	    </tree>
+	</field>
+    </record>
+
+    <record id="view_membership_origin_category_form" model="ir.ui.view">
+        <field name='name'>view.membership.origin.category.form</field>
+        <field name='model'>res.partner.membership.origin.category</field>
+        <field name='arch' type='xml'>
+	    <form string="Membership Origin Category">
+		<group colspan="4" col="2">
+		    <group>
+ 		        <field name="ref"/>
+		    </group>
+		    <group>
+		        <field name="name"/>
+		    </group>
+		</group>
+	    </form>
+	</field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_membership_origin_category_form">
+        <field name="name">Membership Origin Category</field>
+        <field name="res_model">res.partner.membership.origin.category</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_type">form</field>
+	<field name="search_view_id" ref="view_membership_origin_category_search"/>
+    </record>
+
+    <menuitem name="Membership Origin Category" parent="base.menu_marketing_config_association" id="menu_membership_origin_category" sequence="21" action="action_membership_origin_category_form" groups="natuurpunt_crm.group_natuurpunt_crm_manager"/>
+
+    <record id="view_membership_origin_search" model="ir.ui.view">
+	<field name="name">view.membership.origin.search</field>
+	<field name="model">res.partner.membership.origin</field>
+	<field name="arch" type="xml">
+	    <search string="Membership Origin">
+		<group expand="0" string="Selection...">
+		    <field name="ref"/>
+		    <field name="name"/>
+		</group>
+	    </search>
+	</field>
+    </record>
+
+    <record id="view_membership_origin_tree" model="ir.ui.view">
+        <field name='name'>view.membership.origin.tree</field>
+        <field name='model'>res.partner.membership.origin</field>
+        <field name='arch' type='xml'>
+	    <tree string="Origin">
+		<field name="membership_origin_category_id"/>
+		<field name="ref"/>
+		<field name="name"/>
+		<field name="date_end"/>
+   	    </tree>
+	</field>
+    </record>
+
+    <record id="view_membership_origin_form" model="ir.ui.view">
+        <field name='name'>view.membership.origin.form</field>
+        <field name='model'>res.partner.membership.origin</field>
+        <field name='arch' type='xml'>
+	    <form string="Origin">
+		<group colspan="4" col="2">
+		    <group>
+ 		        <field name="ref"/>
+		        <field name="name"/>
+		    </group>
+		    <group>
+			<field name="membership_origin_category_id"/>
+		        <field name="date_end"/>
+			<field name="member_recruit_member"/>
+		    </group>
+		</group>
+	    </form>
+	</field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_membership_origin_form">
+        <field name="name">Membership Origin</field>
+        <field name="res_model">res.partner.membership.origin</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_type">form</field>
+	<field name="search_view_id" ref="view_membership_origin_search"/>
+    </record>
+
+    <menuitem name="Membership Origin" parent="base.menu_marketing_config_association" id="menu_membership_origin" sequence="17" action="action_membership_origin_form" groups="natuurpunt_crm.group_natuurpunt_crm_manager"/>
+
+    <record id="view_address_origin_category_search" model="ir.ui.view">
+	<field name="name">view.address.origin.category.search</field>
+	<field name="model">res.partner.address.origin.category</field>
+	<field name="arch" type="xml">
+	    <search string="Address Origin Category">
+		<group expand="0" string="Selection...">
+		    <field name="ref"/>
+		    <field name="name"/>
+		</group>
+	    </search>
+	</field>
+    </record>
+
+    <record id="view_address_origin_category_tree" model="ir.ui.view">
+        <field name='name'>view.address.origin.category.tree</field>
+        <field name='model'>res.partner.address.origin.category</field>
+        <field name='arch' type='xml'>
+	    <tree string="Origin Category">
+		<field name="ref"/>
+		<field name="name"/>
+   	    </tree>
+	</field>
+    </record>
+
+    <record id="view_address_origin_category_form" model="ir.ui.view">
+        <field name='name'>view.address.origin.category.form</field>
+        <field name='model'>res.partner.address.origin.category</field>
+        <field name='arch' type='xml'>
+	    <form string="Origin Category">
+		<group colspan="4" col="2">
+		    <group>
+ 		        <field name="ref"/>
+		    </group>
+		    <group>
+		        <field name="name"/>
+		    </group>
+		</group>
+	    </form>
+	</field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_address_origin_category_form">
+        <field name="name">Address Origin Category</field>
+        <field name="res_model">res.partner.address.origin.category</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_type">form</field>
+	<field name="search_view_id" ref="view_address_origin_category_search"/>
+    </record>
+
+    <menuitem name="Address Origin Category" parent="base.menu_marketing_config_association" id="menu_address_origin_category" sequence="19" action="action_address_origin_category_form" groups="natuurpunt_crm.group_natuurpunt_crm_manager"/>
+
+    <record id="view_address_origin_search" model="ir.ui.view">
+	<field name="name">view.address.origin.search</field>
+	<field name="model">res.partner.address.origin</field>
+	<field name="arch" type="xml">
+	    <search string="Address Origin">
+		<group expand="0" string="Selection...">
+		    <field name="ref"/>
+		    <field name="name"/>
+		</group>
+	    </search>
+	</field>
+    </record>
+
+    <record id="view_address_origin_tree" model="ir.ui.view">
+        <field name='name'>view.address.origin.tree</field>
+        <field name='model'>res.partner.address.origin</field>
+        <field name='arch' type='xml'>
+	    <tree string="Origin">
+		<field name="address_origin_category_id"/>
+		<field name="ref"/>
+		<field name="name"/>
+   	    </tree>
+	</field>
+    </record>
+
+    <record id="view_address_origin_form" model="ir.ui.view">
+        <field name='name'>view.address.origin.form</field>
+        <field name='model'>res.partner.address.origin</field>
+        <field name='arch' type='xml'>
+	    <form string="Origin">
+		<group colspan="4" col="2">
+		    <group>
+ 		        <field name="ref"/>
+		    </group>
+		    <group>
+		        <field name="name"/>
+ 		        <field name="address_origin_category_id"/>
+		    </group>
+		</group>
+	    </form>
+	</field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_address_origin_form">
+        <field name="name">Address Origin</field>
+        <field name="res_model">res.partner.address.origin</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_type">form</field>
+	<field name="search_view_id" ref="view_address_origin_search"/>
+    </record>
+
+    <menuitem name="Address Origin" parent="base.menu_marketing_config_association" id="menu_address_origin" sequence="20" action="action_address_origin_form" groups="natuurpunt_crm.group_natuurpunt_crm_manager"/>
+
+    <record id="view_partner_interest_search" model="ir.ui.view">
+	<field name="name">view.partner.interest.search</field>
+	<field name="model">res.partner.interest</field>
+	<field name="arch" type="xml">
+	    <search string="Areas of Interest">
+		<group expand="0" string="Selection...">
+		    <field name="ref"/>
+		    <field name="name"/>
+		</group>
+	    </search>
+	</field>
+    </record>
+
+    <record id="view_partner_interest_tree" model="ir.ui.view">
+        <field name='name'>view.partner.interest.tree</field>
+        <field name='model'>res.partner.interest</field>
+        <field name='arch' type='xml'>
+	    <tree string="Areas of Interest">
+		<field name="ref"/>
+		<field name="name"/>
+   	    </tree>
+	</field>
+    </record>
+
+    <record id="view_partner_interest_form" model="ir.ui.view">
+        <field name='name'>view.partner.interest.form</field>
+        <field name='model'>res.partner.interest</field>
+        <field name='arch' type='xml'>
+	    <form string="Areas of Interest">
+		<group colspan="4" col="2">
+		    <group>
+ 		        <field name="ref"/>
+		    </group>
+		    <group>
+		        <field name="name"/>
+		    </group>
+		</group>
+	    </form>
+	</field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_partner_interest_form">
+        <field name="name">Areas of Interest</field>
+        <field name="res_model">res.partner.interest</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_type">form</field>
+	<field name="search_view_id" ref="view_partner_interest_search"/>
+    </record>
+
+    <menuitem name="Areas of Interest" parent="base.menu_marketing_config_association" id="menu_partner_interest" sequence="25" action="action_partner_interest_form" groups="natuurpunt_crm.group_natuurpunt_crm_manager"/>
+
+    <record id="view_partner_corporation_type_search" model="ir.ui.view">
+	<field name="name">view.partner.corporation.type.search</field>
+	<field name="model">res.partner.corporation.type</field>
+	<field name="arch" type="xml">
+	    <search string="Corporation Type">
+		<group expand="0" string="Selection...">
+		    <field name="ref"/>
+		    <field name="name"/>
+		</group>
+	    </search>
+	</field>
+    </record>
+
+    <record id="view_partner_corporation_type_tree" model="ir.ui.view">
+        <field name='name'>view.partner.corporation.type.tree</field>
+        <field name='model'>res.partner.corporation.type</field>
+        <field name='arch' type='xml'>
+	    <tree string="Corporation Type">
+		<field name="ref"/>
+		<field name="name"/>
+   	    </tree>
+	</field>
+    </record>
+
+    <record id="view_partner_corporation_type_form" model="ir.ui.view">
+        <field name='name'>view.partner.corporation.type.form</field>
+        <field name='model'>res.partner.corporation.type</field>
+        <field name='arch' type='xml'>
+	    <form string="Corporation Type">
+		<group colspan="4" col="2">
+		    <group>
+ 		        <field name="ref"/>
+		    </group>
+		    <group>
+		        <field name="name"/>
+		    </group>
+		</group>
+	    </form>
+	</field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_partner_corporation_type_form">
+        <field name="name">Corporation Type</field>
+        <field name="res_model">res.partner.corporation.type</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_type">form</field>
+	<field name="search_view_id" ref="view_partner_corporation_type_search"/>
+    </record>
+
+    <menuitem name="Corporation Type" parent="base.menu_marketing_config_association" id="menu_partner_corporation_type" sequence="26" action="action_partner_corporation_type_form" groups="natuurpunt_crm.group_natuurpunt_crm_manager"/>
+
+    <record model="ir.ui.view" id="view_natuurpunt_partner_bank_tree">
+        <field name="name">view.natuurpunt.partner.bank.tree</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="account.view_partner_property_form"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='accounting']/field[@name='bank_ids']/tree/field[@name='sequence']" position="attributes">
+                <attribute name="invisible">False</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_natuurpunt_partner_bank_form">
+        <field name="name">view.natuurpunt.partner.bank.form</field>
+        <field name="model">res.partner.bank</field>
+        <field name="inherit_id" ref="base.view_partner_bank_form"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <field name="acc_number" position="after">
+		<field name="sequence"/>
+            </field>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_organisation_partner_crm_form">
+        <field name="name">view.organisation.partner.crm.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="organisation_structure.organisation_partner_form"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <field name="ref" position="after">
+	            <field name="npca_id" widget="char" attrs="{'invisible': [('display_npca','=',False)]}"/>
+            </field>
+        </field>
+    </record>
+    <record model="ir.ui.view" id="view_organisation_partner2_crm_form">
+        <field name="name">view.organisation.partner2.crm.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="organisation_structure.organisation_partner2_form"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <field name="ref" position="after">
+	            <field name="npca_id" widget="char" readonly="True"/>
+	            <field name="membership_nbr" readonly="True"/>
+            </field>
+	    <field name="phone" position="after">
+		<field name="phone_work" readonly="True"/>
+	    </field>
+	    <field name="email" position="after">
+		<field name="email_work" readonly="True"/>
+	    </field>
+        </field>
+    </record>
+    <record model="ir.ui.view" id="view_organisation_partner_crm_tree">
+        <field name="name">view.organisation.partner.crm.tree</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="organisation_structure.organisation_partner_tree"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <field name="ref" position="after">
+	            <field name="npca_id" widget="char"/>
+		    <field name="membership_nbr"/>
+            </field>
+        </field>
+    </record>
+    <record model="ir.ui.view" id="view_organisation_partner_crm_filter">
+        <field name="name">view.organisation.partner.crm.filter</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="organisation_structure.organisation_partner_filter"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <field name="ref" position="after">
+	            <field name="npca_id"/>
+		    <field name="membership_nbr"/>
+                    <field name="department_id"/>
+            </field>
+        </field>
+    </record>
+
+    </data>
+</openerp>

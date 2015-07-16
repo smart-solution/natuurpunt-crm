@@ -1,0 +1,532 @@
+<?xml version="1.0"?>
+<openerp>
+    <data>
+
+    <record id="view_mailing_list_save" model="ir.ui.view">
+        <field name="name">Save File</field>
+        <field name="model">export.mailing.list</field>
+        <field name="arch" type="xml">
+            <form string="Save file" version="7.0">
+                <label string="Save the File."/>
+                <field name="file_name"/>
+                <field name="file_save" readonly="True" filename="file_name"/>
+                <button name="create_file" string="Export bestand" type="object" class="oe_highlight" attrs="{'invisible':[('file_save','!=',False)]}"/>
+                <button string="Cancel" class="oe_link" special="cancel" />
+            </form>
+        </field>
+    </record>
+    
+    <record id="action_mailing_list_save" model="ir.actions.act_window">
+         <field name="name">Save File</field> 
+         <field name="type">ir.actions.act_window</field> 
+         <field name="res_model">export.mailing.list</field>
+         <field name="view_type">form</field>
+         <field name="view_mode">form</field>
+         <field name="view_id" ref="view_mailing_list_save"/>
+         <field name="target">new</field>
+     </record> 
+
+    <!--
+       Mailing Category Views 
+   -->
+
+    <record model="ir.ui.view" id="view_mailing_category_tree">
+        <field name="name">view.mailing_category.tree</field>
+        <field name="model">mailing.category</field>
+        <field name="type">tree</field>
+        <field name="arch" type="xml">
+            <tree string="Mailing Categorieën">
+                <field name="name"/>
+            </tree>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_mailing_category_form">
+        <field name="name">view.mailing_category.form</field>
+        <field name="model">mailing.category</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="Mailing Categorie">
+				<group colspan="4" col="2">
+		    		    <field name="name"/>
+		                    <field name="digital"/>
+		                    <field name="periodical"/>
+		                    <field name="payable"/>
+	                            <field name="website"/>
+				</group>
+            </form>
+        </field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_mailing_category">
+        <field name="name">Mailing Categorieën</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">mailing.category</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_mailing_category_tree"/>
+    </record>
+
+    <record model="ir.actions.act_window.view" id="action_mailing_category_tree_view">
+        <field name="sequence">10</field>
+        <field name="view_mode">tree</field>
+        <field name="view_id" ref="view_mailing_category_tree"/>
+        <field name="act_window_id" ref="action_mailing_category"/>
+    </record>
+
+    <record model="ir.actions.act_window.view" id="action_mailing_category_form_view">
+        <field name="sequence">20</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_mailing_category_form"/>
+        <field name="act_window_id" ref="action_mailing_category"/>
+    </record>
+
+    <menuitem name="Mailing Categorieën" id="menu_mailing_category_form" action="action_mailing_category" parent = "base.menu_marketing_config_association" sequence="30"/>
+
+    <!--
+       Mailing Group Views 
+   -->
+
+    <record model="ir.ui.view" id="view_mailing_group_tree">
+        <field name="name">view.mailing_group.tree</field>
+        <field name="model">mailing.group</field>
+        <field name="type">tree</field>
+        <field name="arch" type="xml">
+            <tree string="Mailing Groepen">
+                <field name="name"/>
+                <field name="seq"/>
+                <field name="category_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_mailing_group_form">
+        <field name="name">view.mailing_group.form</field>
+        <field name="model">mailing.group</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="Mailing Groep">
+				<group colspan="4" col="2">
+		    		    <field name="name"/>
+		    		    <field name="seq"/>
+		                <field name="category_id" placeholder="Mailing Categorie"/>
+		        </group>
+		        <group>
+		                <field name="payable"/>
+		                <field name="amount"/>
+		        </group>
+		        <group>
+		                <field name="export_details"/>
+		                <field name="export_partner"/>
+		        </group>
+		        <group colspan="4">
+		                <field name="product_ids" placeholder="Producten"/>
+		                <field name="filter_ids" placeholder="Filters" domain="[('model_id','=','res.partner')]"/>
+				</group>
+            </form>
+        </field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_mailing_group">
+        <field name="name">Mailing Groepen</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">mailing.group</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_mailing_group_tree"/>
+    </record>
+
+    <record model="ir.actions.act_window.view" id="action_mailing_group_tree_view">
+        <field name="sequence">10</field>
+        <field name="view_mode">tree</field>
+        <field name="view_id" ref="view_mailing_group_tree"/>
+        <field name="act_window_id" ref="action_mailing_group"/>
+    </record>
+
+    <record model="ir.actions.act_window.view" id="action_mailing_group_form_view">
+        <field name="sequence">20</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_mailing_group_form"/>
+        <field name="act_window_id" ref="action_mailing_group"/>
+    </record>
+
+    <menuitem name="Mailing Groepen" id="menu_mailing_group_form" action="action_mailing_group" parent = "base.menu_marketing_config_association" sequence="40"/>
+
+    <!--
+       Mailing Mailing Views 
+   -->
+
+    <record model="ir.ui.view" id="view_mailing_tree">
+        <field name="name">view.mailing.tree</field>
+        <field name="model">mailing.mailing</field>
+        <field name="type">tree</field>
+        <field name="arch" type="xml">
+            <tree string="Mailings">
+                <field name="name"/>
+                <field name="category_id"/>
+                <field name="date_ship"/>
+                <field name="list_ids"/>
+            </tree>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_mailing_form">
+        <field name="name">view.mailing.form</field>
+        <field name="model">mailing.mailing</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml"> 
+            <form string="Mailing" version="7.0">
+            <header>
+				<button name="%(natuurpunt_mailing.action_mailing_list_save)d" string="Export bestand" attrs="{'invisible': [('digital', '=', False)]}" type="action" class="oe_highlight"/> 
+			</header>
+			<sheet>
+				<group colspan="4" col="2">
+				<group>
+		    		    <field name="name"/>
+				    <field name="description"/>
+				</group>
+				<group>
+		                <field name="category_id" placeholder="Mailing Categorie"/>
+		                <field name="date_ship"/>
+		                <field name="digital"/>
+				</group>
+				</group>
+		                <field name="list_ids" context="{'default_mailing_id':active_id}" attrs="{'invisible': [('digital', '=', True)]}">
+		                	<tree string="Mailing Lijsten">
+								<field name="mailing_id"/>
+								<field name="group_id"/>
+								<field name="mailing_date"/>
+								<field name="list_partner_ids"/>
+            				</tree>
+            			</field>
+            </sheet>
+            </form>
+		</field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_mailing">
+        <field name="name">Mailings</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">mailing.mailing</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_mailing_tree"/>
+    </record>
+
+    <record model="ir.actions.act_window.view" id="action_mailing_tree_view">
+        <field name="sequence">10</field>
+        <field name="view_mode">tree</field>
+        <field name="view_id" ref="view_mailing_tree"/>
+        <field name="act_window_id" ref="action_mailing"/>
+    </record>
+
+    <record model="ir.actions.act_window.view" id="action_mailing_form_view">
+        <field name="sequence">20</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_mailing_form"/>
+        <field name="act_window_id" ref="action_mailing"/>
+    </record>
+
+    <menuitem name="Mailings" id="menu_mailing" parent = "base.menu_association" sequence="15"/>
+    <menuitem name="Mailings" id="menu_mailing_form" action="action_mailing" parent = "natuurpunt_mailing.menu_mailing" sequence="50"/>
+
+    <!--
+       Mailing List Views 
+   -->
+
+    <record model="ir.ui.view" id="view_mailing_list_tree">
+        <field name="name">view.mailing_list.tree</field>
+        <field name="model">mailing.list</field>
+        <field name="type">tree</field>
+        <field name="arch" type="xml">
+            <tree string="Mailing Lijsten">
+                <field name="mailing_id"/>
+                <field name="group_id"/>
+                <field name="mailing_date"/>
+                <field name="generate_reference"/>
+                <field name="processed"/>
+                <field name="closed"/>
+            </tree>
+        </field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_mailing_list">
+        <field name="name">Mailing Lijsten</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">mailing.list</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_mailing_list_tree"/>
+    </record>
+
+    <record model="ir.actions.act_window.view" id="action_mailing_list_tree_view">
+        <field name="sequence">10</field>
+        <field name="view_mode">tree</field>
+        <field name="view_id" ref="view_mailing_list_tree"/>
+        <field name="act_window_id" ref="action_mailing_list"/>
+    </record>
+
+        <record id="view_mailing_list_import_partners" model="ir.ui.view">
+            <field name="name">mailing.list.import.partners.form</field>
+            <field name="model">mailing.list.import.partners</field>
+            <field name="arch" type="xml">
+                <form string="Import Partners" version="7.0">
+                    <separator string="Toevoegen partners"/>
+                    <field height="300" width="700" name="partner_ids"/>
+                    <footer>
+                        <button string="Ok" name="populate_mailing_list" type="object" class="oe_highlight"/>
+                        or
+                        <button string="Cancel" class="oe_link" special="cancel"/>
+                    </footer>
+               </form>
+            </field>
+        </record>
+
+        <record id="action_view_mailing_list_import_partners" model="ir.actions.act_window">
+            <field name="name">Import Entries</field>
+            <field name="res_model">mailing.list.import.partners</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_id" ref="view_mailing_list_import_partners"/>
+            <field name="target">new</field>
+            <field name="context">{'mailing_list_id': active_id}</field>
+        </record>
+
+    <record model="ir.ui.view" id="view_mailing_list_form">
+        <field name="name">view.mailing_list.form</field>
+        <field name="model">mailing.list</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="Mailing Lijst" version="7.0">
+            <header>
+				<button name="%(natuurpunt_mailing.action_view_mailing_list_import_partners)d" string="Partners toevoegen" type="action" class="oe_highlight" attrs="{'invisible': [('closed', '=', True)]}"/> 
+				<button name="%(natuurpunt_mailing.action_mailing_list_save)d" string="Export bestand" type="action" class="oe_highlight" attrs="{'invisible': [('closed', '=', True)]}"/> 
+				<button string="Verwerk" name="process_mailing_list" type="object" class="oe_highlight" attrs="{'invisible': ['|', ('closed', '=', True), ('processed', '=', True)]}"/>
+			</header>
+			<sheet>
+			<group colspan="4" col="2">
+				<field name="mailing_id" domain="[('digital','=', False)]"/>
+                <field name="group_id"/>
+                <group colspan="4" col="6">
+	                <field name="generate_reference"/>
+	                <field name="generate_lidkaart"/>
+	                <field name="generate_welkomstpakket"/>
+	            </group>
+                <field name="mailing_date"/>
+				<field name="processed"/>
+				<field name="closed"/>
+                <field name="list_partner_ids">
+                        <tree string="Mailing Lijsten/Partners" editable="top">
+                            <field name="partner_name"/>
+                            <field name="list_id" invisible="True"/>
+                            <field name="reference"/>
+                            <field name="return_reason_id"/>
+                        </tree>
+                </field>
+           </group>
+           </sheet>
+           </form>
+        </field>
+    </record>
+
+    <record model="ir.actions.act_window.view" id="action_mailing_list_form_view">
+        <field name="sequence">20</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_mailing_list_form"/>
+        <field name="act_window_id" ref="action_mailing_list"/>
+    </record>
+     
+    <menuitem name="Mailing Lijsten" id="menu_mailing_list_form" action="action_mailing_list" parent = "natuurpunt_mailing.menu_mailing" sequence="60"/>
+
+    <record model="ir.ui.view" id="view_mailing_end_reason_tree">
+        <field name="name">view.mailing_end_reason.tree</field>
+        <field name="model">mailing.end.reason</field>
+        <field name="type">tree</field>
+        <field name="arch" type="xml">
+            <tree string="Mailing Redens Stopzetting">
+                <field name="name"/>
+            </tree>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_mailing_end_reason_form">
+        <field name="name">view.mailing_end_reason.form</field>
+        <field name="model">mailing.end.reason</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="Mailing Reden Stopzetting">
+				<group colspan="4" col="2">
+		    		    <field name="name"/>
+		                <field name="description"/>
+				</group>
+            </form>
+        </field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_mailing_end_reason">
+        <field name="name">Mailing Reden Stopzetting</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">mailing.end.reason</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_mailing_end_reason_tree"/>
+    </record>
+
+    <record model="ir.actions.act_window.view" id="action_mailing_end_reason_tree_view">
+        <field name="sequence">10</field>
+        <field name="view_mode">tree</field>
+        <field name="view_id" ref="view_mailing_end_reason_tree"/>
+        <field name="act_window_id" ref="action_mailing_end_reason"/>
+    </record>
+
+    <record model="ir.actions.act_window.view" id="action_mailing_end_reason_form_view">
+        <field name="sequence">20</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_mailing_end_reason_form"/>
+        <field name="act_window_id" ref="action_mailing_end_reason"/>
+    </record>
+
+    <menuitem name="Mailing Redens Stopzetting" id="menu_mailing_end_reason_form" action="action_mailing_end_reason" parent = "base.menu_marketing_config_association" sequence="40"/>
+
+    <!--
+       Mailing Return Reason Views 
+   -->
+
+    <record model="ir.ui.view" id="view_mailing_return_reason_tree">
+        <field name="name">view.mailing_return_reason.tree</field>
+        <field name="model">mailing.return.reason</field>
+        <field name="type">tree</field>
+        <field name="arch" type="xml">
+            <tree string="Mailing Redens Retourzending">
+                <field name="name"/>
+            </tree>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_mailing_return_reason_form">
+        <field name="name">view.mailing_return_reason.form</field>
+        <field name="model">mailing.return.reason</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="Mailing Reden Retourzending">
+				<group colspan="4" col="2">
+		    		    <field name="name"/>
+		                <field name="description"/>
+				</group>
+            </form>
+        </field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_mailing_return_reason">
+        <field name="name">Mailing Reden Retourzending</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">mailing.return.reason</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_mailing_return_reason_tree"/>
+    </record>
+
+    <record model="ir.actions.act_window.view" id="action_mailing_return_reason_tree_view">
+        <field name="sequence">10</field>
+        <field name="view_mode">tree</field>
+        <field name="view_id" ref="view_mailing_return_reason_tree"/>
+        <field name="act_window_id" ref="action_mailing_return_reason"/>
+    </record>
+
+    <record model="ir.actions.act_window.view" id="action_mailing_return_reason_form_view">
+        <field name="sequence">20</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_mailing_return_reason_form"/>
+        <field name="act_window_id" ref="action_mailing_return_reason"/>
+    </record>
+
+    <menuitem name="Mailing Redens Retourzending" id="menu_mailing_return_reason_form" action="action_mailing_return_reason" parent = "base.menu_marketing_config_association" sequence="50"/>
+
+    <!--
+       Mailing Subscription Views 
+   -->
+
+    <record model="ir.ui.view" id="view_mailing_subscription_form">
+        <field name="name">view.mailing.subscription.form</field>
+        <field name="model">mailing.subscription</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="Digitaal abonnement">
+				<group colspan="4" col="2">
+						<field name="partner_id"/>
+		                <field name="category_id" placeholder="Mailing Categorie"/>
+		                <field name="date_start"/>
+		                <field name="date_stop"/>
+		                <field name="end_reason_id"/>
+				</group>
+            </form>
+        </field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_mailing_subscription">
+        <field name="name">Digitaal abonnement</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">mailing.subscription</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_mailing_subscription_form"/>
+        <field name="context">{'partner_id': active_id}</field>
+    </record>
+
+    <record model="ir.actions.act_window.view" id="action_mailing_subscription_form_view">
+        <field name="sequence">10</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_mailing_subscription_form"/>
+        <field name="act_window_id" ref="action_mailing_subscription"/>
+    </record>
+
+    <record model="ir.ui.view" id="view_natuurpunt_mailing_partner_form2">
+        <field name="name">view.natuurpunt.mailing.partner.form2</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="natuurpunt_crm.view_natuurpunt_crm_partner_form"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+			<field name="no_magazine" position="after">
+							<field name="welkomstpakket"/>
+			                <field name="date_welkomstpakket"/>
+							<field name="lidkaart"/>
+			                <field name="date_lidkaart"/>
+			                <field name="periodical_1_id"/>
+			                <field name="periodical_2_id"/>
+			</field>
+		</field>
+	</record>
+
+    <record model="ir.ui.view" id="view_natuurpunt_mailing_partner_form">
+        <field name="name">view.natuurpunt.mailing.partner.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="membership.view_partner_form"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+			<page string="Membership" position="after">
+			    <page string="Mailinghistorie" groups="natuurpunt_mailing.group_natuurpunt_mailing_user">
+			    	<field name="mailing_list_partner_ids">
+				    	<tree>
+				    		<field name="mailing_name"/>
+				    		<field name="mailing_date"/>
+				    		<field name="reference"/>
+				    		<field name="return_reason_id"/>
+				    	</tree>
+			    	</field>
+			    </page>
+			    <page string="Digitale abonnementen" groups="natuurpunt_mailing.group_natuurpunt_mailing_user">
+			    	<field name="mailing_subscription_ids" context="{'default_partner_id': active_id}">
+					    <tree>
+					    	<field name="category_id"/>
+					    	<field name="date_start"/>
+					    	<field name="date_stop"/>
+					    	<field name="end_reason_id"/>
+					    </tree>
+				    </field>
+			    </page>
+			</page>
+		</field>
+	</record>
+
+    </data>
+</openerp>
