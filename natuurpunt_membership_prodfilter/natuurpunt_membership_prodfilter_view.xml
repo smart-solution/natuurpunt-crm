@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<openerp>
+   <data>
+	<record model="ir.ui.view" id="natuurpunt_membership_partner_form">
+    	<field name="name">natuurpunt.membership.partner.form.prodfilter</field>
+    	<field name="model">res.partner</field>
+    	<field name="inherit_id" ref="natuurpunt_membership.natuurpunt_membership_partner_form"/>
+    	<field name="arch" type="xml">
+			<xpath expr="//field[@name='membership_renewal_product_id']" position="attributes">				
+				<attribute name="domain">[('membership_product','=',True)]</attribute>
+			</xpath>
+    	</field>
+	</record>
+   </data>
+</openerp>
