@@ -143,6 +143,7 @@ class account_invoice(osv.osv):
                 reconcile_ids = [credit_mv_line_id, rec_line_id]
 
                 # Reconcile the journal entry
+                #mv_line_obj.reconcile(cr, uid, reconcile_ids, 'auto', invoice.account_id.id, mv.period_id.id, mv.journal_id.id, context=context)
                 mv_line_obj.reconcile(cr, uid, reconcile_ids, 'auto', False, False, False, context=context)
                 logger.info('Diret Debit Invoice Reconciliation done')
 
