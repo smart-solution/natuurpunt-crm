@@ -1,5 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_web_report_user,access.web.report.user,model_web_report,organisation_structure.group_organisation_structure_user,1,0,0,0
-access_web_report_manager,access.web.report.manager,model_web_report,organisation_structure.group_organisation_structure_manager,1,1,1,1
-access_web_report_download_user,access.web.report.download.user,model_web_report_download,organisation_structure.group_organisation_structure_user,1,0,0,0
-access_web_report_download_manager,access.web.report.download.manager,model_web_report_download,organisation_structure.group_organisation_structure_manager,1,1,1,1

@@ -888,3 +888,73 @@ class product_product(osv.osv):
     }
 
 product_product()
+
+def _format_iban(iban_str):
+    '''
+    This function removes all characters from given 'iban_str' that isn't a alpha numeric and converts it to upper case.
+    '''
+    res = ""
+    if iban_str:
+        for char in iban_str:
+            if char.isalnum():
+                res += char.upper()
+    return res
+
+class res_partner_bank(osv.osv):
+    _inherit = "res.partner.bank"
+
+    def create(self, cr, uid, vals, context=None):
+        res = super(res_partner_bank, self).create(cr, uid, vals, context)
+        if (vals.get('state',False)=='iban') and vals.get('acc_number', False):
+            vals['acc_number'] = _format_iban(vals['acc_number'])
+            self.write(cr, uid, [res], {'acc_number': vals['acc_number']}, context)
+        return res
+
+    def write(self, cr, uid, ids, vals, context=None):
+        res= super(res_partner_bank, self).write(cr, uid, ids, vals, context)
+        if vals.get('acc_number', False):
+            for rpb in ids:
+                acc_number = _format_iban(vals['acc_number'])
+                sql_stat = "update res_partner_bank set acc_number = '%s' where id = %d" % (acc_number, rpb,)
+                cr.execute(sql_stat)
+                cr.commit()
+                del vals['acc_number']       
+        return res
+
+res_partner_bank()
+
+def _format_vat(vat_str):
+    '''
+    This function removes all characters from given 'vat_str' that isn't a alpha numeric and converts it to upper case.
+    '''
+    res = ""
+    if vat_str:
+        for char in vat_str:
+            if char.isalnum():
+                res += char.upper()
+    return res
+
+class res_partner(osv.osv):
+    _inherit = 'res.partner'
+
+    def create(self, cr, uid, vals, context=None):
+        res = super(res_partner, self).create(cr, uid, vals, context)
+        if vals.get('vat', False):
+            vals['vat'] = _format_vat(vals['vat'])
+            self.write(cr, uid, [res], {'vat': vals['vat']}, context)
+        return res
+
+    def write(self, cr, uid, ids, vals, context=None):
+        res= super(res_partner, self).write(cr, uid, ids, vals, context)
+        if vals.get('vat', False):
+            for rp in ids:
+                vat = _format_iban(vals['vat'])
+                sql_stat = "update res_partner set vat = '%s', vat_subjected = 'True' where id = %d" % (vat, rp,)
+                cr.execute(sql_stat)
+                cr.commit()
+                del vals['vat']       
+        return res
+
+res_partner()
+
+# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

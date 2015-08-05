@@ -1,7 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_member_fys_file_user,access.member.fys.file.user,model_member_fys_file,natuurpunt_imp_members.group_natuurpunt_crm_import_contacts_user,1,0,0,0
-access_member_fys_file_manager,access.member.fys.file.manager,model_member_fys_file,natuurpunt_imp_members.group_natuurpunt_crm_import_contacts_manager,1,1,1,1
-access_member_file_user,access.member.file.user,model_member_file,natuurpunt_imp_members.group_natuurpunt_crm_import_contacts_user,1,0,0,0
-access_member_file_manager,access.member.file.manager,model_member_file,natuurpunt_imp_members.group_natuurpunt_crm_import_contacts_manager,1,1,1,1
-access_member_fys_file_user,access.member.lines.user,model_member_lines,natuurpunt_imp_members.group_natuurpunt_crm_import_contacts_user,1,0,0,0
-access_member_fys_file_manager,access.member.lines.manager,model_member_lines,natuurpunt_imp_members.group_natuurpunt_crm_import_contacts_manager,1,1,1,1
