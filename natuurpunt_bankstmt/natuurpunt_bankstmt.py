@@ -451,7 +451,6 @@ class bank_statement_create_partner(osv.osv_memory):
 		return {'value':res}
 
     def create_partner(self, cr, uid, ids, context=None):
-	print 'CONTEXT:',context
 	res = {}
 	partner_obj = self.pool.get('res.partner')
 	for partner in self.browse(cr, uid, ids, context):
@@ -502,7 +501,6 @@ class bank_statement_create_partner(osv.osv_memory):
     	        }, context)
 	    res['partner_id'] = partner_id
 
-	    print 'ADD BANK ACCOUNT:',partner.add_bank_account
 	    if partner.add_bank_account:
 		bank_obj = self.pool.get('res.bank')
 		bank = bank_obj.search(cr, uid, [('bic','=',partner.bic)])
@@ -643,7 +641,6 @@ class bank_statement_create_partner(osv.osv_memory):
 		        'acc_number': partner.bank_account,
 	            }, context=context)
 	    else:
-		print 'BANK ACCOUNT NIET TOEGEVOEGD'
 
 	    cr.commit()
 
@@ -728,7 +725,26 @@ class bank_statement_create_partner(osv.osv_memory):
 	            		membership_line = membership_line_obj.search(cr, uid, [('account_invoice_line','=',invoice_line_rec.id)])
 	            		if membership_line:
 				            membership_line_obj.unlink(cr, uid, membership_line[0])
-	            		wf_service.trg_validate(uid, 'account.invoice', partner.openinvoice_id, 'invoice_cancel', cr)
+
+                                refund_wiz = self.pool.get('account.invoice.refund')
+
+                                vals={}
+                                vals['filter_refund'] = 'cancel'
+                                vals['description'] = 'Invoice cancelled from bank statement'
+                                journal_ids = self.pool.get('account.journal').search(cr, uid, [('code','=','LIDC')])
+                                if not journal_ids or len(journal_ids) > 1:
+                                    raise osv.except_osv(_('Error!'), _('No refund journal could be found.'))
+                                vals['journal_id'] = journal_ids[0]
+                                vals['date'] = time.strftime('%Y-%m-%d')
+                                vals['period'] = self.pool.get('account.period').find(cr, uid, dt=vals['date'], context=context)[0]
+
+                                refund_wiz_id = self.pool.get('account.invoice.refund').create(cr, uid, vals, context=context)
+
+                                context['skip_write'] = True
+                                context['active_ids'] = [partner.openinvoice_id]
+                                refund_res = self.pool.get('account.invoice.refund').compute_refund(cr, uid, [refund_wiz_id], mode='cancel', context=context)
+
+#	            		wf_service.trg_validate(uid, 'account.invoice', partner.openinvoice_id, 'invoice_cancel', cr)
 		cr.commit()
 
 		if 'stmt_id' in context and context['stmt_id']:
@@ -754,7 +770,6 @@ class bank_statement_create_partner(osv.osv_memory):
                     	reconcile = mvl.id
                         transaction_type = 'customer'                                    
 
-#			print 'ACCOUNT:',mvl.move_id.journal_id.default_credit_account_id.code
 		        voucher_vals = {
 		            'type': transaction_type == 'supplier' and 'payment' or 'receipt',
 		            'name': mvl.move_id.name,
@@ -806,7 +821,6 @@ class bank_statement_create_partner(osv.osv_memory):
             	analytic_dimension_1_id = None
             	analytic_dimension_2_id = None
             	analytic_dimension_3_id = None
-# 		print 'Anal.Acct:', partner.analytic_account_id.name
             	if partner.analytic_account_id.dimension_id.sequence == 1:
             	    analytic_dimension_1_id = partner.analytic_account_id.id
             	    if partner.analytic_account_id.default_dimension_2_id:
@@ -825,9 +839,6 @@ class bank_statement_create_partner(osv.osv_memory):
             	        analytic_dimension_1_id = partner.analytic_account_id.default_dimension_1_id.id
             	    if partner.analytic_account_id.default_dimension_2_id:
             	        analytic_dimension_2_id = partner.analytic_account_id.default_dimension_2_id.id
-# 		print 'AA1:',analytic_dimension_1_id
-# 		print 'AA2:',analytic_dimension_2_id
-# 		print 'AA3:',analytic_dimension_3_id
 
 		account_id = partner.donation_product_id.property_account_income.id or False
 
