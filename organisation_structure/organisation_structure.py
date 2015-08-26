@@ -206,7 +206,7 @@ class account_analytic_account(osv.osv):
 
 	for analytic_account_id in ids:
             if 'name' in vals:
-                sql_stat = "update res_partner set name = '%s' where analytic_account_id = %d" % (vals['name'], analytic_account_id, )
+                sql_stat = "update res_partner set name = '%s' where analytic_account_id = %d" % (vals['name'].replace("'","''"), analytic_account_id, )
                 cr.execute(sql_stat)
 
         return res

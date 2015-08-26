@@ -344,7 +344,7 @@ order by date_from, date_to
 #                                break
                             elif mline.account_invoice_line.invoice_id.definitive_reject:
                                 s = 3
-                            elif mstate == 'open' and s!=0 and mline.account_invoice_line.invoice_id.sdd_mandate_id:
+                            elif mstate == 'open' and s!=0 and mline.account_invoice_line.invoice_id.sdd_mandate_id and mline.account_invoice_line.invoice_id.sdd_mandate_id.state == 'valid':
                                 s = 1
                             elif mstate == 'open' and s!=0 and mline.account_invoice_line.invoice_id.website_payment:
                                 s = 1
@@ -625,7 +625,7 @@ class membership_membership_line(osv.osv):
 #                     res[member.id] = sql_res['type']
 #                 else:
 #                     res[member.id] = ''
-                if member.account_invoice_id.sdd_mandate_id:
+                if member.account_invoice_id.sdd_mandate_id and member.account_invoice_id.sdd_mandate_id == 'valid':
                     res[member.id] = 'Domiciliëring'
                 else:
                     if member.account_invoice_id.payment_ids:
