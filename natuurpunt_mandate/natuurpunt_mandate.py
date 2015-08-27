@@ -90,22 +90,59 @@ class partner_create_bank_mandate_invoice(osv.osv_memory):
     def onchange_bankacct(self, cr, uid, ids, partner_id, bank_account, context=None):
         res = {}
         warning = ''
+        warning_msg = {}
 
         if partner_id and bank_account:
             sql_stat = "select res_partner.id, res_partner.name, res_partner.ref from res_partner_bank, res_partner where replace(acc_number, ' ', '') = replace('%s', ' ', '') and res_partner_bank.partner_id <> %d and res_partner.id = res_partner_bank.partner_id" % (bank_account, partner_id, )
             cr.execute(sql_stat)
             for sql_res in cr.dictfetchall():
                 if warning == '':
-                    warning = sql_res['name'] + ' (' + str(sql_res['id']) + ')'
+                    warning = '''De volgende contacten zijn reeds geregistreerd met dit rekeningnummer: 
+''' + sql_res['name'] + ' (' + str(sql_res['id']) + ')'
                 else:
                     warning = warning + ', ' + sql_res['name'] + ' (' + str(sql_res['id']) + ')'
                 warning = warning + ''' 
 '''
+            sql_stat = "select sdd_mandate.id from sdd_mandate, res_partner_bank where sdd_mandate.partner_bank_id = res_partner_bank.id and res_partner_bank.partner_id = %d and sdd_mandate.state in ('valid','draft')" % (partner_id, )
+            cr.execute(sql_stat)
+            for sql_res in cr.dictfetchall():
+                if warning == '':
+                    warning = 'Let op: Partner heeft reeds andere mandaten.'
+                else:
+                    warning = warning + 'Let op: Partner heeft reeds andere mandaten.'
+                warning = warning + ''' 
+'''
 
+            sql_stat = '''select date_from, date_to, membership_membership_line.state, extract(year from date_from) as year_from, extract(year from date_to) as year_to
+from membership_membership_line
+inner join product_product on (product_product.id = membership_membership_line.membership_id and product_product.membership_product = True)
+where membership_membership_line.partner = %d and not(membership_membership_line.state = 'canceled')
+''' % (partner_id, )
+            cr.execute(sql_stat)
+            today = date.today()
+            year_today = today.year
+            for sql_res in cr.dictfetchall():
+                year_from_membership = int(sql_res['year_from'])
+                year_to_membership = int(sql_res['year_to'])
+                if sql_res['state'] == 'invoiced' and year_from_membership <= year_today:
+                    if warning == '':
+                        warning = 'Let op: Partner heeft reeds een ander gefactureerd lidmaatschap van jaar ' + str(year_from_membership) + ' tot ' + str(year_to_membership)
+                    else:
+                        warning = warning + 'Let op: Partner heeft reeds een ander gefactureerd lidmaatschap van jaar ' + str(year_from_membership) + ' tot ' + str(year_to_membership)
+                    warning = warning + ''' 
+    '''
+                if sql_res['state'] == 'paid' and not(year_to_membership < year_today):
+                    if warning == '':
+                        warning = 'Let op: Partner heeft reeds een ander betaald lidmaatschap van jaar ' + str(year_from_membership) + ' tot ' + str(year_to_membership)
+                    else:
+                        warning = warning + 'Let op: Partner heeft reeds een andere betaald lidmaatschap van jaar ' + str(year_from_membership) + ' tot ' + str(year_to_membership)
+                    warning = warning + ''' 
+    '''
+                    
         if not (warning == ''):
             warning_msg = { 
                     'title': _('Warning!'),
-                    'message': _('''De volgende contacten zijn reeds geregistreerd met dit rekeningnummer: 
+                    'message': _('''
 %s''' % (warning))
                 }   
             return {'warning': warning_msg}
