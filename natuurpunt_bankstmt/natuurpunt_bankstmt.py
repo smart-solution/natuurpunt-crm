@@ -242,8 +242,13 @@ class bank_statement_create_partner(osv.osv_memory):
                         res['donation_partner'] = True
                         donation = True
                 else:
+# warning toevoegen - transaction_amount < membership_amount
                         res['donation_partner'] = False
                         donation = False
+                        raise osv.except_osv(('Waring'),_('Bedrag lidmaatschap groter dan betaald bedrag'))
+#                         return {'warning': { 
+#                                             'title': _('Warning!'),
+#                                             'message': _('Bedrag lidmaatschap groter dan betaald bedrag')}}
                 if donation and not donation_product_id:
                         prod_obj = self.pool.get('product.product')
                         prod_ids = prod_obj.search(cr, uid, [('donation_product_bank_stmt','=',True)])
