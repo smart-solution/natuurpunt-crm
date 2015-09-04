@@ -70,11 +70,13 @@ class partner_create_bank_mandate_invoice(osv.osv_memory):
 		'recruiting_organisation_id': fields.many2one('res.partner', 'Wervende Organisatie', select=True),
         'scan': fields.binary('Scan van het Mandaat'),
         'next_year_mandate': fields.boolean('Mandaat volgend jaar'),
+        'mandate_only': fields.boolean('Enkel mandaat aanmaken'),
     }
 
-#    _defaults = {
+    _defaults = {
+         'mandate_only': False,
 #        'unique_mandate_reference': lambda self, cr, uid, ctx: self.pool['ir.sequence'].get(cr, uid, 'sdd.mandate.reference'),
-#    }
+    }
 
     def onchange_future_date(self, cr, uid, ids, input_date, context=None):
         res = {}
@@ -208,79 +210,80 @@ where membership_membership_line.partner = %d and not(membership_membership_line
      
             cr.commit()
      
-            if not partner.next_year_mandate:
-                invoice_obj = self.pool.get('account.invoice')
-                invoice_line_obj = self.pool.get('account.invoice.line')
-                invoice_tax_obj = self.pool.get('account.invoice.tax')
-         
-                product_id = partner.membership_product_id.id
-                analytic_dimension_1_id = partner.membership_product_id.analytic_dimension_1_id.id
-                analytic_dimension_2_id = partner.membership_product_id.analytic_dimension_2_id.id
-                analytic_dimension_3_id = partner.membership_product_id.analytic_dimension_3_id.id
-         
-        #            amount_inv = partner.membership_product_id.product_tmpl_id.list_price
-                amount_inv = partner.membership_product_id.list_price
-         
-                account_id = partner.partner_id.property_account_receivable and partner.partner_id.property_account_receivable.id or False
-                fpos_id = partner.partner_id.property_account_position and partner.partner_id.property_account_position.id or False
-         
-                quantity = 1
-                
-                payment_term_obj = self.pool.get('account.payment.term')
-                payment_term = payment_term_obj.search(cr, uid, [('name','=','Direct debit')])
-                payment_term_rec = payment_term_obj.browse(cr, uid, payment_term[0])
-                payment_term_id = payment_term_rec.id
-                     
-                line_value = {}
-                line_dict = invoice_line_obj.product_id_change(cr, uid, {}, product_id, False, quantity, '', 'out_invoice', partner.partner_id.id, fpos_id, price_unit=amount_inv, context=context)
-                line_value.update(line_dict['value'])
-                line_value['price_unit'] = amount_inv
-                if line_value.get('invoice_line_tax_id', False):
-                    tax_tab = [(6, 0, line_value['invoice_line_tax_id'])]
-                    line_value['invoice_line_tax_id'] = tax_tab
-                line_value['analytic_dimension_1_id'] = analytic_dimension_1_id
-                line_value['analytic_dimension_2_id'] = analytic_dimension_2_id
-                line_value['analytic_dimension_3_id'] = analytic_dimension_3_id
-                line_value['product_id'] = product_id
-         
-                today = datetime.today()
-#                days30 = datetime.timedelta(days=30)
-                datedue = today + relativedelta( days = +30 )
-         
-                reference = invoice_obj.generate_bbacomm(cr, uid, ids, 'out_invoice', 'bba', partner.partner_id.id, '', context={})
-                referenc2 = reference['value']['reference']
-         
-                invoice_id = invoice_obj.create(cr, uid, {
-                    'partner_id': partner.partner_id.id,
-                    'membership_partner_id': partner.partner_id.id,
-                    'account_id': account_id,
-                    'membership_invoice': True,
-                    'third_payer_id': None,
-                    'third_payer_amount': 0.00,
-                    'fiscal_position': fpos_id or False,
-                    'payment_term': payment_term_id,
-                    'sdd_mandate_id': mandate_id,
-                    'partner_bank_id': partner_bank_id,
-                    'reference_type': 'bba',
-                    'type': 'out_invoice',
-                    'reference': referenc2,
-                    'date_due': datedue,
-                    'internal_number': None,
-                    'number': None,
-                    'move_name': None,
-                }, context=context)
-         
-                line_value['invoice_id'] = invoice_id
-                context['web_invoice_id'] = invoice_id
-                invoice_line_id = invoice_line_obj.create(cr, uid, line_value, context=context)
-                invoice_obj.write(cr, uid, invoice_id, {'invoice_line': [(6, 0, [invoice_line_id])]}, context=context)
-                if 'invoice_line_tax_id' in line_value and line_value['invoice_line_tax_id']:
-                    tax_value = invoice_tax_obj.compute(cr, uid, invoice_id).values()
-                    for tax in tax_value:
-                        invoice_tax_obj.create(cr, uid, tax, context=context)
-         
-                wf_service = netsvc.LocalService('workflow')
-                wf_service.trg_validate(uid, 'account.invoice', invoice_id, 'invoice_open', cr) 
+            if not partner.mandate_only:
+                if not partner.next_year_mandate:
+                    invoice_obj = self.pool.get('account.invoice')
+                    invoice_line_obj = self.pool.get('account.invoice.line')
+                    invoice_tax_obj = self.pool.get('account.invoice.tax')
+             
+                    product_id = partner.membership_product_id.id
+                    analytic_dimension_1_id = partner.membership_product_id.analytic_dimension_1_id.id
+                    analytic_dimension_2_id = partner.membership_product_id.analytic_dimension_2_id.id
+                    analytic_dimension_3_id = partner.membership_product_id.analytic_dimension_3_id.id
+             
+            #            amount_inv = partner.membership_product_id.product_tmpl_id.list_price
+                    amount_inv = partner.membership_product_id.list_price
+             
+                    account_id = partner.partner_id.property_account_receivable and partner.partner_id.property_account_receivable.id or False
+                    fpos_id = partner.partner_id.property_account_position and partner.partner_id.property_account_position.id or False
+             
+                    quantity = 1
+                    
+                    payment_term_obj = self.pool.get('account.payment.term')
+                    payment_term = payment_term_obj.search(cr, uid, [('name','=','Direct debit')])
+                    payment_term_rec = payment_term_obj.browse(cr, uid, payment_term[0])
+                    payment_term_id = payment_term_rec.id
+                         
+                    line_value = {}
+                    line_dict = invoice_line_obj.product_id_change(cr, uid, {}, product_id, False, quantity, '', 'out_invoice', partner.partner_id.id, fpos_id, price_unit=amount_inv, context=context)
+                    line_value.update(line_dict['value'])
+                    line_value['price_unit'] = amount_inv
+                    if line_value.get('invoice_line_tax_id', False):
+                        tax_tab = [(6, 0, line_value['invoice_line_tax_id'])]
+                        line_value['invoice_line_tax_id'] = tax_tab
+                    line_value['analytic_dimension_1_id'] = analytic_dimension_1_id
+                    line_value['analytic_dimension_2_id'] = analytic_dimension_2_id
+                    line_value['analytic_dimension_3_id'] = analytic_dimension_3_id
+                    line_value['product_id'] = product_id
+             
+                    today = datetime.today()
+    #                days30 = datetime.timedelta(days=30)
+                    datedue = today + relativedelta( days = +30 )
+             
+                    reference = invoice_obj.generate_bbacomm(cr, uid, ids, 'out_invoice', 'bba', partner.partner_id.id, '', context={})
+                    referenc2 = reference['value']['reference']
+             
+                    invoice_id = invoice_obj.create(cr, uid, {
+                        'partner_id': partner.partner_id.id,
+                        'membership_partner_id': partner.partner_id.id,
+                        'account_id': account_id,
+                        'membership_invoice': True,
+                        'third_payer_id': None,
+                        'third_payer_amount': 0.00,
+                        'fiscal_position': fpos_id or False,
+                        'payment_term': payment_term_id,
+                        'sdd_mandate_id': mandate_id,
+                        'partner_bank_id': partner_bank_id,
+                        'reference_type': 'bba',
+                        'type': 'out_invoice',
+                        'reference': referenc2,
+                        'date_due': datedue,
+                        'internal_number': None,
+                        'number': None,
+                        'move_name': None,
+                    }, context=context)
+             
+                    line_value['invoice_id'] = invoice_id
+                    context['web_invoice_id'] = invoice_id
+                    invoice_line_id = invoice_line_obj.create(cr, uid, line_value, context=context)
+                    invoice_obj.write(cr, uid, invoice_id, {'invoice_line': [(6, 0, [invoice_line_id])]}, context=context)
+                    if 'invoice_line_tax_id' in line_value and line_value['invoice_line_tax_id']:
+                        tax_value = invoice_tax_obj.compute(cr, uid, invoice_id).values()
+                        for tax in tax_value:
+                            invoice_tax_obj.create(cr, uid, tax, context=context)
+             
+                    wf_service = netsvc.LocalService('workflow')
+                    wf_service.trg_validate(uid, 'account.invoice', invoice_id, 'invoice_open', cr) 
 
             if partner.membership_origin_id:
                 sql_stat = '''update res_partner set membership_origin_id = %d where id = %d''' % (partner.membership_origin_id.id, partner.partner_id.id, )
