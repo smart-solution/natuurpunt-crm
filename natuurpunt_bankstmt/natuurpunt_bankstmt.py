@@ -297,7 +297,7 @@ class bank_statement_create_partner(osv.osv_memory):
 
         return {'value':res}
 
-    def onchange_membership_amount(self, cr, uid, ids, transaction_amount, membership_amount, context=None):
+    def onchange_membership_amount(self, cr, uid, ids, transaction_amount, membership_amount, donation_product_id, context=None):
         res = {}
         donation_amount = 0.00
         donation_amount = transaction_amount - membership_amount
