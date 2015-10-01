@@ -224,56 +224,107 @@ class bank_statement_create_partner(osv.osv_memory):
             
         return {'value':res}
 
+    def onchange_donation_partner(self, cr, uid, ids, donation_partner, donation_product_id, context=None):
+        res={}
+        if donation_partner and not donation_product_id:
+            prod_obj = self.pool.get('product.product')
+            prod_ids = prod_obj.search(cr, uid, [('donation_product_bank_stmt','=',True)])
+            if len(prod_ids) == 1:
+                prod = prod_obj.browse(cr, uid, prod_ids[0])
+                res['donation_product_id'] = prod.id
+        if not donation_partner:
+            res['donation_amount'] = 0
+            res['donation_amount_inv'] = 0
+            res['donation_partner'] = False
+            res['donation_product_id'] = False
+        return {'value':res}                
+    
     def onchange_product_id(self, cr, uid, ids, product_id, transaction_amount, donation_partner, membership_partner, donation_product_id, context=None):
-                res = {}
-                membership_amount = 0.00
-                donation = donation_partner
-                if product_id and membership_partner:
-                        product_obj = self.pool.get('product.product')
-                        product = product_obj.browse(cr, uid, product_id, context=context)
-                        membership_amount = product.list_price
-                if membership_partner:
-                        res['membership_amount'] = membership_amount
-                        res['membership_amount_inv'] = membership_amount
-                donation_amount = transaction_amount - membership_amount
-                if donation_amount > 0.00:
-                        res['donation_amount'] = donation_amount
-                        res['donation_amount_inv'] = donation_amount
-                        res['donation_partner'] = True
-                        donation = True
-                else:
-                        res['donation_partner'] = False
-                        donation = False
-                if donation and not donation_product_id:
-                        prod_obj = self.pool.get('product.product')
-                        prod_ids = prod_obj.search(cr, uid, [('donation_product_bank_stmt','=',True)])
-                        if len(prod_ids) == 1:
-                                prod = prod_obj.browse(cr, uid, prod_ids[0])
-                                res['donation_product_id'] = prod.id
-        
-                return {'value':res}
+        res = {}
+        membership_amount = 0.00
+        donation = donation_partner
+        if product_id and membership_partner:
+            product_obj = self.pool.get('product.product')
+            product = product_obj.browse(cr, uid, product_id, context=context)
+            membership_amount = product.list_price
+        if membership_partner:
+            res['membership_amount'] = membership_amount
+            res['membership_amount_inv'] = membership_amount
+        donation_amount = transaction_amount - membership_amount
+        if donation_amount > 0.00:
+            res['donation_amount'] = donation_amount
+            res['donation_amount_inv'] = donation_amount
+            res['donation_partner'] = True
+            donation = True
+        else:
+            res['donation_amount'] = 0
+            res['donation_amount_inv'] = 0
+            res['donation_partner'] = False
+            res['donation_product_id'] = False
+            donation = False
+        if donation_amount < 0.00:
+            return {'warning': { 
+                                'title': _('Warning!'),
+                                'message': _('Bedrag lidmaatschap groter dan betaald bedrag')}}
+            
+#         else:
+# # warning toevoegen - transaction_amount < membership_amount
+#             warning = {}
+#             title = False
+#             message = False
+# 
+#             if result.get('warning',False):
+#                 warning['title'] = title and title +' & '+ result['warning']['title'] or result['warning']['title']
+#                 warning['message'] = message and message + ' ' + result['warning']['message'] or result['warning']['message']
+#     
+#                 return {'value': result.get('value',{}), 'warning':warning}
+#                         
+#                         
+#                         
+#                         
+#                         res['donation_partner'] = False
+#                         donation = False
+#                         raise osv.except_osv(('Waring'),_('Bedrag lidmaatschap groter dan betaald bedrag'))
+#                         return {'warning': { 
+#                                             'title': _('Warning!'),
+#                                             'message': _('Bedrag lidmaatschap groter dan betaald bedrag')}}
+        if donation and not donation_product_id:
+            prod_obj = self.pool.get('product.product')
+            prod_ids = prod_obj.search(cr, uid, [('donation_product_bank_stmt','=',True)])
+            if len(prod_ids) == 1:
+                prod = prod_obj.browse(cr, uid, prod_ids[0])
+                res['donation_product_id'] = prod.id
 
-    def onchange_membership_amount(self, cr, uid, ids, transaction_amount, membership_amount, context=None):
-                res = {}
-                donation_amount = 0.00
-                donation_amount = transaction_amount - membership_amount
-                res['membership_amount_inv'] = membership_amount
-                if donation_amount > 0.00:
-                        res['donation_amount'] = donation_amount
-                        res['donation_amount_inv'] = donation_amount
-                        res['donation_partner'] = True
-                        donation = True
-                else:
-                        res['donation_partner'] = False
-                        donation = False
-#        if donation:
-#            prod_obj = self.pool.get('product.product')
-#            prod_ids = prod_obj.search(cr, uid, [('donation_product_bank_stmt','=',True)])
-#            if len(prod_ids) == 1:
-#                prod = prod_obj.browse(cr, uid, prod_ids[0])
-#                res['donation_product_id'] = prod.id
+        return {'value':res}
+
+    def onchange_membership_amount(self, cr, uid, ids, transaction_amount, membership_amount, donation_product_id, context=None):
+        res = {}
+        donation_amount = 0.00
+        donation_amount = transaction_amount - membership_amount
+        res['membership_amount_inv'] = membership_amount
+        if donation_amount > 0.00:
+            res['donation_amount'] = donation_amount
+            res['donation_amount_inv'] = donation_amount
+            res['donation_partner'] = True
+            donation = True
+        else:
+            res['donation_amount'] = 0
+            res['donation_amount_inv'] = 0
+            res['donation_partner'] = False
+            res['donation_product_id'] = False
+            donation = False
+        if donation_amount < 0.00:
+            return {'warning': { 
+                                'title': _('Warning!'),
+                                'message': _('Bedrag lidmaatschap groter dan betaald bedrag')}}
+        if donation and not donation_product_id:
+            prod_obj = self.pool.get('product.product')
+            prod_ids = prod_obj.search(cr, uid, [('donation_product_bank_stmt','=',True)])
+            if len(prod_ids) == 1:
+                prod = prod_obj.browse(cr, uid, prod_ids[0])
+                res['donation_product_id'] = prod.id
         
-                return {'value':res}
+        return {'value':res}
 
     def onchange_bankacct(self, cr, uid, ids, bank_account, context=None):
         res = {}
@@ -408,47 +459,47 @@ class bank_statement_create_partner(osv.osv_memory):
         return {'value':res}
 
     def onchange_partner_id(self, cr, uid, ids, partner_id, context=None):
-                res = {}
-                if partner_id:
-                        partner_obj = self.pool.get('res.partner')
-                        partner = partner_obj.browse(cr, uid, partner_id, context=context)
-                        if partner.membership_state_b == 'none':
-                                membership_state = 'Geen lid'
-                        else:
-                                if partner.membership_state_b == 'canceled':
-                                        membership_state = 'Opgezegd lid'
-                                else:
-                                        if partner.membership_state_b == 'old':
-                                                membership_state = 'Oud lid'
-                                        else:
-                                                if partner.membership_state_b == 'waiting':
-                                                        membership_state = 'Wachtend lid'
-                                                else:
-                                                        if partner.membership_state_b == 'invoiced':
-                                                                membership_state = 'Gefactureerd lid'
-                                                        else:
-                                                                if partner.membership_state_b == 'paid':
-                                                                        membership_state = 'Betaald lid'
-                                                                else:
-                                                                        if partner.membership_state_b == 'wait_member':
-                                                                                membership_state = 'Wachtend lidmaatschap'
-                                                                        else:
-                                                                                if partner.membership_state_b == 'free':
-                                                                                        membership_state = 'Gratis lid'
-                                                                                else:
-                                                                                        membership_state = 'Geen lid'
-                        res['membership_nbr'] = partner.membership_nbr
-                        res['membership_state'] = membership_state
-                        res['partner_address'] = partner.street + ' ' + partner.zip + ' ' + partner.city
-                
+        res = {}
+        if partner_id:
+            partner_obj = self.pool.get('res.partner')
+            partner = partner_obj.browse(cr, uid, partner_id, context=context)
+            if partner.membership_state_b == 'none':
+                    membership_state = 'Geen lid'
+            else:
+                    if partner.membership_state_b == 'canceled':
+                            membership_state = 'Opgezegd lid'
+                    else:
+                            if partner.membership_state_b == 'old':
+                                    membership_state = 'Oud lid'
+                            else:
+                                    if partner.membership_state_b == 'waiting':
+                                            membership_state = 'Wachtend lid'
+                                    else:
+                                            if partner.membership_state_b == 'invoiced':
+                                                    membership_state = 'Gefactureerd lid'
+                                            else:
+                                                    if partner.membership_state_b == 'paid':
+                                                            membership_state = 'Betaald lid'
+                                                    else:
+                                                            if partner.membership_state_b == 'wait_member':
+                                                                    membership_state = 'Wachtend lidmaatschap'
+                                                            else:
+                                                                    if partner.membership_state_b == 'free':
+                                                                            membership_state = 'Gratis lid'
+                                                                    else:
+                                                                            membership_state = 'Geen lid'
+            res['membership_nbr'] = partner.membership_nbr
+            res['membership_state'] = membership_state
+            res['partner_address'] = partner.street + ' ' + partner.zip + ' ' + partner.city
+    
 
-                        for invoicelines in partner.invoice_ids:
-                                if invoicelines.invoice_id.state == 'open' and invoicelines.invoice_id.membership_invoice:
-                                        res['openinvoice_id']=invoicelines.invoice_id.id
-                                        res['openinvoice_nbr']=invoicelines.invoice_id.number
-                                        res['openinvoice_amount']=invoicelines.invoice_id.amount_total
-                                
-                return {'value':res}
+            for invoicelines in partner.invoice_ids:
+                    if invoicelines.invoice_id.state == 'open' and invoicelines.invoice_id.membership_invoice:
+                            res['openinvoice_id']=invoicelines.invoice_id.id
+                            res['openinvoice_nbr']=invoicelines.invoice_id.number
+                            res['openinvoice_amount']=invoicelines.invoice_id.amount_total
+                        
+        return {'value':res}
 
     def create_partner(self, cr, uid, ids, context=None):
         res = {}

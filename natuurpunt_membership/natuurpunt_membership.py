@@ -112,12 +112,13 @@ class res_partner(osv.osv):
             today = date.today()
             year_today = today.year
 
-            sql_stat = '''select date_from, date_to, date_cancel, membership_cancel_id, membership_membership_line.state, npca_migrated, membership_renewal, date_invoice, sdd_mandate_id, website_payment, account_invoice.state as invoice_state, abo_company, company_deal, organisation_type_id, extract(year from date_from) as year_from, extract(year from date_to) as year_to, case when not(date_cancel IS NULL) and date_cancel < now() then 'canceled' else 'none' end as cancel_state
+            sql_stat = '''select date_from, date_to, date_cancel, membership_cancel_id, membership_membership_line.state, npca_migrated, membership_renewal, date_invoice, sdd_mandate_id, sdd_mandate.state as mandate_state, website_payment, account_invoice.state as invoice_state, abo_company, company_deal, organisation_type_id, extract(year from date_from) as year_from, extract(year from date_to) as year_to, case when not(date_cancel IS NULL) and date_cancel < now() then 'canceled' else 'none' end as cancel_state
 from membership_membership_line
 inner join product_product on (product_product.id = membership_membership_line.membership_id and product_product.membership_product = True)
 left outer join account_invoice_line on (account_invoice_line.id = account_invoice_line)
 left outer join account_invoice on (account_invoice.id = invoice_id)
 left outer join res_partner on (res_partner.id = account_invoice.partner_id)
+left outer join sdd_mandate on (account_invoice.sdd_mandate_id = sdd_mandate.id)
 where membership_membership_line.partner = %d
 order by date_from, date_to
 ''' % (partner.id, )
@@ -131,6 +132,7 @@ order by date_from, date_to
                 membership_renewal = sql_res['membership_renewal']
                 date_invoice = sql_res['date_invoice']
                 sdd_mandate_id = sql_res['sdd_mandate_id']
+                mandate_state = sql_res['mandate_state']
                 website_payment = sql_res['website_payment']
                 invoice_state = sql_res['invoice_state']
                 abo_company = sql_res['abo_company']
@@ -164,16 +166,34 @@ order by date_from, date_to
                     else:
                         membership_state_field = 'canceled'
                 if state == 'paid':
-                    if year_to_membership == year_today or year_from_membership == year_today or (year_today > year_from_membership and year_today < year_to_membership):
-                        membership_state_field = 'paid'
-                    else:
-                        if year_from_membership > year_today:
-                            continue
+                    if invoice_state == 'paid':
+                        if year_to_membership == year_today or year_from_membership == year_today or (year_today > year_from_membership and year_today < year_to_membership):
+                            membership_state_field = 'paid'
                         else:
-                            if year_to_membership < year_today:
-                                membership_state_field = 'old'
+                            if year_from_membership > year_today:
+                                continue
+                            else:
+                                if year_to_membership < year_today:
+                                    membership_state_field = 'old'
+                    else:
+                        if year_from_membership <= year_today:
+                            if sdd_mandate_id and mandate_state == 'valid':
+                                membership_state_field = 'invoiced'
+                            elif website_payment:
+                                membership_state_field = 'invoiced'
+                            elif abo_company:
+                                membership_state_field = 'invoiced'
+                            elif company_deal:
+                                membership_state_field = 'invoiced'
+                            elif organisation_type_id and organisation_type_id == 1:
+                                membership_state_field = 'invoiced'
+                            elif invoice_state == 'draft' or invoice_state == 'proforma':
+                                membership_state_field = 'waiting'
+                            else:
+                                membership_state_field = 'wait_member'
+                            
                 if state == 'invoiced' and year_from_membership <= year_today:
-                    if sdd_mandate_id:
+                    if sdd_mandate_id and mandate_state == 'valid':
                         membership_state_field = 'invoiced'
                     elif website_payment:
                         membership_state_field = 'invoiced'
