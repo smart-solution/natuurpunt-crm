@@ -70,11 +70,13 @@ class partner_create_bank_mandate_invoice(osv.osv_memory):
 		'recruiting_organisation_id': fields.many2one('res.partner', 'Wervende Organisatie', select=True),
         'scan': fields.binary('Scan van het Mandaat'),
         'next_year_mandate': fields.boolean('Mandaat volgend jaar'),
+        'mandate_only': fields.boolean('Enkel mandaat aanmaken'),
     }
 
-#    _defaults = {
+    _defaults = {
+         'mandate_only': False,
 #        'unique_mandate_reference': lambda self, cr, uid, ctx: self.pool['ir.sequence'].get(cr, uid, 'sdd.mandate.reference'),
-#    }
+    }
 
     def onchange_future_date(self, cr, uid, ids, input_date, context=None):
         res = {}
@@ -90,22 +92,59 @@ class partner_create_bank_mandate_invoice(osv.osv_memory):
     def onchange_bankacct(self, cr, uid, ids, partner_id, bank_account, context=None):
         res = {}
         warning = ''
+        warning_msg = {}
 
         if partner_id and bank_account:
             sql_stat = "select res_partner.id, res_partner.name, res_partner.ref from res_partner_bank, res_partner where replace(acc_number, ' ', '') = replace('%s', ' ', '') and res_partner_bank.partner_id <> %d and res_partner.id = res_partner_bank.partner_id" % (bank_account, partner_id, )
             cr.execute(sql_stat)
             for sql_res in cr.dictfetchall():
                 if warning == '':
-                    warning = sql_res['name'] + ' (' + str(sql_res['id']) + ')'
+                    warning = '''De volgende contacten zijn reeds geregistreerd met dit rekeningnummer: 
+''' + sql_res['name'] + ' (' + str(sql_res['id']) + ')'
                 else:
                     warning = warning + ', ' + sql_res['name'] + ' (' + str(sql_res['id']) + ')'
                 warning = warning + ''' 
 '''
+            sql_stat = "select sdd_mandate.id from sdd_mandate, res_partner_bank where sdd_mandate.partner_bank_id = res_partner_bank.id and res_partner_bank.partner_id = %d and sdd_mandate.state in ('valid','draft')" % (partner_id, )
+            cr.execute(sql_stat)
+            for sql_res in cr.dictfetchall():
+                if warning == '':
+                    warning = 'Let op: Partner heeft reeds andere mandaten.'
+                else:
+                    warning = warning + 'Let op: Partner heeft reeds andere mandaten.'
+                warning = warning + ''' 
+'''
 
+            sql_stat = '''select date_from, date_to, membership_membership_line.state, extract(year from date_from) as year_from, extract(year from date_to) as year_to
+from membership_membership_line
+inner join product_product on (product_product.id = membership_membership_line.membership_id and product_product.membership_product = True)
+where membership_membership_line.partner = %d and not(membership_membership_line.state = 'canceled')
+''' % (partner_id, )
+            cr.execute(sql_stat)
+            today = date.today()
+            year_today = today.year
+            for sql_res in cr.dictfetchall():
+                year_from_membership = int(sql_res['year_from'])
+                year_to_membership = int(sql_res['year_to'])
+                if sql_res['state'] == 'invoiced' and year_from_membership <= year_today:
+                    if warning == '':
+                        warning = 'Let op: Partner heeft reeds een ander gefactureerd lidmaatschap van jaar ' + str(year_from_membership) + ' tot ' + str(year_to_membership)
+                    else:
+                        warning = warning + 'Let op: Partner heeft reeds een ander gefactureerd lidmaatschap van jaar ' + str(year_from_membership) + ' tot ' + str(year_to_membership)
+                    warning = warning + ''' 
+    '''
+                if sql_res['state'] == 'paid' and not(year_to_membership < year_today):
+                    if warning == '':
+                        warning = 'Let op: Partner heeft reeds een ander betaald lidmaatschap van jaar ' + str(year_from_membership) + ' tot ' + str(year_to_membership)
+                    else:
+                        warning = warning + 'Let op: Partner heeft reeds een andere betaald lidmaatschap van jaar ' + str(year_from_membership) + ' tot ' + str(year_to_membership)
+                    warning = warning + ''' 
+    '''
+                    
         if not (warning == ''):
             warning_msg = { 
                     'title': _('Warning!'),
-                    'message': _('''De volgende contacten zijn reeds geregistreerd met dit rekeningnummer: 
+                    'message': _('''
 %s''' % (warning))
                 }   
             return {'warning': warning_msg}
@@ -171,79 +210,80 @@ class partner_create_bank_mandate_invoice(osv.osv_memory):
      
             cr.commit()
      
-            if not partner.next_year_mandate:
-                invoice_obj = self.pool.get('account.invoice')
-                invoice_line_obj = self.pool.get('account.invoice.line')
-                invoice_tax_obj = self.pool.get('account.invoice.tax')
-         
-                product_id = partner.membership_product_id.id
-                analytic_dimension_1_id = partner.membership_product_id.analytic_dimension_1_id.id
-                analytic_dimension_2_id = partner.membership_product_id.analytic_dimension_2_id.id
-                analytic_dimension_3_id = partner.membership_product_id.analytic_dimension_3_id.id
-         
-        #            amount_inv = partner.membership_product_id.product_tmpl_id.list_price
-                amount_inv = partner.membership_product_id.list_price
-         
-                account_id = partner.partner_id.property_account_receivable and partner.partner_id.property_account_receivable.id or False
-                fpos_id = partner.partner_id.property_account_position and partner.partner_id.property_account_position.id or False
-         
-                quantity = 1
-                
-                payment_term_obj = self.pool.get('account.payment.term')
-                payment_term = payment_term_obj.search(cr, uid, [('name','=','Direct debit')])
-                payment_term_rec = payment_term_obj.browse(cr, uid, payment_term[0])
-                payment_term_id = payment_term_rec.id
-                     
-                line_value = {}
-                line_dict = invoice_line_obj.product_id_change(cr, uid, {}, product_id, False, quantity, '', 'out_invoice', partner.partner_id.id, fpos_id, price_unit=amount_inv, context=context)
-                line_value.update(line_dict['value'])
-                line_value['price_unit'] = amount_inv
-                if line_value.get('invoice_line_tax_id', False):
-                    tax_tab = [(6, 0, line_value['invoice_line_tax_id'])]
-                    line_value['invoice_line_tax_id'] = tax_tab
-                line_value['analytic_dimension_1_id'] = analytic_dimension_1_id
-                line_value['analytic_dimension_2_id'] = analytic_dimension_2_id
-                line_value['analytic_dimension_3_id'] = analytic_dimension_3_id
-                line_value['product_id'] = product_id
-         
-                today = datetime.today()
-#                days30 = datetime.timedelta(days=30)
-                datedue = today + relativedelta( days = +30 )
-         
-                reference = invoice_obj.generate_bbacomm(cr, uid, ids, 'out_invoice', 'bba', partner.partner_id.id, '', context={})
-                referenc2 = reference['value']['reference']
-         
-                invoice_id = invoice_obj.create(cr, uid, {
-                    'partner_id': partner.partner_id.id,
-                    'membership_partner_id': partner.partner_id.id,
-                    'account_id': account_id,
-                    'membership_invoice': True,
-                    'third_payer_id': None,
-                    'third_payer_amount': 0.00,
-                    'fiscal_position': fpos_id or False,
-                    'payment_term': payment_term_id,
-                    'sdd_mandate_id': mandate_id,
-                    'partner_bank_id': partner_bank_id,
-                    'reference_type': 'bba',
-                    'type': 'out_invoice',
-                    'reference': referenc2,
-                    'date_due': datedue,
-                    'internal_number': None,
-                    'number': None,
-                    'move_name': None,
-                }, context=context)
-         
-                line_value['invoice_id'] = invoice_id
-                context['web_invoice_id'] = invoice_id
-                invoice_line_id = invoice_line_obj.create(cr, uid, line_value, context=context)
-                invoice_obj.write(cr, uid, invoice_id, {'invoice_line': [(6, 0, [invoice_line_id])]}, context=context)
-                if 'invoice_line_tax_id' in line_value and line_value['invoice_line_tax_id']:
-                    tax_value = invoice_tax_obj.compute(cr, uid, invoice_id).values()
-                    for tax in tax_value:
-                        invoice_tax_obj.create(cr, uid, tax, context=context)
-         
-                wf_service = netsvc.LocalService('workflow')
-                wf_service.trg_validate(uid, 'account.invoice', invoice_id, 'invoice_open', cr) 
+            if not partner.mandate_only:
+                if not partner.next_year_mandate:
+                    invoice_obj = self.pool.get('account.invoice')
+                    invoice_line_obj = self.pool.get('account.invoice.line')
+                    invoice_tax_obj = self.pool.get('account.invoice.tax')
+             
+                    product_id = partner.membership_product_id.id
+                    analytic_dimension_1_id = partner.membership_product_id.analytic_dimension_1_id.id
+                    analytic_dimension_2_id = partner.membership_product_id.analytic_dimension_2_id.id
+                    analytic_dimension_3_id = partner.membership_product_id.analytic_dimension_3_id.id
+             
+            #            amount_inv = partner.membership_product_id.product_tmpl_id.list_price
+                    amount_inv = partner.membership_product_id.list_price
+             
+                    account_id = partner.partner_id.property_account_receivable and partner.partner_id.property_account_receivable.id or False
+                    fpos_id = partner.partner_id.property_account_position and partner.partner_id.property_account_position.id or False
+             
+                    quantity = 1
+                    
+                    payment_term_obj = self.pool.get('account.payment.term')
+                    payment_term = payment_term_obj.search(cr, uid, [('name','=','Direct debit')])
+                    payment_term_rec = payment_term_obj.browse(cr, uid, payment_term[0])
+                    payment_term_id = payment_term_rec.id
+                         
+                    line_value = {}
+                    line_dict = invoice_line_obj.product_id_change(cr, uid, {}, product_id, False, quantity, '', 'out_invoice', partner.partner_id.id, fpos_id, price_unit=amount_inv, context=context)
+                    line_value.update(line_dict['value'])
+                    line_value['price_unit'] = amount_inv
+                    if line_value.get('invoice_line_tax_id', False):
+                        tax_tab = [(6, 0, line_value['invoice_line_tax_id'])]
+                        line_value['invoice_line_tax_id'] = tax_tab
+                    line_value['analytic_dimension_1_id'] = analytic_dimension_1_id
+                    line_value['analytic_dimension_2_id'] = analytic_dimension_2_id
+                    line_value['analytic_dimension_3_id'] = analytic_dimension_3_id
+                    line_value['product_id'] = product_id
+             
+                    today = datetime.today()
+    #                days30 = datetime.timedelta(days=30)
+                    datedue = today + relativedelta( days = +30 )
+             
+                    reference = invoice_obj.generate_bbacomm(cr, uid, ids, 'out_invoice', 'bba', partner.partner_id.id, '', context={})
+                    referenc2 = reference['value']['reference']
+             
+                    invoice_id = invoice_obj.create(cr, uid, {
+                        'partner_id': partner.partner_id.id,
+                        'membership_partner_id': partner.partner_id.id,
+                        'account_id': account_id,
+                        'membership_invoice': True,
+                        'third_payer_id': None,
+                        'third_payer_amount': 0.00,
+                        'fiscal_position': fpos_id or False,
+                        'payment_term': payment_term_id,
+                        'sdd_mandate_id': mandate_id,
+                        'partner_bank_id': partner_bank_id,
+                        'reference_type': 'bba',
+                        'type': 'out_invoice',
+                        'reference': referenc2,
+                        'date_due': datedue,
+                        'internal_number': None,
+                        'number': None,
+                        'move_name': None,
+                    }, context=context)
+             
+                    line_value['invoice_id'] = invoice_id
+                    context['web_invoice_id'] = invoice_id
+                    invoice_line_id = invoice_line_obj.create(cr, uid, line_value, context=context)
+                    invoice_obj.write(cr, uid, invoice_id, {'invoice_line': [(6, 0, [invoice_line_id])]}, context=context)
+                    if 'invoice_line_tax_id' in line_value and line_value['invoice_line_tax_id']:
+                        tax_value = invoice_tax_obj.compute(cr, uid, invoice_id).values()
+                        for tax in tax_value:
+                            invoice_tax_obj.create(cr, uid, tax, context=context)
+             
+                    wf_service = netsvc.LocalService('workflow')
+                    wf_service.trg_validate(uid, 'account.invoice', invoice_id, 'invoice_open', cr) 
 
             if partner.membership_origin_id:
                 sql_stat = '''update res_partner set membership_origin_id = %d where id = %d''' % (partner.membership_origin_id.id, partner.partner_id.id, )

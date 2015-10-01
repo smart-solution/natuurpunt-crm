@@ -79,10 +79,11 @@
 			            <field name="signature_date" on_change="onchange_future_date(signature_date)"/>
 			        </group>
 			        <group>
+			        <field name="mandate_only"/>
 				    <field name="next_year_mandate"/>
-				    <field name="membership_product_id" attrs="{'required': [('next_year_mandate', '=', False)], 'invisible': [('next_year_mandate', '=', True)]}" domain="[('membership_product','=',True)]"/>
-				    <field name="membership_origin_id" attrs="{'invisible': [('next_year_mandate', '=', True)]}"/>
-                    <field name="recruiting_organisation_id" attrs="{'invisible': [('next_year_mandate', '=', True)]}" domain="[('organisation_type_id','=','Afdeling')]"/>
+				    <field name="membership_product_id" attrs="{'required': [('next_year_mandate', '=', False),('mandate_only', '=', False)], 'invisible': ['|',('next_year_mandate', '=', True),('mandate_only', '=', True)]}" domain="[('membership_product','=',True)]"/>
+				    <field name="membership_origin_id" attrs="{'invisible': ['|',('next_year_mandate', '=', True),('mandate_only', '=', True)]}"/>
+                    <field name="recruiting_organisation_id" attrs="{'invisible': ['|',('next_year_mandate', '=', True),('mandate_only', '=', True)]}" domain="[('organisation_type_id','=','Afdeling')]"/>
 			        </group>
 			    </group>
                 <!--
