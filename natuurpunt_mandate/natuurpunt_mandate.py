@@ -26,6 +26,7 @@ from datetime import datetime
 from datetime import time
 from datetime import date
 from dateutil.relativedelta import relativedelta
+import time
 import re
 
 class res_partner(osv.osv):
@@ -50,9 +51,33 @@ class res_partner(osv.osv):
                 'target': 'new',
                 'context': context,
                 }
+
+    def active_membership_line_find(self, cr, uid, id, date, context=None):
+        """Find the active membership line"""
+        if not date:
+            date = time.strftime('%Y-%m-%d')
+
+        line_ids = self.pool.get('membership.membership_line').search(cr, uid, [('partner','=', id),('date_to','>=', date),('date_from','<=', date),('state','=','paid'),('membership_cancel_id','=',False)])
+
+        membership_lines = []
+        for line in self.pool.get('membership.membership_line').browse(cr, uid, line_ids):
+
+            # If it is a membership product select the partner
+            if line.membership_id.membership:
+                membership_lines.append(line.id)
+
+        return membership_lines and membership_lines[0] or False
     
-    _columns = {
-        }
+    def active_membership_lines_find(self, cr, uid, id, date, context=None):
+        """Find the active membership lines"""
+        if not date:
+            date = time.strftime('%Y-%m-%d')
+        line_ids = self.pool.get('membership.membership_line').search(cr, uid, [('partner','=', id),('date_to','>=', date),('date_from','<=', date),('state','=','paid'),('membership_cancel_id','=',False)])
+        membership_lines = []
+        for line in self.pool.get('membership.membership_line').browse(cr, uid, line_ids):
+            if line.membership_id.membership:
+                membership_lines.append(line.id)
+        return membership_lines
         
 res_partner()
 
