@@ -183,6 +183,19 @@ class res_partner(osv.osv):
 		'display_regional_partnership': fields.related('organisation_type_id','display_regional_partnership',type='boolean',string='Toon regionaal samenwerkingsverband'),
 	}
 
+# 	def write(self, cr, uid, ids, vals, context=None):
+# 		print "in WRITE in ORGANISATION STRUCTURE"
+# 		context['skip_write'] = True 
+# 
+# 		if 'zip_ids' in vals:
+# 			print 'organisation structure ids', ids
+# 			print 'organisation structure vals', vals
+# 			for organisation in ids:
+# 				org = self.browse(cr, uid, [organisation], context=context)
+# 				print 'organisation structure org', org.zip_ids
+# 		res = super(res_partner, self).write(cr, uid, ids, vals, context=context)
+# 		return res
+
 res_partner()
 
 class res_country_city(osv.osv):

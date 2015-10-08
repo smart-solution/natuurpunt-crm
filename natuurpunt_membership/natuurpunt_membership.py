@@ -28,6 +28,7 @@ from datetime import date
 from mx import DateTime
 import time
 import logging
+#import pdb
 
 logger = logging.getLogger(__name__)
 
@@ -297,7 +298,8 @@ order by date_from, date_to
         return list_partner
 
     def _membership_state(self, cr, uid, ids, name, args, context=None):
-        print 'CALC MEMBERSHIP STATE', name
+#        pdb.set_trace()
+        print 'CALC MEMBERSHIP STATE', name, ids
         print 'ARGS:',args
         print 'CONTEXT:',context
         if context:

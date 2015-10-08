@@ -442,6 +442,7 @@ class res_partner(osv.osv):
 
         res = super(res_partner, self).create(cr, uid, vals, context=context)
         prc = self.browse(cr, uid, res)
+
         if prc.street:
             province = None
             if prc.zip_id.state_id:
@@ -497,12 +498,32 @@ class res_partner(osv.osv):
 
         if 'member_lines' in vals:
             context['skip_write'] = True
+# 473        
+        if 'zip_ids' in vals:
+            old = self.browse(cr, uid, ids)[0]
+            print 'old', old
+            for old in self.browse(cr, uid, ids):
+                print 'old', old
+                print 'old zip_ids', old.zip_ids
+# 473            
  
         res = super(res_partner, self).write(cr, uid, ids, vals, context=context)
         if not isinstance(ids, list):
             ids = [ids]
-#            print'IDS:',ids
         for prc in self.browse(cr, uid, ids):
+# 473        
+            if 'zip_ids' in vals:
+                print 'organization', prc.organisation_type_id.id
+                if prc.organisation_type_id.id == 1:
+                    print 'prc', prc.zip_ids
+                    print 'old', old.zip_ids
+                    
+                    for rel in prc.zip_ids:
+                        if not(rel in old.zip_ids):
+                            sql_stat = 'update res_partner set department_id = %d where zip_id = %d' % (prc.id, rel.id ,)
+                            print sql_stat
+                            cr.execute(sql_stat)
+# 473            
             if 'relation_partner_id' in vals and not (relation_partner_id == 0):
                 sql_stat = "update res_partner set relation_partner_id = NULL where id = %d" % (relation_partner_id, )
                 cr.execute(sql_stat)
