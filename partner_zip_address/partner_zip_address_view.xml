@@ -65,6 +65,10 @@
         <field name="type">form</field>
         <field name="arch" type="xml">
             <field name="name" position="after">
+            	<field name="street"/>
+            	<field name="zip"/>
+            	<field name="city"/>
+            	<field name="id"/>
                 <field name="zip_id" invisible="1"/>
             </field> 
         </field>
