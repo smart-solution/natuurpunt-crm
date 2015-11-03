@@ -57,7 +57,7 @@
 				</field>
 				<field name="membership_state" position="after">
 					<field name="membership_state_f"/>
-                                        <field name="membership_pay_date" attrs="{'invisible': [('membership_state_f', '!=', 'paid')]}"/>
+                    <field name="membership_pay_date" attrs="{'invisible': [('membership_pay_date', '==', False)]}"/>
 				</field>
 				<field name="membership_start" position="attributes">
 					<attribute name="invisible">True</attribute>
