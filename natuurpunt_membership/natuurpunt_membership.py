@@ -252,7 +252,8 @@ class res_partner(osv.osv):
                 mstates.append([func(mline,fstate) for func in rules])
             mstates = recursive_flatten_list(mstates[0], mstates[1:])
             """ return first non empty membership state """
-            return [s for s in mstates if s][0]
+            mstates = [s for s in mstates if s]
+            return mstates[0] if mstates else (None,'none')
 
         """ loop the current membership lines """
         ids = self.pool.get('membership.membership_line').search(cr, SUPERUSER_ID, [('partner','=',partner_data.id),('date_to','>=',today)])
