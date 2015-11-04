@@ -250,7 +250,7 @@ class res_partner(osv.osv):
                     continue
                 fstate = mline.account_invoice_line.invoice_id.state if mline.account_invoice_line.invoice_id else migrated_fstate()                
                 mstates.append([func(mline,fstate) for func in rules])
-            mstates = recursive_flatten_list(mstates[0], mstates[1:])
+            mstates = recursive_flatten_list(mstates[0], mstates[1:]) if mstates else []
             """ return first non empty membership state """
             mstates = [s for s in mstates if s]
             return mstates[0] if mstates else (None,'none')
