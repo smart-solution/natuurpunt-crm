@@ -487,7 +487,6 @@ where p1.id = %d
             payment_term_id = None
             mandate_id = None
             partner_bank_id = None
-            """
             sql_stat = '''select sdd_mandate.id as mandate_id, account_payment_term.id as payment_term_id, res_partner_bank.id as partner_bank_id from res_partner, res_partner_bank, sdd_mandate, account_payment_term
 where res_partner.id = res_partner_bank.partner_id
   and partner_bank_id = res_partner_bank.id
@@ -500,7 +499,6 @@ where res_partner.id = res_partner_bank.partner_id
                 payment_term_id = sql_res['payment_term_id']
                 mandate_id = sql_res['mandate_id']
                 partner_bank_id = sql_res['partner_bank_id']
-            """
             amount_inv = amount_to_inv - third_payer_amount
             
             inv_org = False
