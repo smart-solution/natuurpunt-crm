@@ -28,6 +28,7 @@
     - check unique function
     - check if function is available for organisation structure
     - remove function tab on res_partner view when partner is organisation structure
+    - method filter on organisation_function_child_ids
 """,
     "depends" : ["natuurpunt_crm",],
     "data" : ["natuurpunt_crm_function_view.xml",],

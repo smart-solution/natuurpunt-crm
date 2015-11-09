@@ -21,6 +21,7 @@
 from osv import osv, fields
 from string import Template
 from tools.translate import _
+from openerp import SUPERUSER_ID
 
 class res_partner(osv.osv):
     _name = 'res.partner'
@@ -43,6 +44,38 @@ class res_partner(osv.osv):
         res['value'] = {}
         res['value']['organisation_function_child_ids'] = new_organisation_function_child_ids
         return res
+    
+    #helper functions filter partner with functions
+    def _view_organisation_function(self,cr,uid,ids,fieldnames,args,context=None):
+        res = {}
+        return res    
+    
+    def _search_view_organisation_function(self, cr, uid, obj, name, args, context=None):
+        sql_stat = 'select distinct person_id from res_organisation_function where active'            
+        cr.execute(sql_stat)
+        res_org_function_ids = map(lambda x: x[0], cr.fetchall())
+        return [('id', '=', '0')] if not res_org_function_ids else [('id', 'in', res_org_function_ids)]
+    
+    def write(self, cr, uid, ids, vals, context=None):        
+        res = super(res_partner, self).write(cr, uid, ids, vals, context=context)
+        # sync active state of partner / person with organisation function        
+        if 'active' in vals :
+            res_org_fnc_obj = self.pool.get('res.organisation.function')
+            domain = ['|',('partner_id', 'in', ids),('person_id', 'in', ids)]            
+            if vals['active']:
+                domain.append(('active','=',False))
+            res_org_fnc_ids = res_org_fnc_obj.search(cr, SUPERUSER_ID, domain)
+            for res_org_fnc in res_org_fnc_obj.browse(cr, SUPERUSER_ID, res_org_fnc_ids):            
+                active = (res_org_fnc.partner_id.active if res_org_fnc.partner_id else True) and (res_org_fnc.person_id.active if res_org_fnc.person_id else True) 
+                res_org_fnc_obj.write(cr, SUPERUSER_ID, [res_org_fnc.id], {'active':active}, context=context)
+        return res        
+
+    _columns = {
+        'view_organisation_function_child_ids': fields.function(_view_organisation_function,                                                                 
+                                                                fnct_search=_search_view_organisation_function,
+                                                                method=True, 
+                                                                type='boolean'),
+    }
 
 res_partner()
 
@@ -58,7 +91,8 @@ class res_organisation_function(osv.osv):
             if ids:
                 res_partner_obj = self.pool.get('res.partner')
                 partner_name = res_partner_obj.read(cr, uid, vals['partner_id'], fields=['name'],context=context)['name']
-                raise osv.except_osv(_('Error!'), _('Function %s already exists for %s\nThis is an unique function'%(vals['name'],partner_name)))
+                function_name = function_type_obj.read(cr, uid, vals['function_type_id'], fields=['name'], context=context)['name']
+                raise osv.except_osv(_('Error!'), _('Function %s already exists for %s\nThis is an unique function'%(function_name,partner_name)))
             else:
                 return True
         else: 
@@ -73,7 +107,8 @@ class res_organisation_function(osv.osv):
             if not organisation_type_id[0] in organisation_type_ids:
                 res_partner_obj = self.pool.get('res.partner')
                 partner_name = res_partner_obj.read(cr, uid, vals['partner_id'], fields=['name'],context=context)['name']
-                raise osv.except_osv(_('Error!'), _('Function %s is not available for %s'%(vals['name'],partner_name)))
+                function_name = function_type_obj.read(cr, uid, vals['function_type_id'], fields=['name'], context=context)['name']
+                raise osv.except_osv(_('Error!'), _('Function %s is not available for %s'%(function_name,partner_name)))
             else:
                 return True
         else:
@@ -99,10 +134,18 @@ class res_organisation_function(osv.osv):
             if not 'function_type_id' in vals:
                 vals['function_type_id'] = rof.function_type_id.id
             if not 'person_id' in vals:
-                vals['person_id'] = rof.person_id.id               
+                vals['person_id'] = rof.person_id.id        
         self._check_unique_type(cr, uid, vals=vals, context=context)
         self._check_organisation_type_ids(cr, uid, vals=vals, context=context)        
         return super(res_organisation_function, self).write(cr, uid, ids, vals=vals, context=context)
+    
+    _columns = {
+        'active': fields.boolean('Active'),
+    }
+    
+    _defaults = {       
+        'active' : True,
+    }
 
 res_organisation_function()
     

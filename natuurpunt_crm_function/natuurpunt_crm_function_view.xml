@@ -25,6 +25,17 @@
                 </xpath>
             </field>
         </record>
+        
+        <record id="organisation_structure.action_function_partner" model="ir.actions.act_window">
+            <field name="domain">[('view_organisation_function_child_ids', '!=', False)]</field>
+        </record>        
+
+        <record id="filter_Inactieve_organisatie" model="ir.filters">
+            <field name="name">Inactieve organisatie</field>
+            <field name="domain">[['active', '!=', True]]</field>
+            <field name="model_id">res.organisation.function</field>
+            <field name="user_id"></field>
+        </record>
 
         </data>
 </openerp>
