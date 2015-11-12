@@ -45,17 +45,6 @@ class res_partner(osv.osv):
         res['value']['organisation_function_child_ids'] = new_organisation_function_child_ids
         return res
     
-    #helper functions filter partner with functions
-    def _view_organisation_function(self,cr,uid,ids,fieldnames,args,context=None):
-        res = {}
-        return res    
-    
-    def _search_view_organisation_function(self, cr, uid, obj, name, args, context=None):
-        sql_stat = 'select distinct person_id from res_organisation_function where active'            
-        cr.execute(sql_stat)
-        res_org_function_ids = map(lambda x: x[0], cr.fetchall())
-        return [('id', '=', '0')] if not res_org_function_ids else [('id', 'in', res_org_function_ids)]
-    
     def write(self, cr, uid, ids, vals, context=None):        
         res = super(res_partner, self).write(cr, uid, ids, vals, context=context)
         # sync active state of partner / person with organisation function        
@@ -69,13 +58,6 @@ class res_partner(osv.osv):
                 active = (res_org_fnc.partner_id.active if res_org_fnc.partner_id else True) and (res_org_fnc.person_id.active if res_org_fnc.person_id else True) 
                 res_org_fnc_obj.write(cr, SUPERUSER_ID, [res_org_fnc.id], {'active':active}, context=context)
         return res        
-
-    _columns = {
-        'view_organisation_function_child_ids': fields.function(_view_organisation_function,                                                                 
-                                                                fnct_search=_search_view_organisation_function,
-                                                                method=True, 
-                                                                type='boolean'),
-    }
 
 res_partner()
 
