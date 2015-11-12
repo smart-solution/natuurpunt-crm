@@ -111,7 +111,6 @@ class account_invoice(osv.osv):
                     'ref': mv.name.replace('/',''),
                     'partner_id': invoice.partner_id.id,
                     'account_id': jrn.default_debit_account_id.id,
-                    'account_id': invoice.account_id.id,
                     'debit': invoice.residual,
                 }
                 debit_mv_line_id = mv_line_obj.create(cr, uid, debit_mv_line_vals)
