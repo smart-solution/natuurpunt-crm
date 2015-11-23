@@ -269,8 +269,9 @@ class res_partner(osv.osv):
             domain = [('partner','=',partner_data.id),('date_from','<',today),('date_to','<',today)]
             ids = self.pool.get('membership.membership_line').search(cr, SUPERUSER_ID, domain)
             if ids:
-                mline, mstate = apply_state_rules_to_membership_lines([membership_is_paid_or_does_not_need_to_be_paid])
-                return (mline,'old') if mstate == 'paid' else (None,'none')
+                mline, mstate = apply_state_rules_to_membership_lines([membership_is_paid_or_does_not_need_to_be_paid,
+                                                                       membership_is_canceled_or_refunded])
+                return (mline,'old') if mstate == 'paid' else (mline,mstate)
             else:
                 return (None,'none')
 
