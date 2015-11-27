@@ -89,78 +89,78 @@ membership_third_payer_actions()
 class res_partner(osv.osv):
     _inherit = 'res.partner'
 
-    def recalc_membership(self, cr, uid, partner_id, context=None):
-        partner = self.pool.get('res.partner').browse(cr, uid, [partner_id], context=context)[0]
+#    def recalc_membership(self, cr, uid, partner_id, context=None):
+#        partner = self.pool.get('res.partner').browse(cr, uid, [partner_id], context=context)[0]
+#
+#        mline, membership_state_field = self._np_membership_state(cr, uid, partner, context=context)
+#
+#        membership_start_date = self._membership_start_date(cr, uid, [partner_id], None, None, context=context)
+#        membership_start_date = membership_start_date[partner_id] if membership_start_date else None
+#
+#        membership_stop_date = self._membership_stop_date(cr, uid, [partner_id], None, None, context=context)
+#        membership_stop_date = membership_stop_date[partner_id] if membership_stop_date else None
+#
+#        membership_cancel_date = self._membership_cancel_date(cr, uid, [partner_id], None, None, context=context)
+#        membership_cancel_date = membership_cancel_date[partner_id] if membership_cancel_date else None
+#
+#        """ feature door axel niet nodig """
+#        membership_renewal_date = None
+#
+#        membership_end_date = self._membership_end_date(cr, uid, [partner_id], None, None, context=context)
+#        membership_end_date = membership_end_date[partner_id] if membership_end_date else None
+#        
+#        membership_pay_date = None
+#        if membership_state_field == 'paid' and mline.account_invoice_line.invoice_id:
+#            ids = self.pool.get('account.invoice').search(cr, uid, [('id','=',mline.account_invoice_line.invoice_id.id)])
+#            for invoice in self.pool.get('account.invoice').browse(cr, uid, ids, context=context):
+#                for payment in invoice.payment_ids:
+#                    membership_pay_date = payment.date
+#
+#        update_partner = False
+#
+#        if membership_state_field != partner.membership_state_b:
+#            update_partner = True
+#        if membership_start_date != partner.membership_start_b:
+#            update_partner = True
+#        if membership_stop_date != partner.membership_stop_b:
+#            update_partner = True
+#        if membership_cancel_date != partner.membership_cancel_b:
+#            update_partner = True
+#        if membership_pay_date != partner.membership_pay_date:
+#            update_partner = True
+#        if membership_end_date != partner.membership_end_b:
+#            update_partner = True
+#
+#        if update_partner:
+#            vals = {
+#                'membership_state_b': membership_state_field,
+#                'membership_start_b': membership_start_date,
+#                'membership_stop_b': membership_stop_date,
+#                'membership_cancel_b': membership_cancel_date,
+#                'membership_pay_date': membership_pay_date,
+#                'membership_end_b': membership_end_date,
+#            }
+#            self.write(cr, uid, [partner.id], vals)
+#            cr.commit()
+#        return True
 
-        mline, membership_state_field = self._np_membership_state(cr, uid, partner, context=context)
-
-        membership_start_date = self._membership_start_date(cr, uid, [partner_id], None, None, context=context)
-        membership_start_date = membership_start_date[partner_id] if membership_start_date else None
-
-        membership_stop_date = self._membership_stop_date(cr, uid, [partner_id], None, None, context=context)
-        membership_stop_date = membership_stop_date[partner_id] if membership_stop_date else None
-
-        membership_cancel_date = self._membership_cancel_date(cr, uid, [partner_id], None, None, context=context)
-        membership_cancel_date = membership_cancel_date[partner_id] if membership_cancel_date else None
-
-        """ feature door axel niet nodig """
-        membership_renewal_date = None
-
-        membership_end_date = self._membership_end_date(cr, uid, [partner_id], None, None, context=context)
-        membership_end_date = membership_end_date[partner_id] if membership_end_date else None
-        
-        membership_pay_date = None
-        if membership_state_field == 'paid' and mline.account_invoice_line.invoice_id:
-            ids = self.pool.get('account.invoice').search(cr, uid, [('id','=',mline.account_invoice_line.invoice_id.id)])
-            for invoice in self.pool.get('account.invoice').browse(cr, uid, ids, context=context):
-                for payment in invoice.payment_ids:
-                    membership_pay_date = payment.date
-
-        update_partner = False
-
-        if membership_state_field != partner.membership_state_b:
-            update_partner = True
-        if membership_start_date != partner.membership_start_b:
-            update_partner = True
-        if membership_stop_date != partner.membership_stop_b:
-            update_partner = True
-        if membership_cancel_date != partner.membership_cancel_b:
-            update_partner = True
-        if membership_pay_date != partner.membership_pay_date:
-            update_partner = True
-        if membership_end_date != partner.membership_end_b:
-            update_partner = True
-
-        if update_partner:
-            vals = {
-                'membership_state_b': membership_state_field,
-                'membership_start_b': membership_start_date,
-                'membership_stop_b': membership_stop_date,
-                'membership_cancel_b': membership_cancel_date,
-                'membership_pay_date': membership_pay_date,
-                'membership_end_b': membership_end_date,
-            }
-            self.write(cr, uid, [partner.id], vals)
-            cr.commit()
-        return True
-
-    def _recalc_membership(self, cr, uid, context=None):
-        logger.info('Calculation of partner membership data started')
-        counter = 0
-        counter1000 = 0
-        partner_ids = self.search(cr, uid, ['|',('member_lines', '!=', False),('free_member', '=', True)], context=context)
-        print 'Partners read'
-        if partner_ids:
-            for partner in partner_ids:
-                self.recalc_membership(cr, uid, partner, context=context)
-                counter = counter + 1
-                counter1000 = counter1000 + 1
-                if counter1000 == 1000:
-                    print 'Partner memberships recalculated: ', counter
-                    counter1000 = 0
-        print 'Partner memberships recalculated: ', counter
-        logger.info('Calculation of partner membership data ended')
-        return True
+#    def _recalc_membership(self, cr, uid, context=None):
+#        logger.info('Calculation of partner membership data started')
+#        counter = 0
+#        counter1000 = 0
+#        partner_ids = self.search(cr, uid, ['|',('member_lines', '!=', False),('free_member', '=', True)], context=context)
+#        print 'Partners read'
+#        if partner_ids:
+#            for partner in partner_ids:
+#                self.recalc_membership(cr, uid, partner, context=context)
+#                counter = counter + 1
+#                counter1000 = counter1000 + 1
+#                if counter1000 == 1000:
+#                    print 'Partner memberships recalculated: ', counter
+#                    counter1000 = 0
+#        print 'Partner memberships recalculated: ', counter
+#        logger.info('Calculation of partner membership data ended')
+#        return True
 
     def onchange_free_member(self, cr, uid, ids, name, free_member, membership_nbr, context=None):
         res = {}
@@ -278,22 +278,22 @@ class res_partner(osv.osv):
         print 'CALC MEMBERSHIP STATE', name
         print 'ARGS:',args
         print 'CONTEXT:',context
-        if context:
-            if 'type' in context or not ('lang' in context):
-                return {}
-# following line is to prevent update of standard membership_state field when creating a new invoice from the bank statement pop-up screen
-            if 'default_orig_name_save' in context:
-                return {}
-            if 'default_invoice_id' in context:
-                return{}
-            if 'skip_write' in context:
-                return {}
-            if 'mandate_id' in context:
-                return {}
-            if 'from_refund' in context:
-                return {}
-        else:
-            return {}
+#        if context:
+#            if 'type' in context or not ('lang' in context):
+#                return {}
+## following line is to prevent update of standard membership_state field when creating a new invoice from the bank statement pop-up screen
+#            if 'default_orig_name_save' in context:
+#                return {}
+#            if 'default_invoice_id' in context:
+#                return{}
+#            if 'skip_write' in context:
+#                return {}
+#            if 'mandate_id' in context:
+#                return {}
+#            if 'from_refund' in context:
+#                return {}
+#        else:
+#            return {}
         """This Function return Membership State For Given Partner.
         @param self: The object pointer
         @param cr: the current row, from the database cursor,
@@ -429,77 +429,56 @@ class res_partner(osv.osv):
         'company_deal': fields.boolean('Bedrijfsdeal'),
 		'membership_renewal_product_id': fields.many2one('product.product', 'Product Hernieuwing Lidmaatschap', select=True),
 		'free_membership_class_id': fields.many2one('res.partner.free.class', 'Gratis Lid Categorie', select=True),
-        'membership_state_b': fields.selection([('none', 'Geen lid'),('canceled', 'Geannuleerd lid'),('old', 'Oud lid'),('waiting', 'Wachtend lid'),('invoiced', 'Gefactureerd lid'),('free', 'Gratis lid'),('paid', 'Betaald lid'),('wait_member', 'Wachtend lidmaatschap')], string='Lidmaatschapsstatus (B)'),
-        'membership_state_f': fields.function(_membership_state, string='Lidmaatschapsstatus (F)', type='selection', selection=STATE_F),
         'membership_state': fields.function(
-#                    __get_membership_state,
                     _membership_state,
                     string = 'Current Membership Status', type = 'selection',
                     selection = STATE,
-#
-                    store = False),
-#                    store = {
-#                        'account.invoice': (_get_invoice_partner, ['state'], 10),
-#                        'membership.membership_line': (_get_partner_id, ['state','date_from','date_to','date_cancel'], 10),
-#                        'res.partner': (_get_partners, ['free_member', 'membership_state', 'associate_member'], 10)
-#                    }, help="""It indicates the membership state.
-#                    -Non Member: A partner who has not applied for any membership.
-#                    -Cancelled Member: A member who has cancelled his membership.
-#                    -Old Member: A member whose membership date has expired.
-#                    -Waiting Member: A member who has applied for the membership and whose invoice is going to be created.
-#                    -Invoiced Member: A member whose invoice has been created.
-#                    -Paying member: A member who has paid the membership fee."""),
-        'membership_start_b': fields.date('Lidmaatschap startdatum (B)'),
-        'membership_start_f': fields.function(_membership_start_date, string='Lidmaatschap startdatum (F)', type='date'),
+                    store = {
+                        'account.invoice': (_get_invoice_partner, ['state'], 10),
+                        'membership.membership_line': (_get_partner_id, ['state','date_from','date_to','date_cancel'], 10),
+                        'res.partner': (_get_partners, ['free_member', 'associate_member'], 10)
+                    }, help="""It indicates the membership state.
+                    -Non Member: A partner who has not applied for any membership.
+                    -Cancelled Member: A member who has cancelled his membership.
+                    -Old Member: A member whose membership date has expired.
+                    -Waiting Member: A member who has applied for the membership and whose invoice is going to be created.
+                    -Invoiced Member: A member whose invoice has been created.
+                    -Paying member: A member who has paid the membership fee."""),
         'membership_start': fields.function(
                     _membership_start_date, 
                     string = 'Membership Start Date', type = 'date',
-#
-                    store = False),
-#                    store = {
-#                        'account.invoice': (_get_invoice_partner, ['state'], 10),
-#                        'membership.membership_line': (_get_partner_id, ['state','date_from','date_to','date_cancel'], 10, ),
-#                        'res.partner': (lambda self, cr, uid, ids, c={}: ids, ['free_member', 'membership_state'], 10)
-#                    }, help="Date from which membership becomes active."),
-        'membership_stop_b': fields.date('Lidmaatschap einddatum (B)'),
-        'membership_stop_f': fields.function(_membership_stop_date, string='Lidmaatschap einddatum (F)', type='date'),
+                    store = {
+                        'account.invoice': (_get_invoice_partner, ['state'], 10),
+                        'membership.membership_line': (_get_partner_id, ['state','date_from','date_to','date_cancel'], 10, ),
+                        'res.partner': (lambda self, cr, uid, ids, c={}: ids, ['free_member'], 10)
+                    }, help="Date from which membership becomes active."),
         'membership_stop': fields.function(
                     _membership_stop_date,
                     string = 'Membership End Date', type='date',
-#
-                    store = False),
-#                    store = {
-#                        'account.invoice': (_get_invoice_partner, ['state'], 10),
-#                        'membership.membership_line': (_get_partner_id, ['state','date_from','date_to','date_cancel'], 10),
-#                        'res.partner': (lambda self, cr, uid, ids, c={}: ids, ['free_member', 'membership_state'], 10)
-#                    }, help="Date until which membership remains active."),
-        'membership_cancel_b': fields.date('Lidmaatschap annulatiedatum (B)'),
-        'membership_cancel_f': fields.function(_membership_cancel_date, string='Lidmaatschap annulatiedatum (F)', type='date'),
+                    store = {
+                        'account.invoice': (_get_invoice_partner, ['state'], 10),
+                        'membership.membership_line': (_get_partner_id, ['state','date_from','date_to','date_cancel'], 10),
+                        'res.partner': (lambda self, cr, uid, ids, c={}: ids, ['free_member'], 10)
+                    }, help="Date until which membership remains active."),
         'membership_cancel': fields.function(
                     _membership_cancel_date,
                     string = 'Cancel Membership Date', type='date',
-#
-                    store = False),
-#                    store = {
-#                        'account.invoice': (_get_invoice_partner, ['state'], 11),
-#                        'membership.membership_line': (_get_partner_id, ['state','date_from','date_to','date_cancel'], 10),
-#                        'res.partner': (lambda self, cr, uid, ids, c={}: ids, ['free_member', 'membership_state'], 10)
-#                    }, help="Date on which membership has been cancelled"),
+                    store = {
+                        'account.invoice': (_get_invoice_partner, ['state'], 11),
+                        'membership.membership_line': (_get_partner_id, ['state','date_from','date_to','date_cancel'], 10),
+                        'res.partner': (lambda self, cr, uid, ids, c={}: ids, ['free_member'], 10)
+                    }, help="Date on which membership has been cancelled"),
         'free_member_comment': fields.char('Reden gratis lid'),
-        'membership_renewal_date': fields.date('Lidmaatschap hernieuwingsdatum (B)'),
+        'membership_renewal_date': fields.date('Lidmaatschap hernieuwingsdatum'),
         'membership_pay_date': fields.date('Lidmaatschap betaaldatum'),
-        'membership_end_b': fields.date('Lidmaatschap recentste einddatum (B)'),
-        'membership_end_f': fields.function(_membership_end_date, string='Lidmaatschap recentste einddatum (F)', type='date'),
         'membership_end': fields.function(
                     _membership_end_date, 
-                    string = 'Recentste einddatum lidmaatschap', type='date',
-#
-                    store = False),
-#                    store = {
-#                        'account.invoice': (_get_invoice_partner, ['state'], 10),
-#                        'membership.membership_line': (_get_partner_id, ['state','date_from','date_to','date_cancel'], 10),
-#                        'res.partner': (lambda self, cr, uid, ids, c={}: ids, ['free_member', 'membership_state'], 10)
-#                    }, help="Date until which membership remains active."),
+                    string = 'Einddatum lidmaatschap', type='date',
+                    store = {
+                        'account.invoice': (_get_invoice_partner, ['state'], 10),
+                        'membership.membership_line': (_get_partner_id, ['state','date_from','date_to','date_cancel'], 10),
+                        'res.partner': (lambda self, cr, uid, ids, c={}: ids, ['free_member'], 10)
+                    }, help="Date until which membership remains active."),
         'lid': fields.boolean('Lid'),
         'focus': fields.boolean('Focus'),
         'oriolus': fields.boolean('Oriolus'),
@@ -633,7 +612,7 @@ class membership_membership_line(osv.osv):
                         string='Membership Status', type='selection',
                         selection=STATE, store = {
                         'account.invoice': (_get_membership_lines, ['state'], 10),
-                        'res.partner': (_get_partners, ['membership_state_b'], 12),
+                        'res.partner': (_get_partners, ['membership_state'], 12),
                         }, help="""It indicates the membership status.
                         -Non Member: A member who has not applied for any membership.
                         -Cancelled Member: A member who has cancelled his membership.

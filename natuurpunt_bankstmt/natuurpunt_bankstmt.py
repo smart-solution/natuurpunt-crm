@@ -86,28 +86,28 @@ class account_bank_statement_line(osv.osv):
             if stmt.partner_id:
                 context['default_partner_address'] = stmt.partner_id.street + ' ' + stmt.partner_id.zip + ' ' + stmt.partner_id.city
                 context['default_membership_nbr'] = stmt.partner_id.membership_nbr
-                if stmt.partner_id.membership_state_b == 'none':
+                if stmt.partner_id.membership_state == 'none':
                     membership_state = 'Geen lid'
                 else:
-                    if stmt.partner_id.membership_state_b == 'canceled':
+                    if stmt.partner_id.membership_state == 'canceled':
                         membership_state = 'Opgezegd lid'
                     else:
-                        if stmt.partner_id.membership_state_b == 'old':
+                        if stmt.partner_id.membership_state == 'old':
                             membership_state = 'Oud lid'
                         else:
-                            if stmt.partner_id.membership_state_b == 'waiting':
+                            if stmt.partner_id.membership_state == 'waiting':
                                 membership_state = 'Wachtend lid'
                             else:
-                                if stmt.partner_id.membership_state_b == 'invoiced':
+                                if stmt.partner_id.membership_state == 'invoiced':
                                     membership_state = 'Gefactureerd lid'
                                 else:
-                                    if stmt.partner_id.membership_state_b == 'paid':
+                                    if stmt.partner_id.membership_state == 'paid':
                                         membership_state = 'Betaald lid'
                                     else:
-                                        if stmt.partner_id.membership_state_b == 'wait_member':
+                                        if stmt.partner_id.membership_state == 'wait_member':
                                             membership_state = 'Wachtend lidmaatschap'
                                         else:
-                                            if stmt.partner_id.membership_state_b == 'free':
+                                            if stmt.partner_id.membership_state == 'free':
                                                 membership_state = 'Gratis lid'
                                             else:
                                                 membership_state = 'Geen lid'
@@ -463,28 +463,28 @@ class bank_statement_create_partner(osv.osv_memory):
         if partner_id:
             partner_obj = self.pool.get('res.partner')
             partner = partner_obj.browse(cr, uid, partner_id, context=context)
-            if partner.membership_state_b == 'none':
+            if partner.membership_state == 'none':
                     membership_state = 'Geen lid'
             else:
-                    if partner.membership_state_b == 'canceled':
+                    if partner.membership_state == 'canceled':
                             membership_state = 'Opgezegd lid'
                     else:
-                            if partner.membership_state_b == 'old':
+                            if partner.membership_state == 'old':
                                     membership_state = 'Oud lid'
                             else:
-                                    if partner.membership_state_b == 'waiting':
+                                    if partner.membership_state == 'waiting':
                                             membership_state = 'Wachtend lid'
                                     else:
-                                            if partner.membership_state_b == 'invoiced':
+                                            if partner.membership_state == 'invoiced':
                                                     membership_state = 'Gefactureerd lid'
                                             else:
-                                                    if partner.membership_state_b == 'paid':
+                                                    if partner.membership_state == 'paid':
                                                             membership_state = 'Betaald lid'
                                                     else:
-                                                            if partner.membership_state_b == 'wait_member':
+                                                            if partner.membership_state == 'wait_member':
                                                                     membership_state = 'Wachtend lidmaatschap'
                                                             else:
-                                                                    if partner.membership_state_b == 'free':
+                                                                    if partner.membership_state == 'free':
                                                                             membership_state = 'Gratis lid'
                                                                     else:
                                                                             membership_state = 'Geen lid'

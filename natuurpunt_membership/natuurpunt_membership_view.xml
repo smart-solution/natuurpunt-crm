@@ -52,31 +52,9 @@
                 <page string="Membership" position="attributes">
                     <attribute name="groups">natuurpunt_membership.group_natuurpunt_membership_user</attribute>
                 </page>
-				<field name="membership_state" position="attributes">
-					<attribute name="invisible">True</attribute>
-				</field>
-				<field name="membership_state" position="after">
-					<field name="membership_state_f"/>
-				</field>
-				<field name="membership_start" position="attributes">
-					<attribute name="invisible">True</attribute>
-				</field>
-				<field name="membership_start" position="after">
-					<field name="membership_start_f"/>
-				</field>
-				<field name="membership_cancel" position="attributes">
-					<attribute name="invisible">True</attribute>
-				</field>
-				<field name="membership_cancel" position="after">
-					<field name="membership_cancel_f" attrs="{'invisible': [('membership_cancel_f', '==', False)]}"/>
-				</field>
-				<field name="membership_stop" position="attributes">
-					<attribute name="invisible">True</attribute>
-				</field>
 				<field name="membership_stop" position="after">
-					<field name="membership_stop_f"/>
 				    <field name="membership_renewal_date" readonly="True"/>
-				    <field name="membership_end_f" readonly="True"/>
+				    <field name="membership_end" readonly="True"/>
 				</field>
                 <page string="Membership" position="before">
 		    <page string="3de Betaler" groups="natuurpunt_membership.group_natuurpunt_membership_user">
@@ -222,17 +200,11 @@
         <field name="type">form</field>
         <field name="arch" type="xml">
 				<field name="associate_member" position="replace">
-					<field name="associate_member" attrs="{'invisible':[('membership_state_b', '!=', 'none')]}"/>
+					<field name="associate_member" attrs="{'invisible':[('membership_state', '!=', 'none')]}"/>
 				</field>
-               <field name="membership_state" position="replace">
-                    <field name="membership_state_b"/>
-                </field>
-               <field name="membership_start" position="replace">
-                    <field name="membership_start_b"/>
-                </field>
                <field name="membership_stop" position="replace">
-                    <field name="membership_stop_b"/>
-                    <field name="membership_end_b"/>
+                    <field name="membership_stop"/>
+                    <field name="membership_end"/>
                 </field>
         </field>
     </record>
@@ -243,26 +215,20 @@
         <field name="type">form</field>
         <field name="arch" type="xml">
                <filter name="all_non_members" position="replace">
-                    <filter icon="terp-personal" name="all_non_members" domain="[('membership_state_b', 'in', ['none','canceled','old','waiting'])]" string="All non Members" help="None/Canceled/Old/Waiting"/>
+                    <filter icon="terp-personal" name="all_non_members" domain="[('membership_state', 'in', ['none','canceled','old','waiting'])]" string="All non Members" help="None/Canceled/Old/Waiting"/>
                 </filter>
                <filter name="all_members" position="replace">
-                    <filter icon="terp-personal" name="all_members" domain="[('membership_state_b', 'in', ['invoiced','paid','free','wait_member'])]" string="All Members" help="Invoiced/Paid/Free"/>
+                    <filter icon="terp-personal" name="all_members" domain="[('membership_state', 'in', ['invoiced','paid','free','wait_member'])]" string="All Members" help="Invoiced/Paid/Free"/>
                 </filter>
 				<filter string=" Membership State" position="attributes">
-					<attribute name="context">{'group_by':'membership_state_b'}</attribute>
+					<attribute name="context">{'group_by':'membership_state'}</attribute>
 				</filter>
 				<filter string="Start Date" position="attributes">
-					<attribute name="context">{'group_by':'membership_start_b'}</attribute>
+					<attribute name="context">{'group_by':'membership_start'}</attribute>
 				</filter>
 				<filter string="End Date" position="attributes">
-					<attribute name="context">{'group_by':'membership_end_b'}</attribute>
+					<attribute name="context">{'group_by':'membership_end'}</attribute>
 				</filter>
-<!--               <field name="membership_start" position="replace">
-                    <field name="membership_start_b" invisible="1"/>
-                </field> -->
-               <field name="membership_stop" position="replace">
-                    <field name="membership_stop_b" string="End Membership Date"/>
-                </field> 
         </field>
     </record> -->
 
