@@ -219,19 +219,18 @@ class res_partner(osv.osv):
                 raise osv.except_osv(_('Error!'), _("Need event to make the invoice."))
 
             #analytisch dim
-            analytic_dimension_1_id = 2927 # TODO config accounting
+            analytic_dimension_1_id = None # TODO config accounting
             analytic_dimension_2_id = None
-            analytic_dimension_3_id = None        
+            analytic_dimension_3_id = None
             product = self.pool.get('product.product').read(cr, uid, selected_product_id, ['analytic_dimension_1_id','analytic_dimension_2_id','analytic_dimension_3_id'], context=context)
             product_id = product[0].get('id',False)
             if product and product[0].get('analytic_dimension_1_id',False):
-                analytic_dimension_1_id = product[0].get('analytic_dimension_1_id',False)
-                analytic_dimension_2_id = product[0].get('analytic_dimension_2_id',False)
-                analytic_dimension_3_id = product[0].get('analytic_dimension_3_id',False)
-            
-            quantity = 1            
+                analytic_dimension_1_id = product[0].get('analytic_dimension_1_id',False)[0] if product[0].get('analytic_dimension_1_id',False) else False
+                analytic_dimension_2_id = product[0].get('analytic_dimension_2_id',False)[0] if product[0].get('analytic_dimension_2_id',False) else False
+                analytic_dimension_3_id = product[0].get('analytic_dimension_3_id',False)[0] if product[0].get('analytic_dimension_3_id',False) else False
+            quantity = 1
             amount = datas.get('amount', 0.0)
-            invoice_id_list = []            
+            invoice_id_list = []
             if type(ids) in (int, long,):
                 ids = [ids]
 
