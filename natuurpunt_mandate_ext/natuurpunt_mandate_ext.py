@@ -135,6 +135,7 @@ class membership_renew(osv.osv_memory):
             datas = { 
                 'membership_product_id': partner.membership_renewal_product_id.id or 2,
                 'membership_renewal':True,
+                'amount': partner.membership_renewal_product_id.list_price or 27.0,
             }
             renew_list.append(partner_obj.create_membership_invoice(cr, uid, [partner.id], datas=datas, context=context))
             cr.commit()
