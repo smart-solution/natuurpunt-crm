@@ -12,7 +12,7 @@
                     </p>
                     <field name="end_date_membership"/>
                     <footer>
-                        <button string="Niet-hernieuwde leden vinden" name="find_members_to_renew" type="object" default_focus="1" class="oe_highlight"/>
+                        <button string="Memberships to renew" name="find_members_to_renew" type="object" default_focus="1" class="oe_highlight"/>
                         or
                         <button string="Cancel" class="oe_link" special="cancel"/>
                     </footer>
@@ -29,7 +29,7 @@
             target="new" 
         />
 
-     <menuitem name="Niet-hernieuwde leden vinden" id="menu_find_members_to_renew" parent="base.menu_report_association" action="action_find_members_to_renew" sequence="2"/>
+     <menuitem name="Memberships to renew" id="menu_find_members_to_renew" parent="base.menu_report_association" action="action_find_members_to_renew" sequence="2"/>
 
         <record id="view_membership_renew_view" model="ir.ui.view">
             <field name="name">membership.renew.view.form</field>

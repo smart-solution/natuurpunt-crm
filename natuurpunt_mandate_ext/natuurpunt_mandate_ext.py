@@ -24,6 +24,7 @@ from openerp.tools.translate import _
 from openerp import netsvc
 import time
 import re
+from datetime import datetime
 
 class payment_line(osv.osv):
     _inherit = 'payment.line'
@@ -37,10 +38,7 @@ class payment_line(osv.osv):
                 invoice_obj = self.pool.get('account.invoice')
                 invoice_id = invoice_obj.search(cr, uid, [('move_id', '=', move_line_id.move_id.id)])
                 if invoice_id and len(invoice_id) > 0:
-                    print 'invoice found'
                     invoice = invoice_obj.browse(cr, uid, invoice_id[0])
-                    print 'journal:', invoice.journal_id.code
-                    print 'mandaat:', invoice.sdd_mandate_id
                     if invoice.journal_id.code == 'LID':
         	            vals['communication'] = 'Lidmaatschap'
                     if invoice.journal_id.code == 'GIFT':
@@ -70,6 +68,10 @@ class wizard_partner_to_renew(osv.osv_memory):
         membership_obj = self.pool.get('membership.membership_line')
 
         wiz = self.browse(cr, uid, ids)[0]
+
+        end_date_membership = wiz.end_date_membership
+        if not end_date_membership:
+            end_date_membership = datetime.today().strftime('%Y-12-31')
         
         args = [('deceased','=',False),
                 ('free_member','=',False),
@@ -83,12 +85,12 @@ class wizard_partner_to_renew(osv.osv_memory):
 
         # Find all active membership lines
         for partner_id in partner_ids:
-            membership_lines = self.pool.get('res.partner').active_membership_line_find(cr, uid, partner_id, wiz.end_date_membership, context=context)
+            membership_lines = self.pool.get('res.partner').active_membership_line_find(cr, uid, partner_id, end_date_membership, context=context)
             print "################################### PARTNER:",partner_id
             print "############## MEMBERSHIP LINES:",membership_lines
             if membership_lines:
                 # Check if a membership already exist after the date
-                exist_line_ids = self.pool.get('membership.membership_line').search(cr, uid, [('partner','=', partner_id),('date_to','>', wiz.end_date_membership),('state','=','paid')])
+                exist_line_ids = self.pool.get('membership.membership_line').search(cr, uid, [('partner','=', partner_id),('date_to','>', end_date_membership),('state','=','paid')])
                 if exist_line_ids:
                     print "######### Already paid member"
                     continue
