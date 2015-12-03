@@ -52,10 +52,17 @@
                 <page string="Membership" position="attributes">
                     <attribute name="groups">natuurpunt_membership.group_natuurpunt_membership_user</attribute>
                 </page>
-				<field name="membership_stop" position="after">
+				<field name="membership_start" position="replace">
+                    <field name="membership_start"/>
+                </field>
+				<field name="membership_stop" position="replace">
+                    <field name="membership_stop"/>
 				    <field name="membership_renewal_date" readonly="True"/>
-				    <field name="membership_end" readonly="True"/>
-				</field>
+                    <field name="membership_end" string="Lidmaatschap recentste einddatum"/>
+                </field>
+				<field name="membership_cancel" position="replace">
+                    <field name="membership_cancel"/>
+                </field>
                 <page string="Membership" position="before">
 		    <page string="3de Betaler" groups="natuurpunt_membership.group_natuurpunt_membership_user">
 			<group colspan="4" col="2">
@@ -199,15 +206,12 @@
         <field name="inherit_id" ref="membership.membership_members_tree"/>
         <field name="type">form</field>
         <field name="arch" type="xml">
-				<field name="associate_member" position="replace">
-					<field name="associate_member" attrs="{'invisible':[('membership_state', '!=', 'none')]}"/>
-				</field>
-               <field name="membership_stop" position="replace">
-                    <field name="membership_stop"/>
-                    <field name="membership_end"/>
+				<field name="membership_stop" position="after">
+                    <field name="membership_end" string="Lidmaatschap recentste einddatum"/>
                 </field>
         </field>
     </record>
+
     <record model="ir.ui.view" id="view_natuurpunt_membership_partner_filter">
         <field name="name">view.natuurpunt.membership.partner.filter</field>
         <field name="model">res.partner</field>

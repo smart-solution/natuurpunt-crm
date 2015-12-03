@@ -6,9 +6,9 @@
             <field name="name">wizard.find.partner.to.renew.form</field>
             <field name="model">wizard.partner.to.renew</field>
             <field name="arch" type="xml">
-                <form string="Find Partner to Renew" version="7.0">
+                <form string="Lidmaatschappen te hernieuwen" version="7.0">
                     <p class="oe_grey">
-                    Niet-hernieuwde leden vinden ?
+                    Lidmaatschappen te hernieuwen
                     </p>
                     <field name="end_date_membership"/>
                     <footer>
@@ -21,7 +21,7 @@
         </record>
 
         <act_window id="action_find_members_to_renew"
-        name="Niet-hernieuwde leden vinden"
+        name="Lidmaatschappen te hernieuwen"
             res_model="wizard.partner.to.renew" 
             view_mode="form" 
             view_type="form"
@@ -29,15 +29,15 @@
             target="new" 
         />
 
-     <menuitem name="Memberships to renew" id="menu_find_members_to_renew" parent="base.menu_report_association" action="action_find_members_to_renew" sequence="2"/>
+     <menuitem name="Lidmaatschappen te hernieuwen" id="menu_find_members_to_renew" parent="base.menu_report_association" action="action_find_members_to_renew" sequence="2"/>
 
         <record id="view_membership_renew_view" model="ir.ui.view">
             <field name="name">membership.renew.view.form</field>
             <field name="model">membership.renew</field>
             <field name="arch" type="xml">
-                <form string="Renew Membership" version="7.0">
+                <form string="Lidmaatschappen hernieuwen" version="7.0">
                     <group>
-                        <label string="Are you sure you want to renew those membership ?"/>
+                        <label string="Lidmaatschappen hernieuwen ?"/>
                     </group>
                     <footer>
                         <button string="Renew Membership" name="membership_renew" type="object" class="oe_highlight"  />

@@ -313,13 +313,19 @@ class res_partner(osv.osv):
         return res       
 
     def _membership_date(self, cr, uid, ids, name, args, context=None):
-        print 'CALC MEMBERSHIP DATE:', name
+        print 'CALC MEMBERSHIP DATE:', ids
         """Return  date of membership"""
-        name = name[0]
+        if isinstance(name,list):
+            name = name[0]
         res = {}
         member_line_obj = self.pool.get('membership.membership_line')
-        for partner in self.browse(cr, SUPERUSER_ID, ids, context=context):
-            partner_id = partner.id
+        for partner in self.browse(cr, uid, ids, context=context):
+            print "1:",name
+            if partner.associate_member:
+                partner_id = partner.associate_member.id
+            else:
+                partner_id = partner.id
+
             res[partner.id] = {
                  'membership_start': False,
                  'membership_stop': False,
@@ -327,86 +333,91 @@ class res_partner(osv.osv):
                  'membership_cancel': False
             }
             if name == 'membership_start':
-                line_id = member_line_obj.search(cr, SUPERUSER_ID, [('partner', '=', partner_id),('membership_id.membership_product', '=', True)],
+                print "2"
+                line_id = member_line_obj.search(cr, uid, [('partner', '=', partner_id),('membership_id.membership_product', '=', True)],
                             limit=1, order='date_from', context=context)
+                print "LINEID:",line_id
                 if line_id:
-                        res[partner.id]['membership_start'] = member_line_obj.read(cr, SUPERUSER_ID, line_id[0], ['date_from'], context=context)['date_from']
+                        print "3"
+                        res[partner.id]['membership_start'] = member_line_obj.read(cr, uid, line_id[0], ['date_from'], context=context)['date_from']
 
             if name == 'membership_stop':
-                line_id1 = member_line_obj.search(cr, SUPERUSER_ID, [('partner', '=', partner_id),('membership_id.membership_product', '=', True)],
+                line_id1 = member_line_obj.search(cr, uid, [('partner', '=', partner_id),('membership_id.membership_product', '=', True)],
                             limit=1, order='date_to desc', context=context)
                 if line_id1:
-                      res[partner.id]['membership_stop'] = member_line_obj.read(cr, SUPERUSER_ID, line_id1[0], ['date_to'], context=context)['date_to']
+                      res[partner.id]['membership_stop'] = member_line_obj.read(cr, uid, line_id1[0], ['date_to'], context=context)['date_to']
 
             if name == 'membership_end':
-                line_id3 = member_line_obj.search(cr, SUPERUSER_ID, [('partner', '=', partner_id),('membership_id.membership_product', '=', True),('state','=','paid')],
+                line_id3 = member_line_obj.search(cr, uid, [('partner', '=', partner_id),('membership_id.membership_product', '=', True),('state','=','paid')],
                             limit=1, order='date_to desc', context=context)
                 if line_id3:
-                      res[partner.id]['membership_end'] = member_line_obj.read(cr, SUPERUSER_ID, line_id3[0], ['date_to'], context=context)['date_to']
+                      res[partner.id]['membership_end'] = member_line_obj.read(cr, uid, line_id3[0], ['date_to'], context=context)['date_to']
 
             if name == 'membership_cancel':
                 if partner.membership_state == 'canceled':
-                    line_id2 = member_line_obj.search(cr, SUPERUSER_ID, [('partner', '=', partner.id),('membership_id.membership_product', '=', True)], limit=1, order='date_cancel', context=context)
+                    line_id2 = member_line_obj.search(cr, uid, [('partner', '=', partner.id),('membership_id.membership_product', '=', True)], limit=1, order='date_cancel', context=context)
                     if line_id2:
-                        res[partner.id]['membership_cancel'] = member_line_obj.read(cr, SUPERUSER_ID, line_id2[0], ['date_cancel'], context=context)['date_cancel']
+                        res[partner.id]['membership_cancel'] = member_line_obj.read(cr, uid, line_id2[0], ['date_cancel'], context=context)['date_cancel']
+        print "MEMBERSHIP STATE RES:",res
         return res
 
-    def _membership_start_date(self, cr, uid, ids, name, args, context=None):
-        if 1 == 1:
-            if name == 'membership_start':
-                return {}
-        """Return  date of membership"""
-        res = {}
-        member_line_obj = self.pool.get('membership.membership_line')
-        for partner in self.browse(cr, SUPERUSER_ID, ids, context=context):
-            line_id = member_line_obj.search(cr, SUPERUSER_ID, [('partner', '=', partner.id),('membership_id.membership_product', '=', True)],
-                            limit=1, order='date_from', context=context)
-            if line_id:
-                res[partner.id] = member_line_obj.read(cr, SUPERUSER_ID, line_id[0], ['date_from'], context=context)['date_from']
-        return res
-    def _membership_stop_date(self, cr, uid, ids, name, args, context=None):
-        if 1 == 1:
-            if name == 'membership_stop':
-                return {}
-        """Return  date of membership"""
-        res = {}
-        member_line_obj = self.pool.get('membership.membership_line')
-        for partner in self.browse(cr, SUPERUSER_ID, ids, context=context):
-            line_id1 = member_line_obj.search(cr, SUPERUSER_ID, [('partner', '=', partner.id),('membership_id.membership_product', '=', True)],
-                            limit=1, order='date_to desc', context=context)
-            if line_id1:
-                res[partner.id] = member_line_obj.read(cr, SUPERUSER_ID, line_id1[0], ['date_to'], context=context)['date_to']
-        return res
-    def _membership_end_date(self, cr, uid, ids, name, args, context=None):
-        if 1 == 1:
-            if name == 'membership_end':
-                return {}
-        """Return  date of membership"""
-        res = {}
-        member_line_obj = self.pool.get('membership.membership_line')
-        for partner in self.browse(cr, SUPERUSER_ID, ids, context=context):
-            line_id1 = member_line_obj.search(cr, SUPERUSER_ID, [('partner', '=', partner.id),('membership_id.membership_product', '=', True),('state','=','paid')],
-                            limit=1, order='date_to desc', context=context)
-            if line_id1:
-                res[partner.id] = member_line_obj.read(cr, SUPERUSER_ID, line_id1[0], ['date_to'], context=context)['date_to']
-        return res
-    def _membership_cancel_date(self, cr, uid, ids, name, args, context=None):
-        if 1 == 1:
-            if name == 'membership_cancel':
-                return {}
-        """Return  date of membership"""
-        res = {}
-        member_line_obj = self.pool.get('membership.membership_line')
-        for partner in self.browse(cr, SUPERUSER_ID, ids, context=context):
-            line_id1 = member_line_obj.search(cr, SUPERUSER_ID, [('partner', '=', partner.id),('membership_id.membership_product', '=', True),('state','=','canceled')],
-                            limit=1, order='date_cancel desc', context=context)
-            if line_id1:
-                cancel_date = member_line_obj.read(cr, SUPERUSER_ID, line_id1[0], ['date_to'], context=context)['date_to']
-                if partner.membership_end_f > cancel_date:
-                    res[partner.id] = None
-                else:
-                    res[partner.id] = cancel_date
-        return res
+#    def _membership_start_date(self, cr, uid, ids, name, args, context=None):
+#        if 1 == 1:
+#            if name == 'membership_start':
+#                return {}
+#        """Return  date of membership"""
+#        res = {}
+#        member_line_obj = self.pool.get('membership.membership_line')
+#        for partner in self.browse(cr, SUPERUSER_ID, ids, context=context):
+#            line_id = member_line_obj.search(cr, SUPERUSER_ID, [('partner', '=', partner.id),('membership_id.membership_product', '=', True)],
+#                            limit=1, order='date_from', context=context)
+#            if line_id:
+#                res[partner.id] = member_line_obj.read(cr, SUPERUSER_ID, line_id[0], ['date_from'], context=context)['date_from']
+#        print "START DATE RES:",res
+#        return res
+#    def _membership_stop_date(self, cr, uid, ids, name, args, context=None):
+#        if 1 == 1:
+#            if name == 'membership_stop':
+#                return {}
+#        """Return  date of membership"""
+#        res = {}
+#        member_line_obj = self.pool.get('membership.membership_line')
+#        for partner in self.browse(cr, SUPERUSER_ID, ids, context=context):
+#            line_id1 = member_line_obj.search(cr, SUPERUSER_ID, [('partner', '=', partner.id),('membership_id.membership_product', '=', True)],
+#                            limit=1, order='date_to desc', context=context)
+#            if line_id1:
+#                res[partner.id] = member_line_obj.read(cr, SUPERUSER_ID, line_id1[0], ['date_to'], context=context)['date_to']
+#        return res
+#    def _membership_end_date(self, cr, uid, ids, name, args, context=None):
+#        if 1 == 1:
+#            if name == 'membership_end':
+#                return {}
+#        """Return  date of membership"""
+#        res = {}
+#        member_line_obj = self.pool.get('membership.membership_line')
+#        for partner in self.browse(cr, SUPERUSER_ID, ids, context=context):
+#            line_id1 = member_line_obj.search(cr, SUPERUSER_ID, [('partner', '=', partner.id),('membership_id.membership_product', '=', True),('state','=','paid')],
+#                            limit=1, order='date_to desc', context=context)
+#            if line_id1:
+#                res[partner.id] = member_line_obj.read(cr, SUPERUSER_ID, line_id1[0], ['date_to'], context=context)['date_to']
+#        return res
+#    def _membership_cancel_date(self, cr, uid, ids, name, args, context=None):
+#        if 1 == 1:
+#            if name == 'membership_cancel':
+#                return {}
+#        """Return  date of membership"""
+#        res = {}
+#        member_line_obj = self.pool.get('membership.membership_line')
+#        for partner in self.browse(cr, SUPERUSER_ID, ids, context=context):
+#            line_id1 = member_line_obj.search(cr, SUPERUSER_ID, [('partner', '=', partner.id),('membership_id.membership_product', '=', True),('state','=','canceled')],
+#                            limit=1, order='date_cancel desc', context=context)
+#            if line_id1:
+#                cancel_date = member_line_obj.read(cr, SUPERUSER_ID, line_id1[0], ['date_to'], context=context)['date_to']
+#                if partner.membership_end_f > cancel_date:
+#                    res[partner.id] = None
+#                else:
+#                    res[partner.id] = cancel_date
+#        return res
 
     def _get_partners(self, cr, uid, ids, context=None):
         ids2 = ids
@@ -446,40 +457,72 @@ class res_partner(osv.osv):
                     -Invoiced Member: A member whose invoice has been created.
                     -Paying member: A member who has paid the membership fee."""),
         'membership_start': fields.function(
-                    _membership_start_date, 
+                    _membership_date, multi='membership_start',
                     string = 'Membership Start Date', type = 'date',
-                    store = {
+                    store = { 
                         'account.invoice': (_get_invoice_partner, ['state'], 10),
                         'membership.membership_line': (_get_partner_id, ['state','date_from','date_to','date_cancel'], 10, ),
-                        'res.partner': (lambda self, cr, uid, ids, c={}: ids, ['free_member'], 10)
-                    }, help="Date from which membership becomes active."),
+                        'res.partner': (lambda self, cr, uid, ids, c={}: ids, ['free_member'], 10) 
+                    }, help="Date from which the membership becomes active."),
         'membership_stop': fields.function(
-                    _membership_stop_date,
-                    string = 'Membership End Date', type='date',
-                    store = {
+                    _membership_date, multi='membership_stop',
+                    string = 'Membership Stop Date', type = 'date',
+                    store = { 
                         'account.invoice': (_get_invoice_partner, ['state'], 10),
-                        'membership.membership_line': (_get_partner_id, ['state','date_from','date_to','date_cancel'], 10),
-                        'res.partner': (lambda self, cr, uid, ids, c={}: ids, ['free_member'], 10)
-                    }, help="Date until which membership remains active."),
+                        'membership.membership_line': (_get_partner_id, ['state','date_from','date_to','date_cancel'], 10, ),
+                        'res.partner': (lambda self, cr, uid, ids, c={}: ids, ['free_member'], 10) 
+                    }, help="Date unitl which the membership remains active."),
         'membership_cancel': fields.function(
-                    _membership_cancel_date,
-                    string = 'Cancel Membership Date', type='date',
-                    store = {
-                        'account.invoice': (_get_invoice_partner, ['state'], 11),
-                        'membership.membership_line': (_get_partner_id, ['state','date_from','date_to','date_cancel'], 10),
-                        'res.partner': (lambda self, cr, uid, ids, c={}: ids, ['free_member'], 10)
-                    }, help="Date on which membership has been cancelled"),
+                    _membership_date, multi='membership_cancel',
+                    string = 'Membership Cancel Date', type = 'date',
+                    store = { 
+                        'account.invoice': (_get_invoice_partner, ['state'], 10),
+                        'membership.membership_line': (_get_partner_id, ['state','date_from','date_to','date_cancel'], 10, ),
+                        'res.partner': (lambda self, cr, uid, ids, c={}: ids, ['free_member'], 10) 
+                    }, help="Date on which the membership has been cancelled."),
+        'membership_end': fields.function(
+                    _membership_date, multi='membership_end',
+                    string = 'Membership End Date', type = 'date',
+                    store = { 
+                        'account.invoice': (_get_invoice_partner, ['state'], 10),
+                        'membership.membership_line': (_get_partner_id, ['state','date_from','date_to','date_cancel'], 10, ),
+                        'res.partner': (lambda self, cr, uid, ids, c={}: ids, ['free_member'], 10) 
+                    }, help="The last paid end date."),
+#        'membership_start': fields.function(
+#                    _membership_start_date, 
+#                    string = 'Membership Start Date', type = 'date',
+#                    store = {
+#                        'account.invoice': (_get_invoice_partner, ['state'], 10),
+#                        'membership.membership_line': (_get_partner_id, ['state','date_from','date_to','date_cancel'], 10, ),
+#                        'res.partner': (lambda self, cr, uid, ids, c={}: ids, ['free_member'], 10)
+#                    }, help="Date from which membership becomes active."),
+#        'membership_stop': fields.function(
+#                    _membership_stop_date,
+#                    string = 'Membership End Date', type='date',
+#                    store = {
+#                        'account.invoice': (_get_invoice_partner, ['state'], 10),
+#                        'membership.membership_line': (_get_partner_id, ['state','date_from','date_to','date_cancel'], 10),
+#                        'res.partner': (lambda self, cr, uid, ids, c={}: ids, ['free_member'], 10)
+#                    }, help="Date until which membership remains active."),
+#        'membership_cancel': fields.function(
+#                    _membership_cancel_date,
+#                    string = 'Cancel Membership Date', type='date',
+#                    store = {
+#                        'account.invoice': (_get_invoice_partner, ['state'], 11),
+#                        'membership.membership_line': (_get_partner_id, ['state','date_from','date_to','date_cancel'], 10),
+#                        'res.partner': (lambda self, cr, uid, ids, c={}: ids, ['free_member'], 10)
+#                    }, help="Date on which membership has been cancelled"),
+#        'membership_end': fields.function(
+#                    _membership_end_date, 
+#                    string = 'Einddatum lidmaatschap', type='date',
+#                    store = {
+#                        'account.invoice': (_get_invoice_partner, ['state'], 10),
+#                        'membership.membership_line': (_get_partner_id, ['state','date_from','date_to','date_cancel'], 10),
+#                        'res.partner': (lambda self, cr, uid, ids, c={}: ids, ['free_member'], 10)
+#                    }, help="Date until which membership remains active."),
         'free_member_comment': fields.char('Reden gratis lid'),
         'membership_renewal_date': fields.date('Lidmaatschap hernieuwingsdatum'),
         'membership_pay_date': fields.date('Lidmaatschap betaaldatum'),
-        'membership_end': fields.function(
-                    _membership_end_date, 
-                    string = 'Einddatum lidmaatschap', type='date',
-                    store = {
-                        'account.invoice': (_get_invoice_partner, ['state'], 10),
-                        'membership.membership_line': (_get_partner_id, ['state','date_from','date_to','date_cancel'], 10),
-                        'res.partner': (lambda self, cr, uid, ids, c={}: ids, ['free_member'], 10)
-                    }, help="Date until which membership remains active."),
         'lid': fields.boolean('Lid'),
         'focus': fields.boolean('Focus'),
         'oriolus': fields.boolean('Oriolus'),
