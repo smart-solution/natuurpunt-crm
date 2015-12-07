@@ -90,7 +90,8 @@ class wizard_partner_to_renew(osv.osv_memory):
             print "############## MEMBERSHIP LINES:",membership_lines
             if membership_lines:
                 # Check if a membership already exist after the date
-                exist_line_ids = self.pool.get('membership.membership_line').search(cr, uid, [('partner','=', partner_id),('date_to','>', end_date_membership),('state','=','paid')])
+                domain = [('partner','=', partner_id),('date_to','>', end_date_membership),('|',('state','=','paid'),('membership_renewal','=',True))]
+                exist_line_ids = self.pool.get('membership.membership_line').search(cr, uid, domain)
                 if exist_line_ids:
                     print "######### Already paid member"
                     continue
