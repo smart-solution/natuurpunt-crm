@@ -90,12 +90,21 @@ class wizard_partner_to_renew(osv.osv_memory):
             print "############## MEMBERSHIP LINES:",membership_lines
             if membership_lines:
                 # Check if a membership already exist after the date
-                exist_line_ids = self.pool.get('membership.membership_line').search(cr, uid, [('partner','=', partner_id),('date_to','>', end_date_membership),('state','=','paid')])
+                domain = [('partner','=', partner_id),('date_to','>', end_date_membership),('state','=','paid')]
+                exist_line_ids = self.pool.get('membership.membership_line').search(cr, uid, domain)
                 if exist_line_ids:
                     print "######### Already paid member"
                     continue
+                domain = [('partner_id','=', partner_id),('membership_renewal','=',True)]
+                renewal_invoice_ids = self.pool.get('account.invoice').search(cr, uid, domain)
+                account_invoice_line_ids = self.pool.get('account.invoice.line').search(cr, uid, [('invoice_id','in',renewal_invoice_ids)])
+                domain = [('partner','=', partner_id),('date_to','>', end_date_membership),('account_invoice_line','in',account_invoice_line_ids)]
+                renewal_membership_lines = self.pool.get('membership.membership_line').search(cr, uid, domain)
+                if renewal_membership_lines:
+                    print "######### Already renewed member"
+                    continue
 
-                member_ids.append(partner_id)    
+                member_ids.append(partner_id)
 
         try:
             tree_view_id = mod_obj.get_object_reference(cr, uid, 'membership', 'membership_members_tree')[1]
