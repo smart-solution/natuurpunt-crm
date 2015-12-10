@@ -1,0 +1,233 @@
+# -*- coding: utf-8 -*-
+##############################################################################
+#
+#    Smart Solution bvba
+#    Copyright (C) 2010-Today Smart Solution BVBA (<http://www.smartsolution.be>).
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+############################################################################## 
+ 
+from osv import osv, fields
+
+class res_partner(osv.osv):
+    _inherit = 'res.partner'
+
+    _sql_constraints = [
+        ('vat_uniq', 'unique(vat)', 'Fout! BTW nummer bestaat reeds.'),
+    ]
+
+    def name_search(self, cr, user, name, args=None, operator='ilike', context=None, limit=80):
+        """  
+        Returns a list of tupples containing id, name, as internally it is called {def name_get}
+        result format: {[(id, name), (id, name), ...]}
+
+        @param cr: A database cursor
+        @param user: ID of the user currently logged in
+        @param name: name to search
+        @param args: other arguments
+        @param operator: default operator is 'ilike', it can be changed
+        @param context: context arguments, like lang, time zone
+        @param limit: Returns first 'n' ids of complete result, default is 80.
+
+        @return: Returns a list of tupples containing id and name
+        """
+        if not args:
+            args = [] 
+        if context is None:
+            context = {} 
+        ids = [] 
+        if name:
+            #args.append(('ref','ilike',name))
+            ids = self.search(cr, user, [('name', 'ilike', name)] + args, limit=limit, context=context)
+            if not ids: 
+                ids = self.search(cr, user, [('name', operator, name)] + args, limit=limit, context=context)
+        else:
+            ids = self.search(cr, user, args, limit=limit, context=context or {})
+        return self.name_get(cr, user, ids, context=context)
+
+    _defaults = {
+        'company_id': False,
+    }
+
+res_partner()
+
+class account_invoice(osv.osv):
+    _inherit = 'account.invoice'
+
+    def onchange_company_id(self, cr, uid, ids, company_id, part_id, type, invoice_line, currency_id):
+        res = super(account_invoice, self).onchange_company_id(cr, uid, ids, company_id, part_id, type, invoice_line, currency_id)
+        res['value']['journal_id'] = False
+        if type == 'in_invoice':
+            res['value']['period_id'] = False
+            res['value']['date_invoice'] = False
+        return res
+
+    _sql_constraints = [
+            ('supplier_number_uniq', 'unique(supplier_invoice_number, partner_id, company_id, type)', 'Fout! Nummer leveranciersfactuur bestaat reeds voor deze leverancier in deze VZW!'),
+    ]
+
+    def create(self, cr, uid, vals, context=None):
+        """ Fill the note with supplier invoice number"""
+        if 'supplier_invoice_number' in vals and vals['supplier_invoice_number'] and ('reference' not in vals or not vals['reference']):
+            vals['reference'] = vals['supplier_invoice_number']
+        return super(account_invoice, self).create(cr, uid, vals, context=context)
+
+    def write(self, cr, uid, ids, vals, context=None):
+        """ Fill the note with supplier invoice number"""
+        res = super(account_invoice, self).write(cr, uid, ids, vals, context=context)
+        for inv in self.browse(cr, uid, ids):
+            if 'supplier_invoice_number' in vals and vals['supplier_invoice_number'] and (not inv.reference or inv.reference == ""):
+                self.write(cr, uid, [inv.id], {'reference':vals['supplier_invoice_number']})
+        return res
+
+    def copy(self, cr, uid, id, default=None, context=None):
+        """Clear the supplier reference at copy"""
+        default['supplier_invoice_number'] = False
+        default['reference'] = False
+        return super(account_invoice, self).copy(cr, uid, id, default=default, context=context)
+
+#    def button_date_invoice(self, cr, uid, ids, context=None):
+#        print 'START BUTTON'
+#        inv_obj = self.pool.get('account.invoice').browse(cr, uid, ids)
+#        res = {}
+#        for inv in task_obj:
+#            print 'INV:', inv
+#            res = self.onchange_payment_term_date_invoice(cr, uid, ids, inv.payment_term_id, inv.date_invoice)
+#        return res
+
+account_invoice()
+
+class account_invoice_line(osv.osv):
+
+    _inherit = "account.invoice.line"
+
+    _columns = {
+        'employee_id': fields.many2one('res.users', 'Werknemer'),
+        'fleet_id': fields.many2one('fleet.vehicle', 'Nummerplaat'),
+        'partner_mandatory': fields.related('account_id','partner_mandatory', type="boolean", string='Partner Verplicht', readonly=True),
+        'employee_mandatory': fields.related('account_id','employee_mandatory', type="boolean", string='Werknemer Verplicht', readonly=True),
+        'fleet_mandatory': fields.related('account_id','fleet_mandatory', type="boolean", string='Nummerplaat Verplicht', readonly=True),
+    }
+
+account_invoice_line()
+
+
+class account_account(osv.osv):
+    _inherit = 'account.account'
+
+    _columns = {
+        'partner_mandatory': fields.boolean('Partner Verplicht'),
+        'employee_mandatory': fields.boolean('Werknemer Verplicht'),
+        'fleet_mandatory': fields.boolean('Nummerplaat Verplicht'),
+    }
+
+account_account()
+
+class account_move_line(osv.osv):
+    _inherit = 'account.move.line'
+
+    _columns = {
+        'partner_id': fields.many2one('res.partner', 'Partner'),
+        'employee_id': fields.many2one('res.users', 'Werknemer'),
+        'fleet_id': fields.many2one('fleet.vehicle', 'Nummerplaat'),
+        'partner_mandatory': fields.related('account_id','partner_mandatory', type="boolean", string='Partner Verplicht', readonly=True),
+        'employee_mandatory': fields.related('account_id','employee_mandatory', type="boolean", string='Werknemer Verplicht', readonly=True),
+        'fleet_mandatory': fields.related('account_id','fleet_mandatory', type="boolean", string='Nummerplaat Verplicht', readonly=True),
+    }
+
+    def natuurpunt_account_id_change(self, cr, uid, ids, account_id, partner_id, context):
+        if not account_id:
+            return {}
+        res =  super(account_move_line, self).onchange_account_id( cr, uid, ids, account_id, partner_id, context=context)
+        account_obj = self.pool.get('account.account')
+        account_info = account_obj.browse(cr, uid, account_id)
+
+        if account_info:
+            res['value']['partner_mandatory'] = account_info.partner_mandatory
+            res['value']['employee_mandatory'] = account_info.employee_mandatory
+            res['value']['fleet_mandatory'] = account_info.fleet_mandatory
+
+#        if account_info.type == 'receivable' or account_info.type == 'payable':
+#            res['value']['partner_mandatory'] = True
+
+        return res
+
+account_move_line()
+
+class account_invoice_refund(osv.osv_memory):
+    _inherit = "account.invoice.refund"
+
+    def _get_journal(self, cr, uid, context=None):
+        print 'GET JOURNAL'
+        return False
+
+    _defaults = {
+        'journal_id': False,
+    }
+
+account_invoice_refund()
+
+class account_bank_statement_line(osv.osv):
+
+    _inherit = "account.bank.statement.line"
+
+    _columns = {
+        'employee_id': fields.many2one('res.users', 'Werknemer'),
+        'fleet_id': fields.many2one('fleet.vehicle', 'Nummerplaat'),
+        'partner_mandatory': fields.related('account_id','partner_mandatory', type="boolean", string='Partner Verplicht', readonly=True),
+        'employee_mandatory': fields.related('account_id','employee_mandatory', type="boolean", string='Werknemer Verplicht', readonly=True),
+        'fleet_mandatory': fields.related('account_id','fleet_mandatory', type="boolean", string='Nummerplaat Verplicht', readonly=True),
+    }
+
+account_bank_statement_line()
+
+
+class account_tax(osv.osv):
+
+    _inherit = "account.tax"
+
+    def name_search(self, cr, user, name, args=None, operator='ilike', context=None, limit=80):
+        """  
+        Returns a list of tupples containing id, name, as internally it is called {def name_get}
+        result format: {[(id, name), (id, name), ...]}
+
+        @param cr: A database cursor
+        @param user: ID of the user currently logged in
+        @param name: name to search
+        @param args: other arguments
+        @param operator: default operator is 'ilike', it can be changed
+        @param context: context arguments, like lang, time zone
+        @param limit: Returns first 'n' ids of complete result, default is 80.
+
+        @return: Returns a list of tupples containing id and name
+        """
+        if not args:
+            args = [] 
+        if context is None:
+            context = {} 
+        ids = [] 
+        if name:
+            ids = self.search(cr, user, [('description', 'ilike', name)] + args, limit=limit, context=context)
+            if not ids: 
+                ids = self.search(cr, user, [('name', operator, name)] + args, limit=limit, context=context)
+        else:
+            ids = self.search(cr, user, args, limit=limit, context=context or {})
+        return self.name_get(cr, user, ids, context=context)
+
+
+account_tax()
+
+
+# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

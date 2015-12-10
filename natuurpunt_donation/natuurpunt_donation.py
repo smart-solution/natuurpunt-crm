@@ -94,6 +94,7 @@ class donation_partner_account(osv.osv):
             ('donation_cancel', '=', False),
             ], context=context)
         if donation_ids:
+            logger.info('Found %s donation invoices to create'%(len(donation_ids)))
             self.create_donation_invoice(cr, uid, donation_ids, product_id=None, datas=None, context=context)
         else:
             logger.info('0 donation invoices created')
@@ -112,6 +113,8 @@ class donation_partner_account(osv.osv):
 
         invoice_list = []
         for donation in self.browse(cr, uid, ids, context=context):
+            logger.info('DONATION ID: %s'%(donation.id))
+            logger.info('DONATION PARTNER ID: %s'%(donation.partner_id.id))
             if context == None:
                 context = {}
                 context['uid'] = 1
@@ -168,6 +171,16 @@ class donation_partner_account(osv.osv):
                 'product_id': product_id,
             }
 
+#            certif_account_id = self.pool.get('account.account').search(cr, uid, [('code','=','732000'),('company_id','=',company_id)])
+#            no_certif_account_id = self.pool.get('account.account').search(cr, uid, [('code','=','732100'),('company_id','=',company_id)])
+#            print "CERTIF ACC:",certif_account_id
+#            print "NO CERTIF ACC:",no_certif_account_id
+#
+#            if donation.partner_id.tax_certificate:
+#                line_value['account_id'] = certif_account_id[0] or False
+#            else:
+#                line_value['account_id'] = no_certif_account_id[0] or False
+
             payment_term_id = None
             mandate_id = None
             partner_bank_id = None
@@ -202,6 +215,8 @@ order by res_partner_bank.sequence''' % (partner_id, )
 
                 today = datetime.today()
                 datedue = datetime.today() + relativedelta(days=30)
+                period_id =  self.pool.get('account.period').find(cr, uid, today)
+                print "PERIOD ID:",period_id
 
                 invoice_id = invoice_obj.create(cr, uid, {
                     'partner_id': partner_id,
@@ -219,6 +234,7 @@ order by res_partner_bank.sequence''' % (partner_id, )
                     'donation_id': donation.id,
                     'company_id': company_id,
                     'journal_id': journal_id,
+                    'period_id': period_id and period_id[0] or False
     #                'invoice_line': [(0, 0, line_value)],
                     }, context=dict(context, no_store_function=True)) # Don't store function fields inside the loop.
 
