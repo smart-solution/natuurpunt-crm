@@ -30,6 +30,7 @@ from openerp import netsvc
 from datetime import datetime
 from openerp.tools import float_compare
 from openerp.report import report_sxw
+from itertools import groupby
 import openerp.addons.decimal_precision as dp
 import logging
 
@@ -721,8 +722,9 @@ class banking_export_sdd_wizard(orm.TransientModel):
                 }, context=context)
 
             mandate_ids = [line.sdd_mandate_id.id for line in order.line_ids]
+            unique_mandate_ids = [k for k, _ in groupby(sorted(mandate_ids, key=lambda x: mandate_ids.index(x)))]
             self.pool['sdd.mandate'].write(
-                cr, uid, mandate_ids,
+                cr, uid, unique_mandate_ids,
                 {'last_debit_date': datetime.today().strftime('%Y-%m-%d')},
                 context=context)
             wf_service.trg_validate(uid, 'payment.order', order.id, 'done', cr)
