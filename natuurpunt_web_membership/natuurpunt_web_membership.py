@@ -134,6 +134,8 @@ class res_partner(osv.osv):
 
     def _web_membership_partner(self,cr,uid,ids,vals,context=None):
         if ids:
+            # address update via website resets status
+            vals['address_state_id'] = False
             self.write(cr,uid,ids,vals,context=context)
         else:
             # address via website
