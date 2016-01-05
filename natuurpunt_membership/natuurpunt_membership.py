@@ -248,7 +248,7 @@ class res_partner(osv.osv):
             for mline in self.pool.get('membership.membership_line').browse(cr, SUPERUSER_ID, ids, context=context):
                 if not(mline.membership_id and mline.membership_id.membership_product):
                     continue
-                fstate = mline.account_invoice_line.invoice_id.state if mline.account_invoice_line.invoice_id else migrated_fstate()                
+                fstate = mline.account_invoice_line.invoice_id.state if not(mline.membership_cancel_id) and mline.account_invoice_line.invoice_id else migrated_fstate()
                 mstates.append([func(mline,fstate) for func in rules])
             mstates = recursive_flatten_list(mstates[0], mstates[1:]) if mstates else []
             """ return first non empty membership state """
