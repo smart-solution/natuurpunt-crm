@@ -30,6 +30,13 @@ import logging
 
 _logger = logging.getLogger('natuurpunt_web_membership')
 
+class OrganisatiePartnerEnum():
+    AFDELING = 1
+    RESERVAAT = 2
+    KERN = 3
+    WERKGROEP = 5
+    REGIONALE = 7
+
 class res_partner(osv.osv):
     _inherit = 'res.partner'
 
@@ -101,7 +108,7 @@ class res_partner(osv.osv):
 
     def _verify_recruiting_organisation(self,cr,uid,ids,context=None):
         recruiting_organisation_obj = self.pool.get('res.partner')
-        if recruiting_organisation_obj.search(cr, uid, [('id','in',ids)],context=context):
+        if recruiting_organisation_obj.search(cr, uid, [('id','in',ids),('organisation_type_id','=',OrganisatiePartnerEnum.AFDELING)],context=context):
             return True
         else:
             return False
