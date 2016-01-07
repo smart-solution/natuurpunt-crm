@@ -210,7 +210,7 @@ class res_partner(osv.osv):
 
         # recruiting_organisation_id
         recruiting_organisation_id = datas.get('recruiting_organisation_id', 0)
-        if self._verify_recruiting_organisation(cr,uid[recruiting_organisation_id],context=context):
+        if self._verify_recruiting_organisation(cr,uid,[recruiting_organisation_id],context=context):
             vals['recruiting_organisation_id'] = recruiting_organisation_id
 
         # convert website membership + subscriptions to product
