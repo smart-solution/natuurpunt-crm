@@ -321,9 +321,10 @@
             <field name="view_mode">tree,form</field>
             <field name="view_type">form</field>
         </record>
-
+ 
+		<!--
         <menuitem name="Organisatierelaties" parent="base.menu_organisation_organisation" id="base.organisation_organisation_relations" sequence="10" action="action_organisation_relation_form"/>
-
+        --> 
         <record id="view_organisation_function_tree" model="ir.ui.view">
             <field name='name'>view.organisation.function.tree</field>
             <field name='model'>res.organisation.function</field>
