@@ -42,7 +42,10 @@ class payment_line(osv.osv):
                     if invoice.journal_id.code == 'LID':
         	            vals['communication'] = 'Lidmaatschap'
                     if invoice.journal_id.code == 'GIFT':
-                        vals['communication'] = 'Gift %s' % (invoice.donation_id.analytic_account_id.name, )
+                        if invoice.donation_id and invoice.donation_id.analytic_account_id:
+                            vals['communication'] = 'Gift %s' % (invoice.donation_id.analytic_account_id.name, )
+                        else:
+                            vals['communication'] = 'Gift TO CHECK'
                     if invoice.sdd_mandate_id:
                         vals['bank_id'] = invoice.sdd_mandate_id.partner_bank_id.id
                         vals['sdd_mandate_id'] = invoice.sdd_mandate_id.id
