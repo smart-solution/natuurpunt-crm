@@ -30,6 +30,13 @@ import logging
 
 _logger = logging.getLogger('natuurpunt_web_membership')
 
+class OrganisatiePartnerEnum():
+    AFDELING = 1
+    RESERVAAT = 2
+    KERN = 3
+    WERKGROEP = 5
+    REGIONALE = 7
+
 class res_partner(osv.osv):
     _inherit = 'res.partner'
 
@@ -91,13 +98,20 @@ class res_partner(osv.osv):
             return ids[0]
         else:
             return False
-        
+
     def _verify_membership_origin(self,cr,uid,ids,context=None):
         membership_origin_obj = self.pool.get('res.partner.membership.origin')
-        if membership_origin_obj.search(cr, uid, [('id','in',ids)],context=context):       
+        if membership_origin_obj.search(cr, uid, [('id','in',ids)],context=context):
             return True
         else:
-            return False        
+            return False
+
+    def _verify_recruiting_organisation(self,cr,uid,ids,context=None):
+        recruiting_organisation_obj = self.pool.get('res.partner')
+        if recruiting_organisation_obj.search(cr, uid, [('id','in',ids),('organisation_type_id','=',OrganisatiePartnerEnum.AFDELING)],context=context):
+            return True
+        else:
+            return False
 
     def partner_state_website_double_address(self,cr,uid,context=None):
         partner_state_obj = self.pool.get('res.partner.state')
@@ -106,7 +120,7 @@ class res_partner(osv.osv):
             return ids[0]
         else:
             return False
-        
+
     def partner_match_in_onchange_street_warning(self,cr,uid,name,onchange_street_res,context=None):
         #http://stackoverflow.com/questions/3429086/python-regex-to-get-all-text-until-a-and-get-text-inside-brackets        
         #{'message': u'De volgende contacten zijn reeds geregistreerd op dit adres: Truus Van Kelst (131822) \n', 'title': u'Waarschuwing!'}
@@ -195,22 +209,27 @@ class res_partner(osv.osv):
         context = context or {}
         if ids == None:
             ids = []
-                                
+
         # membership_origin_id                    
         membership_origin_id = datas.get('membership_origin_id', 0)
         if self._verify_membership_origin(cr,uid,[membership_origin_id],context=context):
             vals['membership_origin_id'] = membership_origin_id
-            
+
+        # recruiting_organisation_id
+        recruiting_organisation_id = datas.get('recruiting_organisation_id', 0)
+        if not(self._verify_recruiting_organisation(cr,uid,[recruiting_organisation_id],context=context)):
+            datas.pop('recruiting_organisation_id', None)
+
         # convert website membership + subscriptions to product
         product_id = self._web_membership_product(cr,uid,datas['subscriptions'],context=context)
-                
+
         # renewal product...? , update contact  
-        if datas.get('membership_renewal', False):            
+        if datas.get('membership_renewal', False):
             vals['membership_renewal_product_id'] = product_id
 
         # override default from website            
         vals['customer'] = False
-            
+
         # membership partner update or create
         _logger.info(ids)
         _logger.info(vals)

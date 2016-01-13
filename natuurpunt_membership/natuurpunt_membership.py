@@ -89,11 +89,11 @@ membership_third_payer_actions()
 class res_partner(osv.osv):
     _inherit = 'res.partner'
 
-#    def recalc_membership(self, cr, uid, partner_id, context=None):
-#        partner = self.pool.get('res.partner').browse(cr, uid, [partner_id], context=context)[0]
-#
-#        mline, membership_state_field = self._np_membership_state(cr, uid, partner, context=context)
-#
+    def recalc_membership(self, cr, uid, partner_id, context=None):
+        partner = self.pool.get('res.partner').browse(cr, uid, [partner_id], context=context)[0]
+
+        mline, membership_state_field = self._np_membership_state(cr, uid, partner, context=context)
+
 #        membership_start_date = self._membership_start_date(cr, uid, [partner_id], None, None, context=context)
 #        membership_start_date = membership_start_date[partner_id] if membership_start_date else None
 #
@@ -109,15 +109,15 @@ class res_partner(osv.osv):
 #        membership_end_date = self._membership_end_date(cr, uid, [partner_id], None, None, context=context)
 #        membership_end_date = membership_end_date[partner_id] if membership_end_date else None
 #        
-#        membership_pay_date = None
-#        if membership_state_field == 'paid' and mline.account_invoice_line.invoice_id:
-#            ids = self.pool.get('account.invoice').search(cr, uid, [('id','=',mline.account_invoice_line.invoice_id.id)])
-#            for invoice in self.pool.get('account.invoice').browse(cr, uid, ids, context=context):
-#                for payment in invoice.payment_ids:
-#                    membership_pay_date = payment.date
-#
-#        update_partner = False
-#
+        membership_pay_date = None
+        if membership_state_field == 'paid' and mline.account_invoice_line.invoice_id:
+            ids = self.pool.get('account.invoice').search(cr, uid, [('id','=',mline.account_invoice_line.invoice_id.id)])
+            for invoice in self.pool.get('account.invoice').browse(cr, uid, ids, context=context):
+                for payment in invoice.payment_ids:
+                    membership_pay_date = payment.date
+
+        update_partner = False
+
 #        if membership_state_field != partner.membership_state_b:
 #            update_partner = True
 #        if membership_start_date != partner.membership_start_b:
@@ -126,41 +126,41 @@ class res_partner(osv.osv):
 #            update_partner = True
 #        if membership_cancel_date != partner.membership_cancel_b:
 #            update_partner = True
-#        if membership_pay_date != partner.membership_pay_date:
-#            update_partner = True
+        if membership_pay_date != partner.membership_pay_date:
+            update_partner = True
 #        if membership_end_date != partner.membership_end_b:
 #            update_partner = True
 #
-#        if update_partner:
-#            vals = {
+        if update_partner:
+            vals = {
 #                'membership_state_b': membership_state_field,
 #                'membership_start_b': membership_start_date,
 #                'membership_stop_b': membership_stop_date,
 #                'membership_cancel_b': membership_cancel_date,
-#                'membership_pay_date': membership_pay_date,
+                'membership_pay_date': membership_pay_date,
 #                'membership_end_b': membership_end_date,
-#            }
-#            self.write(cr, uid, [partner.id], vals)
-#            cr.commit()
-#        return True
+            }
+            self.write(cr, uid, [partner.id], vals)
+            cr.commit()
+        return True
 
-#    def _recalc_membership(self, cr, uid, context=None):
-#        logger.info('Calculation of partner membership data started')
-#        counter = 0
-#        counter1000 = 0
-#        partner_ids = self.search(cr, uid, ['|',('member_lines', '!=', False),('free_member', '=', True)], context=context)
-#        print 'Partners read'
-#        if partner_ids:
-#            for partner in partner_ids:
-#                self.recalc_membership(cr, uid, partner, context=context)
-#                counter = counter + 1
-#                counter1000 = counter1000 + 1
-#                if counter1000 == 1000:
-#                    print 'Partner memberships recalculated: ', counter
-#                    counter1000 = 0
-#        print 'Partner memberships recalculated: ', counter
-#        logger.info('Calculation of partner membership data ended')
-#        return True
+    def _recalc_membership(self, cr, uid, context=None):
+        logger.info('Calculation of partner membership data started')
+        counter = 0
+        counter1000 = 0
+        partner_ids = self.search(cr, uid, ['|',('member_lines', '!=', False),('free_member', '=', True)], context=context)
+        print 'Partners read'
+        if partner_ids:
+            for partner in partner_ids:
+                self.recalc_membership(cr, uid, partner, context=context)
+                counter = counter + 1
+                counter1000 = counter1000 + 1
+                if counter1000 == 1000:
+                    print 'Partner memberships recalculated: ', counter
+                    counter1000 = 0
+        print 'Partner memberships recalculated: ', counter
+        logger.info('Calculation of partner membership data ended')
+        return True
 
     def onchange_free_member(self, cr, uid, ids, name, free_member, membership_nbr, context=None):
         res = {}
