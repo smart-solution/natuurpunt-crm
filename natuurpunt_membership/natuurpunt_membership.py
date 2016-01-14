@@ -277,7 +277,7 @@ class res_partner(osv.osv):
                                                                    membership_is_wait_member,
                                                                    membership_is_canceled_or_refunded])
             """ fallback to expired membership lines if there was no membership product ex. id 249991 """
-            return (mline,mstate) if mline expired_membership_lines(expired_mline_rules)
+            return (mline,mstate) if mline else expired_membership_lines(expired_mline_rules)
         else:
             return expired_membership_lines(expired_mline_rules)
 
