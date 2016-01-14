@@ -209,14 +209,14 @@ class res_partner(osv.osv):
 
         if partner_data.free_member:
             return (None,'free')
-	
-        """ define the membership state rules """ 
+
+        """ define the membership state rules """
         def membership_is_invoiced(mline,fstate):
             if fstate == 'open':
-               if ( mline.account_invoice_line.invoice_id.sdd_mandate_id and mline.account_invoice_line.invoice_id.sdd_mandate_id.state == 'valid' 
+               if ( mline.account_invoice_line.invoice_id.sdd_mandate_id and mline.account_invoice_line.invoice_id.sdd_mandate_id.state == 'valid'
                   or mline.account_invoice_line.invoice_id.partner_id.abo_company
                   or mline.account_invoice_line.invoice_id.partner_id.company_deal
-                  or mline.account_invoice_line.invoice_id.partner_id.organisation_type_id.id == 1 
+                  or mline.account_invoice_line.invoice_id.partner_id.organisation_type_id.id == 1
                   ):
                    return (mline,'invoiced')
             return False
@@ -228,12 +228,12 @@ class res_partner(osv.osv):
                 return False
 
         membership_is_wait_member = lambda mline,fstate: (mline,'wait_member') if fstate == 'open' and not(mline.account_invoice_line.invoice_id.website_payment) else False
-	membership_is_none_member = lambda mline,fstate: (mline,'none') if fstate == 'open' and mline.account_invoice_line.invoice_id.website_payment else False
+        membership_is_none_member = lambda mline,fstate: (mline,'none') if fstate == 'open' and mline.account_invoice_line.invoice_id.website_payment else False
         membership_is_waiting = lambda mline,fstate: (mline,'waiting') if fstate == 'open' and mline.account_invoice_line.invoice_id.definitive_reject else False
 
         def membership_is_canceled_or_refunded(mline,fstate):
             inv = mline.account_invoice_line.invoice_id
-            if ( fstate == 'cancel' 
+            if ( fstate == 'cancel'
                or mline.membership_cancel_id
                or inv and any([payment.invoice.type == 'out_refund' for payment in inv.payment_ids])
                ):
@@ -241,7 +241,7 @@ class res_partner(osv.osv):
             else:
                 return False
         """ end define membership state rules """
-        
+
         def apply_state_rules_to_membership_lines(rules):
             mstates = []
             migrated_fstate = lambda : 'cancel' if mline.membership_cancel_id else 'paid'
@@ -253,19 +253,9 @@ class res_partner(osv.osv):
             mstates = recursive_flatten_list(mstates[0], mstates[1:]) if mstates else []
             """ return first non empty membership state """
             mstates = [s for s in mstates if s]
-            return mstates[0] if mstates else (None,'none')
+            return mstates[0] if mstates else False
 
-        """ loop the current membership lines """
-        ids = self.pool.get('membership.membership_line').search(cr, SUPERUSER_ID, [('partner','=',partner_data.id),('date_to','>=',today)])
-        if ids:
-            """ hierarchy list of membership state conditions """
-            return apply_state_rules_to_membership_lines([membership_is_paid_or_does_not_need_to_be_paid,
-                                                          membership_is_invoiced,
-                                                          membership_is_waiting,
-                                                          membership_is_none_member,
-                                                          membership_is_wait_member,
-                                                          membership_is_canceled_or_refunded])
-        else: # old or no lines
+        def expired_membership_lines():
             domain = [('partner','=',partner_data.id),('date_from','<',today),('date_to','<',today)]
             ids = self.pool.get('membership.membership_line').search(cr, SUPERUSER_ID, domain)
             if ids:
@@ -274,6 +264,21 @@ class res_partner(osv.osv):
                 return (mline,'old') if mstate == 'paid' else (mline,mstate)
             else:
                 return (None,'none')
+
+        """ loop the current membership lines """
+        ids = self.pool.get('membership.membership_line').search(cr, SUPERUSER_ID, [('partner','=',partner_data.id),('date_to','>=',today)])
+        if ids:
+            """ hierarchy list of membership state conditions """
+            res = apply_state_rules_to_membership_lines([membership_is_paid_or_does_not_need_to_be_paid,
+                                                         membership_is_invoiced,
+                                                         membership_is_waiting,
+                                                         membership_is_none_member,
+                                                         membership_is_wait_member,
+                                                         membership_is_canceled_or_refunded])
+            """ fallback to expired membership lines if there was no membership product ex. id 249991 """
+            return res if res else expired_membership_lines()
+        else:
+            return expired_membership_lines()
 
     def _membership_state(self, cr, uid, ids, name, args, context=None):
         print 'CALC MEMBERSHIP STATE', name
