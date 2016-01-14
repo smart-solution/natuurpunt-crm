@@ -255,15 +255,16 @@ class res_partner(osv.osv):
             mstates = [s for s in mstates if s]
             return mstates[0] if mstates else False
 
-        def expired_membership_lines():
+        def expired_membership_lines(rules):
             domain = [('partner','=',partner_data.id),('date_from','<',today),('date_to','<',today)]
             ids = self.pool.get('membership.membership_line').search(cr, SUPERUSER_ID, domain)
             if ids:
-                mline, mstate = apply_state_rules_to_membership_lines([membership_is_paid_or_does_not_need_to_be_paid,
-                                                                       membership_is_canceled_or_refunded])
+                mline, mstate = apply_state_rules_to_membership_lines(rules)
                 return (mline,'old') if mstate == 'paid' else (mline,mstate)
             else:
                 return (None,'none')
+
+        expired_mline_rules = [membership_is_paid_or_does_not_need_to_be_paid, membership_is_canceled_or_refunded]
 
         """ loop the current membership lines """
         ids = self.pool.get('membership.membership_line').search(cr, SUPERUSER_ID, [('partner','=',partner_data.id),('date_to','>=',today)])
@@ -276,9 +277,9 @@ class res_partner(osv.osv):
                                                          membership_is_wait_member,
                                                          membership_is_canceled_or_refunded])
             """ fallback to expired membership lines if there was no membership product ex. id 249991 """
-            return res if res else expired_membership_lines()
+            return res if res else expired_membership_lines(expired_mline_rules)
         else:
-            return expired_membership_lines()
+            return expired_membership_lines(expired_mline_rules)
 
     def _membership_state(self, cr, uid, ids, name, args, context=None):
         print 'CALC MEMBERSHIP STATE', name
