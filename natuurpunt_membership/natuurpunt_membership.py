@@ -253,7 +253,7 @@ class res_partner(osv.osv):
             mstates = recursive_flatten_list(mstates[0], mstates[1:]) if mstates else []
             """ return first non empty membership state """
             mstates = [s for s in mstates if s]
-            return mstates[0] if mstates else False
+            return mstates[0] if mstates else (None,'none')
 
         def expired_membership_lines(rules):
             domain = [('partner','=',partner_data.id),('date_from','<',today),('date_to','<',today)]
@@ -270,14 +270,14 @@ class res_partner(osv.osv):
         ids = self.pool.get('membership.membership_line').search(cr, SUPERUSER_ID, [('partner','=',partner_data.id),('date_to','>=',today)])
         if ids:
             """ hierarchy list of membership state conditions """
-            res = apply_state_rules_to_membership_lines([membership_is_paid_or_does_not_need_to_be_paid,
-                                                         membership_is_invoiced,
-                                                         membership_is_waiting,
-                                                         membership_is_none_member,
-                                                         membership_is_wait_member,
-                                                         membership_is_canceled_or_refunded])
+            mline, mstate = apply_state_rules_to_membership_lines([membership_is_paid_or_does_not_need_to_be_paid,
+                                                                   membership_is_invoiced,
+                                                                   membership_is_waiting,
+                                                                   membership_is_none_member,
+                                                                   membership_is_wait_member,
+                                                                   membership_is_canceled_or_refunded])
             """ fallback to expired membership lines if there was no membership product ex. id 249991 """
-            return res if res else expired_membership_lines(expired_mline_rules)
+            return (mline,mstate) if mline expired_membership_lines(expired_mline_rules)
         else:
             return expired_membership_lines(expired_mline_rules)
 
