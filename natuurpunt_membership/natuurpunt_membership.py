@@ -242,7 +242,7 @@ class res_partner(osv.osv):
                 return False
         """ end define membership state rules """
 
-        def apply_state_rules_to_membership_lines(rules):
+        def apply_state_rules_to_membership_lines(ids, rules):
             mstates = []
             migrated_fstate = lambda : 'cancel' if mline.membership_cancel_id else 'paid'
             for mline in self.pool.get('membership.membership_line').browse(cr, SUPERUSER_ID, ids, context=context):
@@ -255,31 +255,32 @@ class res_partner(osv.osv):
             mstates = [s for s in mstates if s]
             return mstates[0] if mstates else (None,'none')
 
-        def expired_membership_lines(rules):
+        def expired_membership_lines():
             domain = [('partner','=',partner_data.id),('date_from','<',today),('date_to','<',today)]
             ids = self.pool.get('membership.membership_line').search(cr, SUPERUSER_ID, domain)
             if ids:
-                mline, mstate = apply_state_rules_to_membership_lines(rules)
+                mline, mstate = apply_state_rules_to_membership_lines(ids,
+                                                                      [membership_is_paid_or_does_not_need_to_be_paid,
+                                                                       membership_is_canceled_or_refunded])
                 return (mline,'old') if mstate == 'paid' else (mline,mstate)
             else:
                 return (None,'none')
-
-        expired_mline_rules = [membership_is_paid_or_does_not_need_to_be_paid, membership_is_canceled_or_refunded]
 
         """ loop the current membership lines """
         ids = self.pool.get('membership.membership_line').search(cr, SUPERUSER_ID, [('partner','=',partner_data.id),('date_to','>=',today)])
         if ids:
             """ hierarchy list of membership state conditions """
-            mline, mstate = apply_state_rules_to_membership_lines([membership_is_paid_or_does_not_need_to_be_paid,
+            mline, mstate = apply_state_rules_to_membership_lines(ids,
+                                                                  [membership_is_paid_or_does_not_need_to_be_paid,
                                                                    membership_is_invoiced,
                                                                    membership_is_waiting,
                                                                    membership_is_none_member,
                                                                    membership_is_wait_member,
                                                                    membership_is_canceled_or_refunded])
             """ fallback to expired membership lines if there was no membership product ex. id 249991 """
-            return (mline,mstate) if mline else expired_membership_lines(expired_mline_rules)
+            return (mline,mstate) if mline else expired_membership_lines()
         else:
-            return expired_membership_lines(expired_mline_rules)
+            return expired_membership_lines()
 
     def _membership_state(self, cr, uid, ids, name, args, context=None):
         print 'CALC MEMBERSHIP STATE', name
