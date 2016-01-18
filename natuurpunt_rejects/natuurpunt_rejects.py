@@ -140,7 +140,7 @@ class account_bank_statement(osv.osv):
                         for dupl_line in move_line_obj.browse(cr, uid, dupl_line_ids):
                             debit = dupl_line.credit
                             credit = dupl_line.debit
-                            sql_stat = 'update account_move_line set debit = %d, credit = %d where id = %d' % (debit, credit, dupl_line.id, )
+                            sql_stat = 'update account_move_line set debit = {:.2f}, credit = {:.2f} where id = {}'.format(debit, credit, dupl_line.id)
                             cr.execute(sql_stat)
                         move_obj.button_validate(cr, uid, [dupl_id], context=context)
                         reconcile_ids = []
