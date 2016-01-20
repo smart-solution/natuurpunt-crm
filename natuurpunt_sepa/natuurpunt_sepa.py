@@ -713,10 +713,13 @@ class banking_export_sdd_wizard(orm.TransientModel):
                     logger.info('Direct Debit Order invoice preocessed : %s'%(line.ml_inv_ref.number))
                 logger.info('Direct Debit Order lines left to process : %s'%(line_nbr))
 
+            unique_to_expire_ids = [k for k, _ in groupby(sorted(to_expire_ids, key=lambda x: to_expire_ids.index(x)))]
             self.pool['sdd.mandate'].write(
-                cr, uid, to_expire_ids, {'state': 'expired'}, context=context)
+                cr, uid, unique_to_expire_ids, {'state': 'expired'}, context=context)
+
+            unique_first_mandate_ids = [k for k, _ in groupby(sorted(first_mandate_ids, key=lambda x: first_mandate_ids.index(x)))]
             self.pool['sdd.mandate'].write(
-                cr, uid, first_mandate_ids, {
+                cr, uid, unique_first_mandate_ids, {
                     'recurrent_sequence_type': 'recurring',
                     'sepa_migrated': True,
                 }, context=context)
