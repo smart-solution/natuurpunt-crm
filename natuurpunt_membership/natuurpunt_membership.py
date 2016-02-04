@@ -227,8 +227,13 @@ class res_partner(osv.osv):
             else:
                 return False
 
+        def membership_via_website(mline,fstate):
+            if fstate == 'open' and mline.account_invoice_line.invoice_id.website_payment:
+                return (mline,'wait_member') if expired_membership_lines()[1] == 'old' else (mline,'none')
+            else:
+                return False
+
         membership_is_wait_member = lambda mline,fstate: (mline,'wait_member') if fstate == 'open' and not(mline.account_invoice_line.invoice_id.website_payment) else False
-        membership_is_none_member = lambda mline,fstate: (mline,'none') if fstate == 'open' and mline.account_invoice_line.invoice_id.website_payment else False
         membership_is_waiting = lambda mline,fstate: (mline,'waiting') if fstate == 'open' and mline.account_invoice_line.invoice_id.definitive_reject else False
 
         def membership_is_canceled_or_refunded(mline,fstate):
@@ -274,7 +279,7 @@ class res_partner(osv.osv):
                                                                   [membership_is_paid_or_does_not_need_to_be_paid,
                                                                    membership_is_invoiced,
                                                                    membership_is_waiting,
-                                                                   membership_is_none_member,
+                                                                   membership_via_website,
                                                                    membership_is_wait_member,
                                                                    membership_is_canceled_or_refunded])
             """ fallback to expired membership lines if there was no membership product ex. id 249991 """
