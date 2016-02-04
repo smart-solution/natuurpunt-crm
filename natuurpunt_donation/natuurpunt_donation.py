@@ -80,6 +80,10 @@ class donation_partner_account(osv.osv):
         'product_id': fields.many2one('product.product', 'Product', select=True),
     }
 
+    _defaults = {
+        'interval_number': 1,
+    }
+
     def _create_donation_invoices(self, cr, uid, context=None):
         logger.info('Searching for donations that must be invoiced')
         date_invoice = datetime.today()
