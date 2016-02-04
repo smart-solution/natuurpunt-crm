@@ -247,7 +247,7 @@ order by res_partner_bank.sequence''' % (partner_id, )
                 invoice_obj.check_bba(cr, uid, invoice_list, context=context)
                 wf_service = netsvc.LocalService('workflow')
                 wf_service.trg_validate(uid, 'account.invoice', invoice_id, 'invoice_open', cr) 
-                cr.commit()
+                #cr.commit()
 
                 if donation.interval_type == 'D':
                     next_invoice_date = datetime.today() + relativedelta(days=donation.interval_number)
