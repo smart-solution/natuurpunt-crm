@@ -84,6 +84,11 @@ class donation_partner_account(osv.osv):
         'interval_number': 1,
     }
 
+    def write(self, cr, uid, ids, vals, context=None):
+        if 'donation_cancel' in vals and vals['donation_cancel']:
+            vals['next_invoice_date'] = False
+        return super(donation_partner_account, self).write(cr, uid, ids, vals=vals, context=context)
+
     def _create_donation_invoices(self, cr, uid, context=None):
         logger.info('Searching for donations that must be invoiced')
         date_invoice = datetime.today()
@@ -175,16 +180,6 @@ class donation_partner_account(osv.osv):
                 'product_id': product_id,
             }
 
-#            certif_account_id = self.pool.get('account.account').search(cr, uid, [('code','=','732000'),('company_id','=',company_id)])
-#            no_certif_account_id = self.pool.get('account.account').search(cr, uid, [('code','=','732100'),('company_id','=',company_id)])
-#            print "CERTIF ACC:",certif_account_id
-#            print "NO CERTIF ACC:",no_certif_account_id
-#
-#            if donation.partner_id.tax_certificate:
-#                line_value['account_id'] = certif_account_id[0] or False
-#            else:
-#                line_value['account_id'] = no_certif_account_id[0] or False
-
             payment_term_id = None
             mandate_id = None
             partner_bank_id = None
@@ -251,7 +246,6 @@ order by res_partner_bank.sequence''' % (partner_id, )
                 invoice_obj.check_bba(cr, uid, invoice_list, context=context)
                 wf_service = netsvc.LocalService('workflow')
                 wf_service.trg_validate(uid, 'account.invoice', invoice_id, 'invoice_open', cr) 
-                #cr.commit()
 
                 if donation.interval_type == 'D':
                     next_invoice_date = datetime.today() + relativedelta(days=donation.interval_number)
@@ -264,7 +258,11 @@ order by res_partner_bank.sequence''' % (partner_id, )
 
                 last_invoice_date = datetime.today()
 
-                self.write(cr, uid, donation.id, {'last_invoice_date': last_invoice_date, 'next_invoice_date': next_invoice_date}, context=context)
+#                # Do not set a next invoice date if after the end date
+#                if donation.donation_end and donation.donation_end <= last_invoice_date:
+#                    self.write(cr, uid, donation.id, {'last_invoice_date': last_invoice_date, 'next_invoice_date': False}, context=context)
+#                else:
+#                    self.write(cr, uid, donation.id, {'last_invoice_date': last_invoice_date, 'next_invoice_date': next_invoice_date}, context=context)
 
                 donation_line_id = donation_line_obj.create(cr, uid, {
                     'partner_id': partner_id,
