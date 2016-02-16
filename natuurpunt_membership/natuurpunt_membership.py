@@ -272,31 +272,30 @@ class res_partner(osv.osv):
             else:
                 return False
 
-        def included_product_ids_from_membership(mem):
-            """returns included product ids from membership product.
+        def get_included_product_ids(prod_id):
+            """returns included product ids from combined product.
             all except 'gewoon lid' have included products
-            @param mem: id of membership product
+            @param mem: id of combined product
             @param return: list ids or membership_product id list if empty
             """
-            if mem:
-                included_prod_ids = prod_object.read(cr, uid, mem, ['included_product_ids'], context=context)['included_product_ids']
-                return sorted(included_prod_ids) if included_prod_ids else [mem]
+            if prod_id:
+                included_prod_ids = prod_object.read(cr, uid, prod_id, ['included_product_ids'], context=context)['included_product_ids']
+                return sorted(included_prod_ids) if included_prod_ids else [prod_id]
             else:
                 included_prod_ids = prod_object.search(cr, uid, [('membership_product','=',True),('included_product_ids','=',False)])
                 return included_prod_ids
 
-        def convert_memberships_to_included_products(mem_mag_set):
+        def convert_memberships_and_magazines_to_included_products(mem_mag_set):
             if isinstance(mem_mag_set, tuple):
-                if mem_mag_set[0]:
-                    return [(included_product_ids_from_membership(mem),mem_mag_set[1]) for mem in mem_mag_set[0]]
-                else:
-                    return [(included_product_ids_from_membership(False),mem_mag_set[1])]
+                mem = [get_included_product_ids(mem) for mem in mem_mag_set[0]] if mem_mag_set[0] else [get_included_product_ids(False)]
+                mag = [get_included_product_ids(mag) for mag in mem_mag_set[1]] if mem_mag_set[1] else mem_mag_set[1]
+                return (mem,[item for sublist in mag for item in sublist])
             else:
                 return False
-
-        def join_included_products_with_magazines(mem_mag_list):
-            if isinstance(mem_mag_list, list):
-                return [sorted(set(mem_mag[0] + mem_mag[1])) for mem_mag in mem_mag_list]
+        
+        def join_memberships_with_magazines(mem_mag_set):
+            if isinstance(mem_mag_set, tuple):
+                return [sorted(set(mem_mag + mem_mag_set[1])) for mem_mag in mem_mag_set[0]]
             else:
                 return False
 
@@ -315,8 +314,8 @@ class res_partner(osv.osv):
                                                   membership_is_invoiced,
                                                   membership_is_canceled_or_refunded])
                 products = [compose(split_memberships_and_magazines,
-                                    convert_memberships_to_included_products,
-                                    join_included_products_with_magazines)(mem_mag) for mem_mag in mline_membership_magazines]
+                                    convert_memberships_and_magazines_to_included_products,
+                                    join_memberships_with_magazines)(mem_mag) for mem_mag in mline_membership_magazines]
                 # return first product
                 product = [product[0] for product in products if product]
                 return product[0] if product else False
@@ -333,10 +332,10 @@ class res_partner(osv.osv):
             """
             membership_product_ids = prod_object.search(cr, uid, [('membership_product','=',True)])
             for membership_product in prod_object.browse(cr, uid, membership_product_ids, context=context):
-                if included_product_ids_from_membership(membership_product.id) == renewal_products:
+                if get_included_product_ids(membership_product.id) == renewal_products:
                     return [membership_product.id]
             else:
-                return included_product_ids_from_membership(False)
+                return get_included_product_ids(False)
 
         renewal_products = products_to_renew_from_membership_lines()
         renewal_product_id = products_to_renew_to_renewal_product(renewal_products)

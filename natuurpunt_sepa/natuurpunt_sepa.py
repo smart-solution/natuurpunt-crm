@@ -603,9 +603,10 @@ where res_partner.id = res_partner_bank.partner_id
             if third_payer_one_time:
                 sql_stat = '''update res_partner set third_payer_processed = True where id = %d''' % (invoice.partner_id.id, )
                 cr.execute(sql_stat)
-            renewal_prod_obj = self._np_membership_renewal_product(cr, uid, invoice.partner_id, context=context)
-            if renewal_prod_obj:
-                sql_stat = '''update res_partner set membership_renewal_product_id = %d where id = %d''' % (renewal_prod_obj.id, invoice.partner_id.id, )
+            import pdb; pdb.set_trace()
+            renewal_prod_id = self._np_membership_renewal_product(cr, uid, invoice.partner_id, context=context)
+            if renewal_prod_id:                
+                sql_stat = '''update res_partner set membership_renewal_product_id = %d where id = %d''' % (renewal_prod_id[0], invoice.partner_id.id, )
             else:
                 sql_stat = '''update res_partner set membership_renewal_product_id = %d where id = %d''' % (product_id, invoice.partner_id.id, )
             cr.execute(sql_stat)
@@ -717,13 +718,10 @@ class banking_export_sdd_wizard(orm.TransientModel):
                     logger.info('Direct Debit Order invoice preocessed : %s'%(line.ml_inv_ref.number))
                 logger.info('Direct Debit Order lines left to process : %s'%(line_nbr))
 
-            unique_to_expire_ids = [k for k, _ in groupby(sorted(to_expire_ids, key=lambda x: to_expire_ids.index(x)))]
             self.pool['sdd.mandate'].write(
-                cr, uid, unique_to_expire_ids, {'state': 'expired'}, context=context)
-
-            unique_first_mandate_ids = [k for k, _ in groupby(sorted(first_mandate_ids, key=lambda x: first_mandate_ids.index(x)))]
+                cr, uid, to_expire_ids, {'state': 'expired'}, context=context)
             self.pool['sdd.mandate'].write(
-                cr, uid, unique_first_mandate_ids, {
+                cr, uid, first_mandate_ids, {
                     'recurrent_sequence_type': 'recurring',
                     'sepa_migrated': True,
                 }, context=context)
