@@ -82,7 +82,7 @@ class account_move_line(osv.osv):
         if (not currency_obj.is_zero(cr, uid, account.company_id.currency_id, writeoff)) or \
            (account.currency_id and (not currency_obj.is_zero(cr, uid, account.currency_id, currency))):
             if not writeoff_acc_id:
-                raise osv.except_osv(_('Warning!'), _('You have to provide an account for the write off/exchange difference entry for partner ID %s. %s'%(ids, partner_id)))
+                raise osv.except_osv(_('Warning!'), _('You have to provide an account for the write off/exchange difference entry for partner ID %s. %s'%(partner_id, ids)))
             if writeoff > 0:
                 debit = writeoff
                 credit = 0.0
