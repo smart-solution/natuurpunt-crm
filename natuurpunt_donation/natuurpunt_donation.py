@@ -316,6 +316,7 @@ class donation_donation_line(osv.osv):
 	    'date_invoice': fields.date('Datum Factuur'),
 	    'amount_total': fields.float('Bedrag'),
 	    'analytic_account_id': fields.many2one('account.analytic.account', 'Analytic Account', select=True),
+            'state': fields.related('invoice_id', 'state', string='State', type='char'),
     }
 
     _order = 'date_invoice desc'
@@ -337,7 +338,7 @@ class res_partner(osv.osv):
 
     _columns = {
         'donation_ids': fields.one2many('donation.partner.account', 'partner_id', 'Giften'),
-        'donation_line_ids': fields.one2many('donation.donation.line', 'partner_id', 'Giftfacturen'),
+        'donation_line_ids': fields.one2many('donation.donation.line', 'partner_id', 'Giftfacturen', domain=[('state','!=','cancel')]),
     }
 
 res_partner()
