@@ -227,7 +227,7 @@ class res_partner(osv.osv):
         def membership_is_paid_or_does_not_need_to_be_paid(mline,fstate):
             if fstate == 'paid' or mline.account_invoice_line.invoice_id and mline.account_invoice_line.invoice_id.amount_total == 0.00:
                 inv = mline.account_invoice_line.invoice_id
-                if any([payment.invoice.type == 'out_refund' for payment in inv.payment_ids]):
+                if inv and any([payment.invoice.type == 'out_refund' for payment in inv.payment_ids]):
                     return False
                 else:
                     return (mline.membership_id.id,) if mline.membership_id else False
