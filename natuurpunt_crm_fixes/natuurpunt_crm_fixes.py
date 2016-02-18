@@ -21,12 +21,8 @@
 
 from openerp.osv import fields, osv
 import time
-<<<<<<< HEAD
-import datetime
-=======
 from openerp import netsvc
 from datetime import datetime
->>>>>>> 002a35f882aed21d786759890ed4a89b227bf23d
 from openerp.tools.translate import _
 import openerp.addons.decimal_precision as dp
 
