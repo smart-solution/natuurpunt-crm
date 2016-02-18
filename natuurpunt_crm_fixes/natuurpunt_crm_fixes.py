@@ -20,7 +20,10 @@
 ##############################################################################
 
 from openerp.osv import fields, osv
-
+import time
+import datetime
+from openerp.tools.translate import _
+import openerp.addons.decimal_precision as dp
 
 class account_move_line(osv.osv):
 
