@@ -144,7 +144,14 @@ class account_invoice(osv.osv):
 
                 # Reconcile the journal entry
                 #mv_line_obj.reconcile(cr, uid, reconcile_ids, 'auto', invoice.account_id.id, mv.period_id.id, mv.journal_id.id, context=context)
-                mv_line_obj.reconcile(cr, uid, reconcile_ids, 'auto', False, False, False, context=context)
+                try: 
+                    mv_line_obj.reconcile(cr, uid, reconcile_ids, 'auto', False, False, False, context=context)
+                except osv.except_osv, exc:
+                    args = exc.args
+                    reconcile_details = _('invoice:{}, partner:{}, ids:{}'.format(invoice.number, invoice.partner_id.id, reconcile_ids)) 
+                    except_osv_message = args[1] + ' ' + reconcile_details if args[1] else reconcile_details
+                    raise osv.except_osv(args[0],except_osv_message) 
+
                 logger.info('Diret Debit Invoice Reconciliation done')
 
 account_invoice()
