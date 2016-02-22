@@ -138,7 +138,7 @@ class account_invoice(osv.osv):
                         rec_line_id = line.id
                 # If no recociliation account could be found
                 if not rec_line_id:
-                    raise osv.except_osv(_('Error!'), _('No recociliation account could be found for the journal entry:'%(invoice.move_id.name)))
+                    raise osv.except_osv(_('Error!'), _('No recociliation account could be found for the journal entry: %s'%(invoice.move_id.name)))
 
                 reconcile_ids = [credit_mv_line_id, rec_line_id]
 
