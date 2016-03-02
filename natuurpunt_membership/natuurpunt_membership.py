@@ -373,17 +373,18 @@ class res_partner(osv.osv):
 
         membership_is_wait_member = lambda mline,fstate: (mline,'wait_member') if fstate == 'open' and not(mline.account_invoice_line.invoice_id.website_payment) else False
         membership_is_waiting = lambda mline,fstate: (mline,'waiting') if fstate == 'open' and mline.account_invoice_line.invoice_id.definitive_reject else False
-
-        def membership_is_canceled_or_refunded(mline,fstate):
-            inv = mline.account_invoice_line.invoice_id
-            if ( fstate == 'cancel'
-               or mline.membership_cancel_id
-               or inv and any([payment.invoice.type == 'out_refund' for payment in inv.payment_ids])
-               ):
-                return (mline,'canceled')
-            else:
-                return False
+	membership_is_canceled_or_refunded = lambda mline,fstate: (mline,'canceled') if fstate == 'cancel' else False
         """ end define membership state rules """
+
+	def membership_fstate(mline): 
+           inv = mline.account_invoice_line.invoice_id
+	   if not(mline.membership_cancel_id):
+	       return 'cancel' if any([payment.invoice.type == 'out_refund' for payment in inv.payment_ids]) else inv.state
+	   else:
+               if mline.date_to <= today or any([payment.invoice.type == 'out_refund' for payment in inv.payment_ids]):
+                   return 'cancel'
+	       else:
+                   return inv.state
 
         def apply_state_rules_to_membership_lines(ids, rules):
             mstates = []
@@ -391,7 +392,7 @@ class res_partner(osv.osv):
             for mline in self.pool.get('membership.membership_line').browse(cr, SUPERUSER_ID, ids, context=context):
                 if not(mline.membership_id and mline.membership_id.membership_product):
                     continue
-                fstate = mline.account_invoice_line.invoice_id.state if not(mline.membership_cancel_id) and mline.account_invoice_line.invoice_id else migrated_fstate()
+                fstate = membership_fstate(mline) if mline.account_invoice_line.invoice_id else migrated_fstate()
                 mstates.append([func(mline,fstate) for func in rules])
             mstates = recursive_flatten_list(mstates[0], mstates[1:], lambda x,y : x or y) if mstates else []
             """ return first non empty membership state """
