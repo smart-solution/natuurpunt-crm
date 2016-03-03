@@ -130,9 +130,16 @@ class account_bank_statement(osv.osv):
                         if sdd_reject_count == 1:
                             invoice_obj.write(cr, uid, invoice_id, {'sdd_reject_count': 2, 'sdd_reject2_id': reject_code, 'sdd_reject2_date': stmt.date, 'sdd_reject2_bankstmt_id': stmt.id}, context=context)
                         if sdd_reject_count == 2 or immediate_reject:
-                            invoice_obj.write(cr, uid, invoice_id, {'definitive_reject':True, 'sdd_reject_count': 3, 'sdd_reject3_id': reject_code, 'sdd_reject3_date': stmt.date, 'sdd_reject3_bankstmt_id': stmt.id}, context=context)
+                            invoice_obj.write(cr, uid, invoice_id,
+                                              {'definitive_reject': True,
+                                               'sdd_reject_count': 3,
+                                               'sdd_reject3_id': reject_code,
+                                               'sdd_reject3_date': stmt.date,
+                                               'sdd_reject3_bankstmt_id': stmt.id},
+                                              context=context)
+                            invoice_obj.action_cancel(cr, uid, invoice_id, context=context)
                             self.pool.get('sdd.mandate').write(cr, uid , [reject.sdd_mandate_id.id], {'state':'cancel'})
-                             
+
                     if move_cancel_id:
                         dupl_id = move_obj.copy(cr, uid, move_cancel_id, None, context=context)
                         move_obj.button_cancel(cr, uid, [dupl_id], context=context)
