@@ -343,7 +343,7 @@ class res_partner(osv.osv):
         return renewal_product_id
 
     def _np_membership_state(self, cr, uid, partner_data, context=None):
-	today = time.strftime('%Y-%m-%d')
+        today = time.strftime('%Y-%m-%d')
 
         if partner_data.free_member:
             return (None,'free')
@@ -373,18 +373,18 @@ class res_partner(osv.osv):
 
         membership_is_wait_member = lambda mline,fstate: (mline,'wait_member') if fstate == 'open' and not(mline.account_invoice_line.invoice_id.website_payment) else False
         membership_is_waiting = lambda mline,fstate: (mline,'waiting') if fstate == 'open' and mline.account_invoice_line.invoice_id.definitive_reject else False
-	membership_is_canceled_or_refunded = lambda mline,fstate: (mline,'canceled') if fstate == 'cancel' else False
+        membership_is_canceled_or_refunded = lambda mline,fstate: (mline,'canceled') if fstate == 'cancel' else False
         """ end define membership state rules """
 
-	def membership_fstate(mline): 
-           inv = mline.account_invoice_line.invoice_id
-	   if not(mline.membership_cancel_id):
-	       return 'cancel' if any([payment.invoice.type == 'out_refund' for payment in inv.payment_ids]) else inv.state
-	   else:
-               if mline.date_to <= today or any([payment.invoice.type == 'out_refund' for payment in inv.payment_ids]):
-                   return 'cancel'
-	       else:
-                   return inv.state
+        def membership_fstate(mline):
+            inv = mline.account_invoice_line.invoice_id
+            if not(mline.membership_cancel_id):
+                return 'cancel' if any([payment.invoice.type == 'out_refund' for payment in inv.payment_ids]) else inv.state
+            else:
+                if mline.date_to <= today or any([payment.invoice.type == 'out_refund' for payment in inv.payment_ids]):
+                    return 'cancel'
+                else:
+                    return inv.state
 
         def apply_state_rules_to_membership_lines(ids, rules):
             mstates = []
