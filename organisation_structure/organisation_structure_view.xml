@@ -441,7 +441,7 @@
 				    <field name="ref"/>
 				</tree>
 			    </field>
-			    <field name="organisation_relation_ids" context="{'default_partner_id':active_id, 'default_name':active_id, 'form_view_ref' : 'organisation_structure.organisation_partner_form'}" attrs="{'invisible': [('display_relations_horizontal','=',False)]}">			
+			    <field name="organisation_relation_ids" context="{'default_partner_id':active_id, 'default_name':active_id, 'form_view_ref' : 'organisation_structure.organisation_partner_form'}" attrs="{'invisible': [('display_relations_horizontal','=',False)]}" domain="[('organisation_type_id','!=',False)]">
 				<tree string="Relaties">
 				    <field name="organisation_type_id"/>
 				    <field name="name" context="{'form_view_ref' : 'organisation_structure.organisation_partner_form'}"/>
