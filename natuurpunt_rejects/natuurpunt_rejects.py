@@ -139,10 +139,6 @@ class account_bank_statement(osv.osv):
                                                'sdd_reject3_bankstmt_id': stmt.id},
                                               context=context)
                             self.pool.get('sdd.mandate').write(cr, uid , [reject.sdd_mandate_id.id], {'state':'cancel'})
-                            # update membership state
-                            partner = partner_obj.browse(cr, uid, [reject.partner_id.id], context=context)[0]
-                            mline, membership_state_field = partner_obj._np_membership_state(cr, uid, partner, context=context)
-                            partner_obj.write(cr, uid, [partner.id], {'membership_state': membership_state_field})
 
                     if move_cancel_id:
                         dupl_id = move_obj.copy(cr, uid, move_cancel_id, None, context=context)
@@ -163,6 +159,11 @@ class account_bank_statement(osv.osv):
                             if line.account_id.reconcile:
                                 reconcile_ids.append(line.id)
                         move_line_obj.reconcile(cr, uid, reconcile_ids, 'auto', False, False, False, context=context)
+
+                    # update membership state
+                    partner = partner_obj.browse(cr, uid, [reject.partner_id.id], context=context)[0]
+                    mline, membership_state_field = partner_obj._np_membership_state(cr, uid, partner, context=context)
+                    partner_obj.write(cr, uid, [partner.id], {'membership_state': membership_state_field})
 
             self.write(cr, uid, [stmt.id], {'reject_processed':True})
             
