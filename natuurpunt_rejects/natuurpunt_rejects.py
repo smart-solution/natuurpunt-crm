@@ -139,9 +139,9 @@ class account_bank_statement(osv.osv):
                                               context=context)
                             # cancel invoice -> draft invoice -> open invoice
                             # this will change the state of the membership
-                            invoice_obj.action_cancel(cr, uid, [invoice_id], context=context)
-                            invoice_obj.action_cancel_draft(cr, uid, [invoice_id], context=context)
-                            invoice_obj.invoice_validate(cr, uid, [invoice_id], context=context)
+                            invoice_obj.action_cancel(cr, uid, [invoice_id], context)
+                            invoice_obj.action_cancel_draft(cr, uid, [invoice_id], context)
+                            invoice_obj.invoice_validate(cr, uid, [invoice_id], context)
                             self.pool.get('sdd.mandate').write(cr, uid , [reject.sdd_mandate_id.id], {'state':'cancel'})
 
                     if move_cancel_id:
