@@ -118,13 +118,6 @@ class account_bank_statement(osv.osv):
                         sql_stat = "delete from payment_line where id = %d" % (payment_line_id, )
                         cr.execute(sql_stat)
 
-                    if reconcile_id:
-                        move_line_ids = move_line_obj.search(cr, uid,[('reconcile_id','=',reconcile_id)])
-                        move_line_obj._remove_move_reconcile(cr, uid, move_line_ids, False, context=context)
-                        for line in move_line_obj.browse(cr, uid, move_line_ids):
-                            if line.move_id.id != move_id:
-                                move_cancel_id = line.move_id.id
-
                     if invoice_id:
                         if sdd_reject_count == 0:
                             invoice_obj.write(cr, uid, invoice_id, {'sdd_reject_count': 1, 'sdd_reject1_id': reject_code, 'sdd_reject1_date': stmt.date, 'sdd_reject1_bankstmt_id': stmt.id}, context=context)
@@ -139,6 +132,13 @@ class account_bank_statement(osv.osv):
                                                'sdd_reject3_bankstmt_id': stmt.id},
                                               context=context)
                             self.pool.get('sdd.mandate').write(cr, uid , [reject.sdd_mandate_id.id], {'state':'cancel'})
+
+                    if reconcile_id:
+                        move_line_ids = move_line_obj.search(cr, uid,[('reconcile_id','=',reconcile_id)])
+                        move_line_obj._remove_move_reconcile(cr, uid, move_line_ids, False, context=context)
+                        for line in move_line_obj.browse(cr, uid, move_line_ids):
+                            if line.move_id.id != move_id:
+                                move_cancel_id = line.move_id.id
 
                     if move_cancel_id:
                         dupl_id = move_obj.copy(cr, uid, move_cancel_id, None, context=context)
@@ -160,14 +160,9 @@ class account_bank_statement(osv.osv):
                                 reconcile_ids.append(line.id)
                         move_line_obj.reconcile(cr, uid, reconcile_ids, 'auto', False, False, False, context=context)
 
-                    # update membership state
-                    partner = partner_obj.browse(cr, uid, [reject.partner_id.id], context=context)[0]
-                    mline, membership_state_field = partner_obj._np_membership_state(cr, uid, partner, context=context)
-                    partner_obj.write(cr, uid, [partner.id], {'membership_state': membership_state_field})
-
             self.write(cr, uid, [stmt.id], {'reject_processed':True})
-            
-        return True                    
+
+        return True
 
 account_bank_statement()
 
