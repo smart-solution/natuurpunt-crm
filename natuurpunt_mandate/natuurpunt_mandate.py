@@ -203,21 +203,24 @@ where membership_membership_line.partner = %d and not(membership_membership_line
                     }, context=context)  
 
             mandate_obj = self.pool.get('sdd.mandate')
-            mandate_id = mandate_obj.create(cr, uid,{
-                'partner_bank_id': partner_bank_id,
-                'partner_id': partner.partner_id.id,
-    #            'company_id': ,
-    #            'unique_mandate_reference': partner.unique_mandate_reference,
-                'type': 'recurrent',
-                'recurrent_sequence_type': 'first',
-                'signature_date': partner.signature_date,
-                'scan': False,
-                'last_debit_date': None,
-                'state': 'valid',
-                'sepa_migrated': True,
-                'original_mandate_identification': None,
-                'scan': partner.scan,
-                }, context=context)
+            mandate_ids = mandate_obj.search(cr, uid, [('partner_id','=', partner.partner_id.id),('state','=','valid'),('partner_bank_id','=',partner_bank_id)])
+            mandate_id = mandate_ids[0] if mandate_ids else False
+            if not mandate_id:
+                mandate_id = mandate_obj.create(cr, uid,{
+                    'partner_bank_id': partner_bank_id,
+                    'partner_id': partner.partner_id.id,
+       #            'company_id': ,
+       #            'unique_mandate_reference': partner.unique_mandate_reference,
+                    'type': 'recurrent',
+                    'recurrent_sequence_type': 'first',
+                    'signature_date': partner.signature_date,
+                    'scan': False,
+                    'last_debit_date': None,
+                    'state': 'valid',
+                    'sepa_migrated': True,
+                    'original_mandate_identification': None,
+                    'scan': partner.scan,
+                    }, context=context)
 
             context['mandate_id'] = mandate_id
    
