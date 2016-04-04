@@ -36,6 +36,7 @@ class OrganisatiePartnerEnum():
     KERN = 3
     WERKGROEP = 5
     REGIONALE = 7
+    BEZOEKERSCENTRUM = 10
 
 class res_partner(osv.osv):
     _inherit = 'res.partner'
@@ -108,7 +109,12 @@ class res_partner(osv.osv):
 
     def _verify_recruiting_organisation(self,cr,uid,ids,context=None):
         recruiting_organisation_obj = self.pool.get('res.partner')
-        if recruiting_organisation_obj.search(cr, uid, [('id','in',ids),('organisation_type_id','=',OrganisatiePartnerEnum.AFDELING)],context=context):
+        org_ids = [
+            OrganisatiePartnerEnum.AFDELING,
+            OrganisatiePartnerEnum.WERKGROEP,
+            OrganisatiePartnerEnum.BEZOEKERSCENTRUM,
+        ]
+        if recruiting_organisation_obj.search(cr, uid, [('id','in',ids),('organisation_type_id','in',org_ids)],context=context):
             return True
         else:
             return False
