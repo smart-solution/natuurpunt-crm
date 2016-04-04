@@ -62,7 +62,7 @@
                     	    <field name="membership_origin_id" on_change="onchange_membership_origin(membership_origin_id)"/>
 			    <field name="member_recruit_member" invisible="True"/>
                     	    <field name="recruiting_member_id" attrs="{'invisible': [('member_recruit_member','!=',True)]}" domain="[('organisation_type_id','=',False)]"/>
-                    	    <field name="recruiting_organisation_id" domain="[('organisation_type_id','=','Afdeling')]"/>
+                    	    <field name="recruiting_organisation_id" domain="[('organisation_type_id','in',['Afdeling','Werkgroep','Bezoekerscentrum'])]"/>
                     	    <field name="address_origin_id"/>
 			    <field name="address_origin_date" on_change="onchange_future_date(address_origin_date)"/>
 		        </group>
