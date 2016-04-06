@@ -50,11 +50,14 @@
 		    <attribute name="on_change">onchange_free_member(name, free_member, membership_nbr)</attribute>
 		</field>
                 <page string="Membership" position="attributes">
-                    <attribute name="groups">natuurpunt_membership.group_natuurpunt_membership_user</attribute>
+                    <attribute name="groups">natuurpunt_membership.group_natuurpunt_membership_power_user</attribute>
                 </page>
 				<field name="membership_start" position="replace">
                     <field name="membership_start"/>
                 </field>
+        <!-- remove membership , visible for power users contacten -->
+        <label for="membership_state" position="replace"/>
+        <field name="membership_state" position="replace"/>
 				<field name="membership_stop" position="replace">
                     <field name="membership_stop"/>
 				    <field name="membership_renewal_date" readonly="True"/>
@@ -64,7 +67,7 @@
                     <field name="membership_cancel"/>
                 </field>
                 <page string="Membership" position="before">
-		    <page string="3de Betaler" groups="natuurpunt_membership.group_natuurpunt_membership_user">
+		    <page string="3de Betaler" groups="natuurpunt_membership.group_natuurpunt_membership_power_user">
 			<group colspan="4" col="2">
 			    <group>
 			    	<field name="third_payer_flag"/>
@@ -82,7 +85,7 @@
 	                <label for="third_payer_action_ids" attrs="{'invisible': [('third_payer_flag', '==', False)]}"/>
         	        <field name="third_payer_action_ids" attrs="{'invisible': [('third_payer_flag', '==', False)]}">
 			    <tree string="3de Betaler Acties" context="{'default_partner_id':active_id}">
-        	                <field name="partner_id" invisible="True"/> 
+        	                <field name="partner_id" invisible="True"/>
         	            	<field name="name"/>
         	        	<field name="amount"/>
         	        	<field name="date_from"/>
@@ -90,7 +93,7 @@
         	            </tree>
 			    <form string="3de Betaler Acties" context="{'default_partner_id':active_id}">
 				<group>
-        	                    <field name="partner_id" invisible="True"/> 
+        	                    <field name="partner_id" invisible="True"/>
         	            	    <field name="name" required="True"/>
         	        	    <field name="amount" required="True"/>
 				</group>
@@ -99,10 +102,10 @@
         	        	    <field name="date_to" required="True"/>
 				</group>
         	            </form>
-			</field> 
-		    </page> 
+			</field>
+		    </page>
                 </page>
- 		<button name="%(membership.action_membership_invoice_view)d" position="replace"/> 
+ 		<button name="%(membership.action_membership_invoice_view)d" position="replace"/>
                 <xpath expr="//div[@name='buttons']" position="inside">
    	            <button name="%(membership.action_membership_invoice_view)d" type="action" string="Buy Membership" attrs="{'invisible':[('free_member','=',True)]}"
                             groups="natuurpunt_crm.group_natuurpunt_crm_user"/>
@@ -199,7 +202,7 @@
 			    </xpath>
         </field>
     </record>
-  
+
     <record model="ir.ui.view" id="view_natuurpunt_membership_tree">
         <field name="name">view.natuurpunt.membership.tree</field>
         <field name="model">res.partner</field>
@@ -247,7 +250,7 @@
                 </field>
         </field>
     </record>
- 
+
     <record model="ir.ui.view" id="view_natuurpunt_account_customer_invoice2_form">
         <field name="name">view.natuurpunt_account.customer.invoice2.form</field>
         <field name="model">account.invoice</field>
@@ -267,7 +270,7 @@
 			<button name="invoice_pay_customer" type="object" string="Cash Betaling" attrs="{'invisible': [('membership_invoice', '!=', True)]}"/>
 		</button>
         </field>
-    </record> 
+    </record>
 
 
     <record id="view_free_membership_search" model="ir.ui.view">
@@ -319,6 +322,21 @@
 
     <menuitem name="Gratis Lid Categoriën" parent="base.menu_marketing_config_association" id="menu_free_membership" sequence="17" action="action_free_membership_form" groups="natuurpunt_membership.group_natuurpunt_membership_manager"/>
 
+    <record model="ir.ui.view" id="view_natuurpunt_crm_partner_form">
+        <field name="name">view.natuurpunt.crm.partner.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="natuurpunt_crm.view_natuurpunt_crm_partner_form" />
+        <field name="arch" type="xml">
+          <field name="membership_nbr" position="replace">
+				        <field name="membership_nbr" attrs="{'readonly': [('membership_nbr_set', '=', True)]}" widget="char"
+                  groups="natuurpunt_membership.group_natuurpunt_membership_user"/>
+                <field name="membership_state" string="Lidmaatschap status" readonly="1"
+                  groups="natuurpunt_membership.group_natuurpunt_membership_user"/>
+          </field>
+          <field name="npca_id" position="replace"/>
+          <field name="ref" position="replace"/>
+        </field>
+    </record>
+
     </data>
 </openerp>
-
