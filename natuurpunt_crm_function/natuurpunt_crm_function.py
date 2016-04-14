@@ -56,8 +56,8 @@ class res_partner(osv.osv):
             res_org_fnc_ids = res_org_fnc_obj.search(cr, SUPERUSER_ID, domain)
             for res_org_fnc in res_org_fnc_obj.browse(cr, SUPERUSER_ID, res_org_fnc_ids):            
                 active = (res_org_fnc.partner_id.active if res_org_fnc.partner_id else True) and (res_org_fnc.person_id.active if res_org_fnc.person_id else True) 
-                res_org_fnc_obj.write(cr, SUPERUSER_ID, [res_org_fnc.id], {'active':active}, context=context)
-        return res        
+                res_org_fnc_obj.sync_active(cr, SUPERUSER_ID, [res_org_fnc.id], active, context=context)
+        return res
 
 res_partner()
 
@@ -119,6 +119,10 @@ class res_organisation_function(osv.osv):
                 vals['person_id'] = rof.person_id.id        
         self._check_unique_type(cr, uid, vals=vals, context=context)
         self._check_organisation_type_ids(cr, uid, vals=vals, context=context)        
+        return super(res_organisation_function, self).write(cr, uid, ids, vals=vals, context=context)
+
+    def sync_active(self, cr, uid, ids, active, context=None):
+        vals = {'active':active}
         return super(res_organisation_function, self).write(cr, uid, ids, vals=vals, context=context)
     
     _columns = {
