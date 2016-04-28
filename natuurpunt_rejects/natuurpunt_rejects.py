@@ -40,6 +40,14 @@ class account_invoice(osv.osv):
 
 account_invoice()
 
+class account_move_line(osv.osv):
+
+    _inherit = 'account.move.line'
+
+    _columns = {
+        'reject_date': fields.date('Weigering Datum'),
+    }
+
 class account_bank_statement(osv.osv):
 
     _inherit = 'account.bank.statement'
@@ -159,6 +167,8 @@ class account_bank_statement(osv.osv):
                             if line.account_id.reconcile:
                                 reconcile_ids.append(line.id)
                         move_line_obj.reconcile(cr, uid, reconcile_ids, 'auto', False, False, False, context=context)
+
+                        move_line_obj.write(cr, uid, reconcile_ids, {'reject_date':datetime.datetime.today().strftime('%Y-%m-%d')})
 
             self.write(cr, uid, [stmt.id], {'reject_processed':True})
 
