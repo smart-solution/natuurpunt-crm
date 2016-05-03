@@ -103,7 +103,7 @@
 			    <field name="organisation_function_child_ids" nolabel="1" context="{'default_person_id':active_id, 'default_name':active_id}"/>
                         </group>
                     </page>	
-                    <page string="Adreshistorie">
+                    <page string="Adreshistorie" groups="natuurpunt_crm.group_natuurpunt_crm_user">
 			<field name="address_history_ids" readonly="True" nolabel="1" context="{'default_partner_id':active_id}">
 			    <tree string="Adreshistory" readonly="True">
 				<field name="date_move"/>
