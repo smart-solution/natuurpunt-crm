@@ -31,7 +31,7 @@
         <field name="inherit_id" ref="natuurpunt_crm.view_natuurpunt_crm_partner_form" />
         <field name="arch" type="xml">
             <field name="recruiting_organisation_id" position="replace">
-                <field name="recruiting_organisation_id" domain="[('organisation_type_id','in',['Afdeling','Werkgroep','Bezoekerscentrum','Regionale'])]"/>
+                <field name="recruiting_organisation_id" domain="[('organisation_type_id','in',['Afdeling','Werkgroep','Bezoekerscentrum','Regionaal samenwerkingsverband'])]"/>
             </field>
         </field>
     </record>
