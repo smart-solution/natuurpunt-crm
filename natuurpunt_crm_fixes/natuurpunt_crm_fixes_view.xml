@@ -25,5 +25,16 @@
         </field>
     </record> 
 
+    <record model="ir.ui.view" id="view_natuurpunt_crm_partner_form">
+        <field name="name">view.natuurpunt.crm.partner.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="natuurpunt_crm.view_natuurpunt_crm_partner_form" />
+        <field name="arch" type="xml">
+            <field name="recruiting_organisation_id" position="replace">
+                <field name="recruiting_organisation_id" domain="[('organisation_type_id','in',['Afdeling','Werkgroep','Bezoekerscentrum','Regionale'])]"/>
+            </field>
+        </field>
+    </record>
+
     </data>
 </openerp>
