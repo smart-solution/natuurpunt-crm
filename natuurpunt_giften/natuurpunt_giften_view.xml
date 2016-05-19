@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<openerp>
+    <data>
+
+        <record id="wizard_giften_invoice_to_create_form" model="ir.ui.view">
+            <field name="name">wizard.find.giften.to.create.form</field>
+            <field name="model">wizard.giften.to.create</field>
+            <field name="arch" type="xml">
+                <form string="Giften te hernieuwen vinden" version="7.0">
+                    <p class="oe_grey">
+                    Giften te hernieuwen vinden
+                    </p>
+                    <field name="end_date_donation"/>
+                    <footer>
+                        <button string="Giften te hernieuwen vinden" name="find_giften_to_create" type="object" default_focus="1" class="oe_highlight"/>
+                        or
+                        <button string="Cancel" class="oe_link" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <act_window id="action_find_giften_to_create"
+        name="Giften the hernieuwen vinden"
+            res_model="wizard.giften.to.create" 
+            view_mode="form" 
+            view_type="form"
+            view_id="wizard_giften_invoice_to_create_form"
+            target="new" 
+        />
+
+     <menuitem name="Giften the hernieuwen vinden" id="menu_find_giften_to_create" parent="membership.menu_membership" action="action_find_giften_to_create" sequence="2"/>
+
+        <record id="view_giften_create_invoice_view" model="ir.ui.view">
+            <field name="name">wizard.giften.create.invoice.view.form</field>
+            <field name="model">wizard.giften.invoice.create</field>
+            <field name="arch" type="xml">
+                <form string="Giften facturen maken" version="7.0">
+                    <field name="end_date_donation"/>
+                    <group>
+                        <label string="Giften facturen maken ?"/>
+                    </group>
+                    <footer>
+                        <button string="Giften facturen maken" name="giften_invoice_create" type="object" class="oe_highlight"  />
+                        or
+                        <button string="Cancel" class="oe_link" special="cancel" />
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_giften_invoice_create_view" model="ir.actions.act_window">
+            <field name="name">Giften facturen maken</field>
+            <field name="res_model">wizard.giften.invoice.create</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_id" ref="view_giften_create_invoice_view"/>
+            <field name="target">new</field>
+        </record>
+
+        <act_window name="Giften facturen maken"
+            res_model="wizard.giften.invoice.create"
+            src_model="res.partner"
+            multi="True"
+            key2="client_action_multi"
+            view_mode="form"
+            id="action_giften_invoice_create_view"/>
+
+    
+    </data>
+</openerp>
+

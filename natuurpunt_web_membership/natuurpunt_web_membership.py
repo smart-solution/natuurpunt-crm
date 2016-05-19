@@ -26,35 +26,70 @@ from openerp.tools.translate import _
 import urllib2
 import xml.etree.ElementTree as ET
 import re
+import logging
+
+_logger = logging.getLogger('natuurpunt_web_membership')
+
+class OrganisatiePartnerEnum():
+    AFDELING = 1
+    RESERVAAT = 2
+    KERN = 3
+    WERKGROEP = 5
+    REGIONALE = 7
+    BEZOEKERSCENTRUM = 10
 
 class res_partner(osv.osv):
     _inherit = 'res.partner'
 
-    def _web_membership_product(self,cr,uid,subscriptions,context=None):
-        # search membership product
+    def _web_membership_product(self,cr,uid,subscriptions,context=None):        
+        # search membership products
         current_date = DateTime.now().strftime('%Y-%m-%d')
         sql_stat = "select id from product_product where membership_product and membership_date_from <= '{0}' and membership_date_to >= '{0}'".format(current_date)
         cr.execute(sql_stat)
         mem_prod_ids = map(lambda x: x[0], cr.fetchall())
         # membership defaulf product
-        mem_prod = 'Gewoon lid' 
+        mem_prod = 'Gewoon lid'
+                
         # website membership product = membership default + subscriptions
         web_prod_list = [mem_prod]
         web_prod_list.extend([s['name'] for s in subscriptions])
+        res = self.subscriptions_to_membership_product(cr,uid,mem_prod_ids,web_prod_list,context=context)
+        
+        # default fall back is 'gewoon lid'
+        # better a product to sell than nothing        
+        if not res:
+            res = self.subscriptions_to_membership_product(cr,uid,mem_prod_ids,[mem_prod],context=context)
 
+        return res
+    
+    def subscriptions_to_membership_product(self,cr,uid,ids,web_prod_list,context=None):
         product_obj = self.pool.get('product.product')
-
-        for product in product_obj.browse(cr, uid, mem_prod_ids, context=context):
+        for product in product_obj.browse(cr, uid, ids, context=context):
             # membership product = membership default + included products
-            mem_prod_list = [mem_prod]
+            mem_prod_list = web_prod_list[:1]
             if product.included_product_ids:
-                for included_product in product_obj.browse(cr, uid, product.included_product_ids, context=context):
+                 for included_product in product_obj.browse(cr, uid, product.included_product_ids, context=context):
                     prod_name = included_product.id.name_template
                     if mem_prod_list[0] != prod_name:
                         mem_prod_list.append(prod_name)
             # intersection match then return product_id
             if set(mem_prod_list) == set(web_prod_list):
                return product.id
+        return None
+    
+    def membership_renewal_product_to_subscriptions(self,cr,uid,ids,context=None):    
+        for partner in self.browse(cr, uid, ids, context=context):
+            if partner.membership_renewal_product_id:
+                mem_prod_list = []
+                mem_prod = 'Gewoon lid'
+                product_obj = self.pool.get('product.product')
+                product = product_obj.browse(cr, uid, partner.membership_renewal_product_id.id, context=context)
+                for included_product in product_obj.browse(cr, uid, product.included_product_ids, context=context):
+                    prod_name = included_product.id.name_template
+                    if mem_prod != prod_name:
+                        mem_prod_list.append(prod_name)
+                # convert list of subscriptions to list {'name':subscription}                                
+                return map(lambda v: {'name':v},mem_prod_list)
         return None
 
     def address_origin_website(self,cr,uid,context=None):
@@ -65,6 +100,25 @@ class res_partner(osv.osv):
         else:
             return False
 
+    def _verify_membership_origin(self,cr,uid,ids,context=None):
+        membership_origin_obj = self.pool.get('res.partner.membership.origin')
+        if membership_origin_obj.search(cr, uid, [('id','in',ids)],context=context):
+            return True
+        else:
+            return False
+
+    def _verify_recruiting_organisation(self,cr,uid,ids,context=None):
+        recruiting_organisation_obj = self.pool.get('res.partner')
+        org_ids = [
+            OrganisatiePartnerEnum.AFDELING,
+            OrganisatiePartnerEnum.WERKGROEP,
+            OrganisatiePartnerEnum.BEZOEKERSCENTRUM,
+        ]
+        if recruiting_organisation_obj.search(cr, uid, [('id','in',ids),('organisation_type_id','in',org_ids)],context=context):
+            return True
+        else:
+            return False
+
     def partner_state_website_double_address(self,cr,uid,context=None):
         partner_state_obj = self.pool.get('res.partner.state')
         ids = partner_state_obj.search(cr, uid, [('ref','=','1')],context=context)
@@ -72,7 +126,7 @@ class res_partner(osv.osv):
             return ids[0]
         else:
             return False
-        
+
     def partner_match_in_onchange_street_warning(self,cr,uid,name,onchange_street_res,context=None):
         #http://stackoverflow.com/questions/3429086/python-regex-to-get-all-text-until-a-and-get-text-inside-brackets        
         #{'message': u'De volgende contacten zijn reeds geregistreerd op dit adres: Truus Van Kelst (131822) \n', 'title': u'Waarschuwing!'}
@@ -100,6 +154,8 @@ class res_partner(osv.osv):
 
     def _web_membership_partner(self,cr,uid,ids,vals,context=None):
         if ids:
+            # address update via website resets status
+            vals['address_state_id'] = False
             self.write(cr,uid,ids,vals,context=context)
         else:
             # address via website
@@ -160,11 +216,30 @@ class res_partner(osv.osv):
         if ids == None:
             ids = []
 
-        # membership partner update or create
-        ids = self._web_membership_partner(cr,uid,ids,vals,context=context)
+        # membership_origin_id                    
+        membership_origin_id = datas.get('membership_origin_id', 0)
+        if self._verify_membership_origin(cr,uid,[membership_origin_id],context=context):
+            vals['membership_origin_id'] = membership_origin_id
+
+        # recruiting_organisation_id
+        recruiting_organisation_id = datas.get('recruiting_organisation_id', 0)
+        if not(self._verify_recruiting_organisation(cr,uid,[recruiting_organisation_id],context=context)):
+            datas.pop('recruiting_organisation_id', None)
 
         # convert website membership + subscriptions to product
         product_id = self._web_membership_product(cr,uid,datas['subscriptions'],context=context)
+
+        # renewal product...? , update contact  
+        if datas.get('membership_renewal', False):
+            vals['membership_renewal_product_id'] = product_id
+
+        # override default from website            
+        vals['customer'] = False
+
+        # membership partner update or create
+        _logger.info(ids)
+        _logger.info(vals)
+        ids = self._web_membership_partner(cr,uid,ids,vals,context=context)
 
         methods = {'OGONE':self.create_membership_invoice,
                    'SEPA':self.create_web_membership_mandate_invoice,

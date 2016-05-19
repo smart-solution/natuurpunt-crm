@@ -83,8 +83,23 @@
         <field name="type">form</field>
         <field name="arch" type="xml">
 			<field name="sdd_ref_ids" position="before">
-				<button name="process_rejects" type="object" string="Verwerk Weigeringen"/>
+				<button name="process_rejects" type="object" string="Verwerk Weigeringen" domain="[('reject_processed','=',False)]"/>
+                <field name="reject_processed"/>
 			</field>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_partner_move_line_rejects_form">
+        <field name="name">view.partner.move.line.rejects.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="natuurpunt_crm.view_natuurpunt_crm_partner_form"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='crm_move_ids']/tree//field[@name='reconcile_id']" position="after">
+                <field name="reject_date" readonly="1"/>
+            </xpath>
+
         </field>
     </record>
 

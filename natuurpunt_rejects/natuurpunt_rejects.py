@@ -40,6 +40,14 @@ class account_invoice(osv.osv):
 
 account_invoice()
 
+class account_move_line(osv.osv):
+
+    _inherit = 'account.move.line'
+
+    _columns = {
+        'reject_date': fields.date('Weigering Datum'),
+    }
+
 class account_bank_statement(osv.osv):
 
     _inherit = 'account.bank.statement'
@@ -73,6 +81,7 @@ class account_bank_statement(osv.osv):
         reject_code_obj = self.pool.get('sdd.reject.code')
         move_line_obj = self.pool.get('account.move.line')
         move_obj = self.pool.get('account.move')
+        partner_obj = self.pool.get('res.partner')
 
         for stmt in self.browse(cr, uid, ids):
             for reject in stmt.sdd_ref_ids:
@@ -117,6 +126,21 @@ class account_bank_statement(osv.osv):
                         sql_stat = "delete from payment_line where id = %d" % (payment_line_id, )
                         cr.execute(sql_stat)
 
+                    if invoice_id:
+                        if sdd_reject_count == 0:
+                            invoice_obj.write(cr, uid, invoice_id, {'sdd_reject_count': 1, 'sdd_reject1_id': reject_code, 'sdd_reject1_date': stmt.date, 'sdd_reject1_bankstmt_id': stmt.id}, context=context)
+                        if sdd_reject_count == 1:
+                            invoice_obj.write(cr, uid, invoice_id, {'sdd_reject_count': 2, 'sdd_reject2_id': reject_code, 'sdd_reject2_date': stmt.date, 'sdd_reject2_bankstmt_id': stmt.id}, context=context)
+                        if sdd_reject_count == 2 or immediate_reject:
+                            invoice_obj.write(cr, uid, invoice_id,
+                                              {'definitive_reject': True,
+                                               'sdd_reject_count': 3,
+                                               'sdd_reject3_id': reject_code,
+                                               'sdd_reject3_date': stmt.date,
+                                               'sdd_reject3_bankstmt_id': stmt.id},
+                                              context=context)
+                            self.pool.get('sdd.mandate').write(cr, uid , [reject.sdd_mandate_id.id], {'state':'cancel'})
+
                     if reconcile_id:
                         move_line_ids = move_line_obj.search(cr, uid,[('reconcile_id','=',reconcile_id)])
                         move_line_obj._remove_move_reconcile(cr, uid, move_line_ids, False, context=context)
@@ -124,15 +148,6 @@ class account_bank_statement(osv.osv):
                             if line.move_id.id != move_id:
                                 move_cancel_id = line.move_id.id
 
-                    if invoice_id:
-                        if sdd_reject_count == 0:
-                            invoice_obj.write(cr, uid, invoice_id, {'sdd_reject_count': 1, 'sdd_reject1_id': reject_code, 'sdd_reject1_date': stmt.date, 'sdd_reject1_bankstmt_id': stmt.id}, context=context)
-                        if sdd_reject_count == 1:
-                            invoice_obj.write(cr, uid, invoice_id, {'sdd_reject_count': 2, 'sdd_reject2_id': reject_code, 'sdd_reject2_date': stmt.date, 'sdd_reject2_bankstmt_id': stmt.id}, context=context)
-                        if sdd_reject_count == 2 or immediate_reject:
-                            invoice_obj.write(cr, uid, invoice_id, {'definitive_reject':True, 'sdd_reject_count': 3, 'sdd_reject3_id': reject_code, 'sdd_reject3_date': stmt.date, 'sdd_reject3_bankstmt_id': stmt.id}, context=context)
-                            self.pool.get('sdd.mandate').write(cr, uid , [reject.sdd_mandate_id.id], {'state':'cancel'})
-                             
                     if move_cancel_id:
                         dupl_id = move_obj.copy(cr, uid, move_cancel_id, None, context=context)
                         move_obj.button_cancel(cr, uid, [dupl_id], context=context)
@@ -140,7 +155,7 @@ class account_bank_statement(osv.osv):
                         for dupl_line in move_line_obj.browse(cr, uid, dupl_line_ids):
                             debit = dupl_line.credit
                             credit = dupl_line.debit
-                            sql_stat = 'update account_move_line set debit = %d, credit = %d where id = %d' % (debit, credit, dupl_line.id, )
+                            sql_stat = 'update account_move_line set debit = {:.2f}, credit = {:.2f} where id = {}'.format(debit, credit, dupl_line.id)
                             cr.execute(sql_stat)
                         move_obj.button_validate(cr, uid, [dupl_id], context=context)
                         reconcile_ids = []
@@ -153,9 +168,11 @@ class account_bank_statement(osv.osv):
                                 reconcile_ids.append(line.id)
                         move_line_obj.reconcile(cr, uid, reconcile_ids, 'auto', False, False, False, context=context)
 
+                        move_line_obj.write(cr, uid, reconcile_ids, {'reject_date':datetime.datetime.today().strftime('%Y-%m-%d')})
+
             self.write(cr, uid, [stmt.id], {'reject_processed':True})
-            
-        return True                    
+
+        return True
 
 account_bank_statement()
 

@@ -30,6 +30,7 @@ from openerp import netsvc
 from datetime import datetime
 from openerp.tools import float_compare
 from openerp.report import report_sxw
+from itertools import groupby
 import openerp.addons.decimal_precision as dp
 import logging
 
@@ -111,7 +112,6 @@ class account_invoice(osv.osv):
                     'ref': mv.name.replace('/',''),
                     'partner_id': invoice.partner_id.id,
                     'account_id': jrn.default_debit_account_id.id,
-                    'account_id': invoice.account_id.id,
                     'debit': invoice.residual,
                 }
                 debit_mv_line_id = mv_line_obj.create(cr, uid, debit_mv_line_vals)
@@ -138,13 +138,20 @@ class account_invoice(osv.osv):
                         rec_line_id = line.id
                 # If no recociliation account could be found
                 if not rec_line_id:
-                    raise osv.except_osv(_('Error!'), _('No recociliation account could be found for the journal entry:'%(invoice.move_id.name)))
+                    raise osv.except_osv(_('Error!'), _('No recociliation account could be found for the journal entry: %s'%(invoice.move_id.name)))
 
                 reconcile_ids = [credit_mv_line_id, rec_line_id]
 
                 # Reconcile the journal entry
                 #mv_line_obj.reconcile(cr, uid, reconcile_ids, 'auto', invoice.account_id.id, mv.period_id.id, mv.journal_id.id, context=context)
-                mv_line_obj.reconcile(cr, uid, reconcile_ids, 'auto', False, False, False, context=context)
+                try: 
+                    mv_line_obj.reconcile(cr, uid, reconcile_ids, 'auto', False, False, False, context=context)
+                except osv.except_osv, exc:
+                    args = exc.args
+                    reconcile_details = _('invoice:{}, partner:{}, ids:{}'.format(invoice.number, invoice.partner_id.id, reconcile_ids)) 
+                    except_osv_message = args[1] + ' ' + reconcile_details if args[1] else reconcile_details
+                    raise osv.except_osv(args[0],except_osv_message) 
+
                 logger.info('Diret Debit Invoice Reconciliation done')
 
 account_invoice()
@@ -499,7 +506,6 @@ where res_partner.id = res_partner_bank.partner_id
                 payment_term_id = sql_res['payment_term_id']
                 mandate_id = sql_res['mandate_id']
                 partner_bank_id = sql_res['partner_bank_id']
-
             amount_inv = amount_to_inv - third_payer_amount
             
             inv_org = False
@@ -541,6 +547,7 @@ where res_partner.id = res_partner_bank.partner_id
                 'membership_partner_id': partner.id,
                 'account_id': account_id,
                 'membership_invoice': True,
+                'website_payment': True if ('web' in context) else False,
                 'third_payer_id': third_payer_id,
                 'third_payer_amount': third_payer_amount,
                 'fiscal_position': fpos_id or False,
@@ -573,6 +580,7 @@ where res_partner.id = res_partner_bank.partner_id
             'membership_partner_id',
             'account_id',
             'membership_invoice',
+            'website_payment',
             'third_payer_id',
             'third_payer_amount',
             'fiscal_position',
@@ -602,6 +610,13 @@ where res_partner.id = res_partner_bank.partner_id
             if third_payer_one_time:
                 sql_stat = '''update res_partner set third_payer_processed = True where id = %d''' % (invoice.partner_id.id, )
                 cr.execute(sql_stat)
+            """
+            renewal_prod_id = self._np_membership_renewal_product(cr, uid, invoice.partner_id, context=context)
+            if renewal_prod_id:
+                sql_stat = '''update res_partner set membership_renewal_product_id = %d where id = %d''' % (renewal_prod_id[0], invoice.partner_id.id, )
+            else:
+                sql_stat = '''update res_partner set membership_renewal_product_id = %d where id = %d''' % (product_id, invoice.partner_id.id, )
+            """
             sql_stat = '''update res_partner set membership_renewal_product_id = %d where id = %d''' % (product_id, invoice.partner_id.id, )
             cr.execute(sql_stat)
 
@@ -721,8 +736,9 @@ class banking_export_sdd_wizard(orm.TransientModel):
                 }, context=context)
 
             mandate_ids = [line.sdd_mandate_id.id for line in order.line_ids]
+            unique_mandate_ids = [k for k, _ in groupby(sorted(mandate_ids, key=lambda x: mandate_ids.index(x)))]
             self.pool['sdd.mandate'].write(
-                cr, uid, mandate_ids,
+                cr, uid, unique_mandate_ids,
                 {'last_debit_date': datetime.today().strftime('%Y-%m-%d')},
                 context=context)
             wf_service.trg_validate(uid, 'payment.order', order.id, 'done', cr)

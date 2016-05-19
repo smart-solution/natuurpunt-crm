@@ -9,6 +9,9 @@
 			<xpath expr="//field[@name='membership_renewal_product_id']" position="attributes">				
 				<attribute name="domain">[('membership_product','=',True)]</attribute>
 			</xpath>
+            <field name="free_member" position="after">
+                <field name="membership_pay_date" attrs="{'invisible': [('membership_pay_date', '==', False)]}"/>
+            </field>
     	</field>
 	</record>
    </data>

@@ -13,5 +13,28 @@
 		</field>
 	</record>
 
+   <record model="ir.ui.view" id="view_natuurpunt_account_customer_invoice_cash_form">
+        <field name="name">view.natuurpunt_account.customer.invoice.cash.form</field>
+        <field name="model">account.invoice</field>
+         <field name="priority">1</field>
+        <field name="inherit_id" ref="natuurpunt_membership.view_natuurpunt_account_customer_invoice2_form"/>
+        <field name="arch" type="xml">
+        <button name="invoice_pay_customer" position="replace">
+            <button name="invoice_pay_customer" type="object" string="Cash Betaling" attrs="{'invisible': [('type', 'not in', ('out_invoice','out_refund'))]}"/>
+        </button>
+        </field>
+    </record> 
+
+    <record model="ir.ui.view" id="view_natuurpunt_crm_partner_form">
+        <field name="name">view.natuurpunt.crm.partner.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="natuurpunt_crm.view_natuurpunt_crm_partner_form" />
+        <field name="arch" type="xml">
+            <field name="recruiting_organisation_id" position="replace">
+                <field name="recruiting_organisation_id" domain="[('organisation_type_id','in',['Afdeling','Werkgroep','Bezoekerscentrum','Regionaal samenwerkingsverband'])]"/>
+            </field>
+        </field>
+    </record>
+
     </data>
 </openerp>

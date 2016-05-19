@@ -16,24 +16,4 @@
 #
 ############################################################################## 
 
-{
-    "name" : "natuurpunt_crm_function",
-    "version" : "1.0",
-    "author" : "Natuurpunt (joeri.belis@natuurpunt.be)",
-    "website" : "www.natuurpunt.be",
-    "category" : "Membership",
-    "description": """
-    extend natuurpunt_crm function functionality 
-    - fix name in res_organisation_function
-    - check unique function
-    - check if function is available for organisation structure
-    - remove function tab on res_partner view when partner is organisation structure
-    - method filter on organisation_function_child_ids
-""",
-    "depends" : ["natuurpunt_crm",],
-    "data" : ["natuurpunt_crm_function_view.xml",],
-    "init_xml" : [],
-    "update_xml" : [],
-    "active": False,
-    "installable": True
-}
+import natuurpunt_web_event

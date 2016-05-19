@@ -52,6 +52,7 @@ class donation_cancel_reason(osv.osv):
 donation_cancel_reason()
 
 class donation_partner_account(osv.osv):
+
     _name = 'donation.partner.account'
 
     def onchange_analacct(self, cr, uid, ids, analytic_account_id, product_id, context=None):
@@ -66,7 +67,7 @@ class donation_partner_account(osv.osv):
         return {'value':res}
 
     _columns = {
-		'partner_id': fields.many2one('res.partner', 'Partner', select=True),
+	'partner_id': fields.many2one('res.partner', 'Partner', select=True),
         'analytic_account_id': fields.many2one('account.analytic.account', 'Analytic Account', select=True),
         'donation_amount': fields.float('Gift Bedrag'),
         'donation_start': fields.date('Startdatum Gift'),
@@ -80,12 +81,18 @@ class donation_partner_account(osv.osv):
         'product_id': fields.many2one('product.product', 'Product', select=True),
     }
 
+    _defaults = {
+        'interval_number': 1,
+    }
+
+    def write(self, cr, uid, ids, vals, context=None):
+        if 'donation_cancel' in vals and vals['donation_cancel']:
+            vals['next_invoice_date'] = False
+        return super(donation_partner_account, self).write(cr, uid, ids, vals=vals, context=context)
+
     def _create_donation_invoices(self, cr, uid, context=None):
         logger.info('Searching for donations that must be invoiced')
         date_invoice = datetime.today()
-#        expire_limit_date = datetime.today() + \
-#            relativedelta(months=-NUMBER_OF_UNUSED_MONTHS_BEFORE_EXPIRY)
-#        expire_limit_date_str = expire_limit_date.strftime('%Y-%m-%d')
         donation_ids = self.search(cr, uid, [
             '|',
             ('next_invoice_date', '=', False),
@@ -94,6 +101,7 @@ class donation_partner_account(osv.osv):
             ('donation_cancel', '=', False),
             ], context=context)
         if donation_ids:
+            logger.info('Found %s donation invoices to create'%(len(donation_ids)))
             self.create_donation_invoice(cr, uid, donation_ids, product_id=None, datas=None, context=context)
         else:
             logger.info('0 donation invoices created')
@@ -112,6 +120,8 @@ class donation_partner_account(osv.osv):
 
         invoice_list = []
         for donation in self.browse(cr, uid, ids, context=context):
+            logger.info('DONATION ID: %s'%(donation.id))
+            logger.info('DONATION PARTNER ID: %s'%(donation.partner_id.id))
             if context == None:
                 context = {}
                 context['uid'] = 1
@@ -202,6 +212,7 @@ order by res_partner_bank.sequence''' % (partner_id, )
 
                 today = datetime.today()
                 datedue = datetime.today() + relativedelta(days=30)
+                period_id =  self.pool.get('account.period').find(cr, uid, today)
 
                 invoice_id = invoice_obj.create(cr, uid, {
                     'partner_id': partner_id,
@@ -219,6 +230,7 @@ order by res_partner_bank.sequence''' % (partner_id, )
                     'donation_id': donation.id,
                     'company_id': company_id,
                     'journal_id': journal_id,
+                    'period_id': period_id and period_id[0] or False
     #                'invoice_line': [(0, 0, line_value)],
                     }, context=dict(context, no_store_function=True)) # Don't store function fields inside the loop.
 
@@ -231,7 +243,6 @@ order by res_partner_bank.sequence''' % (partner_id, )
                 invoice_obj.check_bba(cr, uid, invoice_list, context=context)
                 wf_service = netsvc.LocalService('workflow')
                 wf_service.trg_validate(uid, 'account.invoice', invoice_id, 'invoice_open', cr) 
-                cr.commit()
 
                 if donation.interval_type == 'D':
                     next_invoice_date = datetime.today() + relativedelta(days=donation.interval_number)
@@ -242,9 +253,13 @@ order by res_partner_bank.sequence''' % (partner_id, )
                 if donation.interval_type == 'J':
                     next_invoice_date = datetime.today() + relativedelta(years=donation.interval_number)
 
-                last_invoice_date = datetime.today()
+                last_invoice_date = datetime.today().strftime('%Y-%m-%d')
 
-                self.write(cr, uid, donation.id, {'last_invoice_date': last_invoice_date, 'next_invoice_date': next_invoice_date}, context=context)
+                # Do not set a next invoice date if after the end date
+                if donation.donation_end and time.strftim(donation.donation_end, '%Y%') <= last_invoice_date:
+                    self.write(cr, uid, donation.id, {'last_invoice_date': last_invoice_date, 'next_invoice_date': False}, context=context)
+                else:
+                    self.write(cr, uid, donation.id, {'last_invoice_date': last_invoice_date, 'next_invoice_date': next_invoice_date}, context=context)
 
                 donation_line_id = donation_line_obj.create(cr, uid, {
                     'partner_id': partner_id,
@@ -301,6 +316,7 @@ class donation_donation_line(osv.osv):
 	    'date_invoice': fields.date('Datum Factuur'),
 	    'amount_total': fields.float('Bedrag'),
 	    'analytic_account_id': fields.many2one('account.analytic.account', 'Analytic Account', select=True),
+            'state': fields.related('invoice_id', 'state', string='State', type='char'),
     }
 
     _order = 'date_invoice desc'
@@ -322,7 +338,7 @@ class res_partner(osv.osv):
 
     _columns = {
         'donation_ids': fields.one2many('donation.partner.account', 'partner_id', 'Giften'),
-        'donation_line_ids': fields.one2many('donation.donation.line', 'partner_id', 'Giftfacturen'),
+        'donation_line_ids': fields.one2many('donation.donation.line', 'partner_id', 'Giftfacturen', domain=[('state','in',('draft','open','paid'))]),
     }
 
 res_partner()
@@ -373,15 +389,15 @@ class sdd_add_payment(osv.osv_memory):
 # ,('invoice_line_id.invoice_id.payment_ids','=',False)
         for order in self.browse(cr, uid, ids, context):
             if order.membership_new:
-                move_ids = move_obj.search(cr, uid, [('invoice_line_id.invoice_id.membership_invoice', '=', True),('invoice_line_id.invoice_id.membership_renewal','=',False),('invoice_line_id.invoice_id.sdd_mandate_id','!=',False),('invoice_line_id.invoice_id.sdd_mandate_id.state','=','valid'),('reconcile_id','=',False),('statement_id','=',False),('invoice.type','=','out_invoice'),('invoice.state','=','open'),('invoice_line_id.invoice_id.partner_id.country_id.id','=',21)])
+                move_ids = move_obj.search(cr, uid, [('invoice_line_id.invoice_id.membership_invoice', '=', True),('invoice_line_id.invoice_id.membership_renewal','=',False),('invoice_line_id.invoice_id.sdd_mandate_id','!=',False),('invoice_line_id.invoice_id.sdd_mandate_id.state','=','valid'),('reconcile_id','=',False),('statement_id','=',False),('invoice.type','=','out_invoice'),('invoice.state','=','open')])
                 comm = 'Lidmaatschap'
             else:
                 if order.membership_renewal:
-                    move_ids = move_obj.search(cr, uid, [('invoice_line_id.invoice_id.membership_invoice', '=', True),('invoice_line_id.invoice_id.membership_renewal','=',True),('invoice_line_id.invoice_id.sdd_mandate_id','!=',False),('invoice_line_id.invoice_id.sdd_mandate_id.state','=','valid'),('reconcile_id','=',False),('statement_id','=',False),('invoice.type','=','out_invoice'),('invoice.state','=','open'),('invoice_line_id.invoice_id.partner_id.country_id.id','=',21)])
+                    move_ids = move_obj.search(cr, uid, [('invoice_line_id.invoice_id.membership_invoice', '=', True),('invoice_line_id.invoice_id.membership_renewal','=',True),('invoice_line_id.invoice_id.sdd_mandate_id','!=',False),('invoice_line_id.invoice_id.sdd_mandate_id.state','=','valid'),('reconcile_id','=',False),('statement_id','=',False),('invoice.type','=','out_invoice'),('invoice.state','=','open')])
                     comm = 'Lidmaatschap'
                 else:
                     if order.donation:
-                        move_ids = move_obj.search(cr, uid, [('invoice_line_id.invoice_id.donation_invoice', '=', True),('invoice_line_id.invoice_id.sdd_mandate_id','!=',False),('invoice_line_id.invoice_id.sdd_mandate_id.state','=','valid'),('reconcile_id','=',False),('statement_id','=',False),('invoice.type','=','out_invoice'),('invoice.state','=','open'),('invoice_line_id.invoice_id.partner_id.country_id.id','=',21)])
+                        move_ids = move_obj.search(cr, uid, [('invoice_line_id.invoice_id.donation_invoice', '=', True),('invoice_line_id.invoice_id.sdd_mandate_id','!=',False),('invoice_line_id.invoice_id.sdd_mandate_id.state','=','valid'),('reconcile_id','=',False),('statement_id','=',False),('invoice.type','=','out_invoice'),('invoice.state','=','open')])
                         comm = 'Gift'
 
             line2bank = move_obj.line2bank(cr, uid, move_ids, None, context)
@@ -395,7 +411,6 @@ class sdd_add_payment(osv.osv_memory):
                         date_to_pay = line.date_maturity
                     elif order.payment_order_id.date_prefered == 'fixed':
                         date_to_pay = order.payment_order_id.date_scheduled
-                    print 'ADDED:', line.invoice.number
                     order_line_obj.create(cr, uid,{
                             'move_line_id': line.id,
                             'amount_currency': line.amount_to_pay,
@@ -409,31 +424,9 @@ class sdd_add_payment(osv.osv_memory):
                         }, context=context)
                     counter += 1
                     counter1000 += 1
-                    if counter1000 == 1000:
-                        print 'Nbr of lines added to payment order: ', counter
+#                    if counter1000 == 1000:
+#                        logger.info('Nbr of lines added to payment order: ',counter)
 
-#                order_line_id = order_line_obj.create(cr, uid, {
-#                    'amount': move.amount_residual,
-#                    'amount_currency': move.amount_residual_currency,
-#                    'bank_id': move.invoice_line_id.invoice_id.partner_bank_id.id,
-#                    'communication': comm,
-#                    'communication2': move.invoice_line_id.invoice_id.reference,
-#                    'company_currency': 1,
-#                    'company_id': move.company_id.id,
-#                    'currency': 1,
-#                    'date': datetime.today().strftime('%Y-%m-%d'),
-#                    'move_line_id': move.id,
-#                    'name': 'Test',
-#                    'order_id': order.payment_order_id.id,
-#                    'partner_id': move.partner_id.id,
-#                    'payment_state': 'draft',
-#                    'priority': 'NORM',
-#                    'sdd_mandate_id': move.invoice_line_id.invoice_id.sdd_mandate_id.id,
-#                    'state': 'structured',
-#                    'storno': False,
-#                    'struct_communication_type': 'ISO',
-#                    }, context=context)  
-         
         return {'type':'ir.actions.act_window_close','context': context,}
 
     def onchange_payment_type(self, cr, uid, ids, payment, membership_new, membership_renewal, donation, context=None):

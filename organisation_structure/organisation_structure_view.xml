@@ -314,16 +314,16 @@
 		</form>
 	    </field>
         </record>
-
+		<!--
         <record model="ir.actions.act_window" id="action_organisation_relation_form">
             <field name="name">Organisation Relations</field>
             <field name="res_model">res.organisation.relation</field>
             <field name="view_mode">tree,form</field>
             <field name="view_type">form</field>
         </record>
-
+ 
         <menuitem name="Organisatierelaties" parent="base.menu_organisation_organisation" id="base.organisation_organisation_relations" sequence="10" action="action_organisation_relation_form"/>
-
+        --> 
         <record id="view_organisation_function_tree" model="ir.ui.view">
             <field name='name'>view.organisation.function.tree</field>
             <field name='model'>res.organisation.function</field>
@@ -441,7 +441,7 @@
 				    <field name="ref"/>
 				</tree>
 			    </field>
-			    <field name="organisation_relation_ids" context="{'default_partner_id':active_id, 'default_name':active_id, 'form_view_ref' : 'organisation_structure.organisation_partner_form'}" attrs="{'invisible': [('display_relations_horizontal','=',False)]}">			
+			    <field name="organisation_relation_ids" context="{'default_partner_id':active_id, 'default_name':active_id, 'form_view_ref' : 'organisation_structure.organisation_partner_form'}" attrs="{'invisible': [('display_relations_horizontal','=',False)]}" domain="[('organisation_type_id','!=',False)]">
 				<tree string="Relaties">
 				    <field name="organisation_type_id"/>
 				    <field name="name" context="{'form_view_ref' : 'organisation_structure.organisation_partner_form'}"/>

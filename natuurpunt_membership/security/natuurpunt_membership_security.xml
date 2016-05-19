@@ -1,14 +1,22 @@
 <?xml version="1.0" ?>
 <openerp>
     <data>
+        <!-- Use this group to hide/show membrship fields to basic contacten user -->
+        <!-- To hide/show fields in the tabs,use the groups assicated with that tab -->
         <record id="group_natuurpunt_membership_user" model="res.groups">
-            <field name="name">Natuurpunt Lidmaatschap User</field>
+          <field name="name">Natuurpunt Lidmaatschap User</field>
+          <field name="category_id" ref="base.module_category_customer_relationship_management"/>
+        </record>
+
+        <record id="group_natuurpunt_membership_power_user" model="res.groups">
+            <field name="name">Natuurpunt Lidmaatschap Power User</field>
+            <field name="implied_ids" eval="[(4, ref('group_natuurpunt_membership_user'))]"/>
              <field name="category_id" ref="base.module_category_customer_relationship_management"/>
         </record>
-        
+
         <record id="group_natuurpunt_membership_manager" model="res.groups">
             <field name="name">Natuurpunt Lidmaatschap Manager</field>
-            <field name="implied_ids" eval="[(4, ref('group_natuurpunt_membership_user'))]"/>
+            <field name="implied_ids" eval="[(4, ref('group_natuurpunt_membership_power_user'))]"/>
              <field name="category_id" ref="base.module_category_customer_relationship_management"/>
         </record>
 

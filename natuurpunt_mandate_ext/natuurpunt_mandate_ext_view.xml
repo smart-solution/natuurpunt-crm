@@ -1,6 +1,70 @@
 <?xml version="1.0"?>
 <openerp>
     <data>
+
+        <record id="wizard_find_partner_to_renew_form" model="ir.ui.view">
+            <field name="name">wizard.find.partner.to.renew.form</field>
+            <field name="model">wizard.partner.to.renew</field>
+            <field name="arch" type="xml">
+                <form string="Lidmaatschappen te hernieuwen" version="7.0">
+                    <p class="oe_grey">
+                    Lidmaatschappen te hernieuwen
+                    </p>
+                    <field name="end_date_membership"/>
+                    <footer>
+                        <button string="Memberships to renew" name="find_members_to_renew" type="object" default_focus="1" class="oe_highlight"/>
+                        or
+                        <button string="Cancel" class="oe_link" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <act_window id="action_find_members_to_renew"
+        name="Lidmaatschappen te hernieuwen"
+            res_model="wizard.partner.to.renew" 
+            view_mode="form" 
+            view_type="form"
+            view_id="wizard_find_partner_to_renew_form"
+            target="new" 
+        />
+
+     <menuitem name="Lidmaatschappen te hernieuwen" id="menu_find_members_to_renew" parent="base.menu_report_association" action="action_find_members_to_renew" sequence="2"/>
+
+        <record id="view_membership_renew_view" model="ir.ui.view">
+            <field name="name">membership.renew.view.form</field>
+            <field name="model">membership.renew</field>
+            <field name="arch" type="xml">
+                <form string="Lidmaatschappen hernieuwen" version="7.0">
+                    <group>
+                        <label string="Lidmaatschappen hernieuwen ?"/>
+                    </group>
+                    <footer>
+                        <button string="Renew Membership" name="membership_renew" type="object" class="oe_highlight"  />
+                        or
+                        <button string="Cancel" class="oe_link" special="cancel" />
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_membership_renew_view" model="ir.actions.act_window">
+            <field name="name">Renew Membership</field>
+            <field name="res_model">membership.renew</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_id" ref="view_membership_renew_view"/>
+            <field name="target">new</field>
+        </record>
+
+        <act_window name="Renew Membership"
+            res_model="membership.renew"
+            src_model="res.partner"
+            multi="True"
+            key2="client_action_multi"
+            view_mode="form"
+            id="action_membership_renew_view"/>
+
     
     </data>
 </openerp>
