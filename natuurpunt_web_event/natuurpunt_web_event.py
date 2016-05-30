@@ -200,11 +200,6 @@ class product_product(osv.osv):
 class res_partner(osv.osv):
     _inherit = 'res.partner'
     
-    def _web_event_product(self,cr,uid,context=None):    
-        product_obj = self.pool.get('product.product')
-        product_ids = product_obj.search(cr, uid, [('event_product', '=', True)])        
-        return product_ids
-
     def create_event_invoice(self, cr, uid, ids, selected_product_id=None, datas=None, context=None):
         invoice_obj = self.pool.get('account.invoice')
         invoice_line_obj = self.pool.get('account.invoice.line')
@@ -218,15 +213,11 @@ class res_partner(osv.osv):
                 raise osv.except_osv(_('Error!'), _("Need event to make the invoice."))
 
             #analytisch dim
-            analytic_dimension_1_id = None # TODO config accounting
+            analytic_dimension_1_id = None
             analytic_dimension_2_id = None
             analytic_dimension_3_id = None
-            product = self.pool.get('product.product').read(cr, uid, selected_product_id, ['analytic_dimension_1_id','analytic_dimension_2_id','analytic_dimension_3_id'], context=context)
+            product = self.pool.get('product.product').read(cr, uid, selected_product_id, [], context=context)
             product_id = product[0].get('id',False)
-            if product and product[0].get('analytic_dimension_1_id',False):
-                analytic_dimension_1_id = product[0].get('analytic_dimension_1_id',False)[0] if product[0].get('analytic_dimension_1_id',False) else False
-                analytic_dimension_2_id = product[0].get('analytic_dimension_2_id',False)[0] if product[0].get('analytic_dimension_2_id',False) else False
-                analytic_dimension_3_id = product[0].get('analytic_dimension_3_id',False)[0] if product[0].get('analytic_dimension_3_id',False) else False
             quantity = 1
             amount = datas.get('amount', 0.0)
             invoice_id_list = []
@@ -276,7 +267,6 @@ class res_partner(osv.osv):
 
             for partner in self.browse(cr, uid, ids, context=context):
                 
-                account_id = partner.property_account_receivable and partner.property_account_receivable.id or False
                 fpos_id = partner.property_account_position and partner.property_account_position.id or False
                 partner_id = partner.id
                 addr = self.address_get(cr, uid, [partner_id], ['invoice'])
@@ -286,11 +276,20 @@ class res_partner(osv.osv):
                 ref_type = 'bba'
                 reference = invoice_obj.generate_bbacomm(cr, uid, ids, 'out_invoice', 'bba', partner_id, '', context={})
                 referenc2 = reference['value']['reference']
+
+                journal_obj = self.pool.get('account.journal')
+                journal_id = journal_obj.search(cr, uid, [('code', '=', 'CUR')])
+                if len(journal_id) == 0:
+                    raise osv.except_osv(_('Error!'),_("Can't find required journal 'CUR'."))
+                if len(journal_id) > 1:
+                    raise osv.except_osv(_('Error!'),_("More than one journal 'CUR' found."))
+                journal = journal_obj.browse(cr, uid, journal_id)[0]
             
                 datedue = datetime.date.today()
                 invoice_id = invoice_obj.create(cr, uid, {
+                    'journal_id': journal.id, 
                     'partner_id': partner_id,
-                    'account_id': account_id,                
+                    'account_id': journal.membership_account_id.id, # custom field to store account with journal
                     'event_invoice': True,
                     'fiscal_position': fpos_id or False,
                     'reference_type': ref_type,
@@ -364,8 +363,9 @@ class res_partner(osv.osv):
         if not ids:
             ids.append(self.create(cr,uid,vals,context=context))            
 
-        # get event product for vzw educatie
-        product_id = self._web_event_product(cr, uid, context=None) # 239
+        # get event product for natuurpunt CVN
+        product_obj = self.pool.get('product.product')
+        product_id = product_obj.search(cr, uid, [('event_product', '=', True)])
         assert(len(product_id) == 1)
         
         return self.create_event_invoice(cr,uid,ids,selected_product_id=product_id,datas=datas,context=context)
