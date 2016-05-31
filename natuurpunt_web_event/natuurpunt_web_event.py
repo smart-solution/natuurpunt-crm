@@ -133,6 +133,8 @@ class account_invoice(osv.osv):
     def validate_event_payment(self, cr, uid, ids, context=None):
         mv_obj = self.pool.get('account.move')
         mv_line_obj = self.pool.get('account.move.line')
+        acc_analytic_obj = self.pool.get('account.analytic.account')
+
         for invoice in self.browse(cr, uid, ids, context):
 
             jrn_obj = self.pool.get('account.journal')
@@ -156,13 +158,18 @@ class account_invoice(osv.osv):
                'debit': invoice.residual,
             }
             debit_mv_line_id = mv_line_obj.create(cr, uid, debit_mv_line_vals)
+            
+            # event custom
+            acc_analytic_ids = acc_analytic_obj.search(cr, uid, [('code', '=', 'I07-02')])
+            acc_analytic = acc_analytic_obj.browse(cr, uid, acc_analytic_ids[0])
 
             credit_mv_line_vals = {
                'move_id': mv_id,
                'name': invoice.number,
                'ref': mv.name.replace('/',''),
                'partner_id': invoice.partner_id.id,
-               'account_id': invoice.account_id.id,
+               'account_id': jrn.default_credit_account_id.id,
+               'analytic_dimension_1_id': acc_analytic.id,
                'credit': invoice.residual,
                'quantity': 1,
             }
@@ -176,9 +183,10 @@ class account_invoice(osv.osv):
             if not rec_line_id:
                 raise osv.except_osv(_('Error!'), _('No recociliation account could be found for the journal entry:'%(invoice.move_id.name)))
 
-            reconcile_ids = [credit_mv_line_id, rec_line_id]
+            #reconcile_ids = [credit_mv_line_id, rec_line_id]
             # Reconcile the journal entry
-            return mv_line_obj.reconcile(cr, uid, reconcile_ids, 'auto', False, False, False, context=context)
+            #return mv_line_obj.reconcile(cr, uid, reconcile_ids, 'auto', False, False, False, context=context)
+            return True
 
 account_invoice()
 
@@ -284,12 +292,14 @@ class res_partner(osv.osv):
                 if len(journal_id) > 1:
                     raise osv.except_osv(_('Error!'),_("More than one journal 'CUR' found."))
                 journal = journal_obj.browse(cr, uid, journal_id)[0]
+                
+                account_id = partner.property_account_receivable and partner.property_account_receivable.id or False
             
                 datedue = datetime.date.today()
                 invoice_id = invoice_obj.create(cr, uid, {
                     'journal_id': journal.id, 
                     'partner_id': partner_id,
-                    'account_id': journal.membership_account_id.id, # custom field to store account with journal
+                    'account_id': account_id,
                     'event_invoice': True,
                     'fiscal_position': fpos_id or False,
                     'reference_type': ref_type,
