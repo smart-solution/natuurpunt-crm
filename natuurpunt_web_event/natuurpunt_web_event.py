@@ -24,6 +24,22 @@ import time
 from openerp import netsvc
 from tools.translate import _
 
+def account_configurator(cr,uid,method=False):
+    account_config = {
+       'account_id' : '580200' if method == 'OGONE' else '740150',
+       'analytic_dimension_1_id' : False if method == 'OGONE' else 'I07-02',
+    }        
+    def line_value(obj,column):
+        code = account_config[column] if column in account_config else False
+        if code:
+           ids = obj.search(cr, uid, [('code','=',code)])
+           if not ids:
+              raise osv.except_osv(_('Error!'), _('Event account configurator error'%(column)))
+           return obj.browse(cr, uid, ids[0]).id
+        else:
+           return False
+    return line_value
+
 class event_event(osv.osv):
     _inherit = 'event.event'
     
@@ -159,17 +175,13 @@ class account_invoice(osv.osv):
             }
             debit_mv_line_id = mv_line_obj.create(cr, uid, debit_mv_line_vals)
             
-            # event custom
-            acc_analytic_ids = acc_analytic_obj.search(cr, uid, [('code', '=', 'I07-02')])
-            acc_analytic = acc_analytic_obj.browse(cr, uid, acc_analytic_ids[0])
-
             credit_mv_line_vals = {
                'move_id': mv_id,
                'name': invoice.number,
                'ref': mv.name.replace('/',''),
                'partner_id': invoice.partner_id.id,
                'account_id': jrn.default_credit_account_id.id,
-               'analytic_dimension_1_id': acc_analytic.id,
+               'analytic_dimension_1_id': account_configurator(cr,uid)(acc_analytic_obj,'analytic_dimension_1_id'),
                'credit': invoice.residual,
                'quantity': 1,
             }
@@ -213,6 +225,8 @@ class res_partner(osv.osv):
         invoice_line_obj = self.pool.get('account.invoice.line')
         invoice_tax_obj = self.pool.get('account.invoice.tax')
         event_obj = self.pool.get('event.event')
+        acc_obj = self.pool.get('account.account')
+        acc_analytic_obj = self.pool.get('account.analytic.account')
 
         try:
             #event -> company
@@ -220,14 +234,12 @@ class res_partner(osv.osv):
             if not event_id:
                 raise osv.except_osv(_('Error!'), _("Need event to make the invoice."))
 
-            #analytisch dim
-            analytic_dimension_1_id = None
-            analytic_dimension_2_id = None
-            analytic_dimension_3_id = None
+            line_value_config = account_configurator(cr,uid,datas['method'])
             product = self.pool.get('product.product').read(cr, uid, selected_product_id, [], context=context)
             product_id = product[0].get('id',False)
             quantity = 1
             amount = datas.get('amount', 0.0)
+            method = datas['method']
             invoice_id_list = []
             if type(ids) in (int, long,):
                 ids = [ids]
@@ -253,9 +265,8 @@ class res_partner(osv.osv):
                 if line_value.get('invoice_line_tax_id', False):
                     tax_tab = [(6, 0, line_value['invoice_line_tax_id'])]
                     line_value['invoice_line_tax_id'] = tax_tab
-                line_value['analytic_dimension_1_id'] = analytic_dimension_1_id
-                line_value['analytic_dimension_2_id'] = analytic_dimension_2_id
-                line_value['analytic_dimension_3_id'] = analytic_dimension_3_id
+                line_value['account_id'] = line_value_config(acc_obj,'account_id')
+                line_value['analytic_dimension_1_id'] = line_value_config(acc_analytic_obj,'analytic_dimension_1_id')
                 return line_value
 
             def register_event():
