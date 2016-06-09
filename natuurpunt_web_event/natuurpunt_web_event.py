@@ -40,6 +40,20 @@ def account_configurator(cr,uid,method=False):
            return False
     return line_value
 
+def check_validate_event_ogone_payment(invoice,jrn):
+    """
+    first check the state of the invoice
+    to check if an event invoice can be paid via OGONE, check the move lines
+    as the invoice state is only changed when we process the bank statement
+    """
+    if invoice.state == 'paid':
+        return True
+    else:
+        for line in invoice.move_id.line_id:
+            if line.account_id == jrn.default_credit_account_id:
+                return True
+    return False
+
 class event_event(osv.osv):
     _inherit = 'event.event'
     
@@ -72,7 +86,7 @@ class account_invoice(osv.osv):
         """
         registration_obj = self.pool.get('event.registration')
         registration_ids = registration_obj.search(cr, uid, [('invoice_id', 'in', ids)])
-        if mode == 'confirm':            
+        if mode == 'confirm':
             registration_obj.confirm_registration(cr, uid, registration_ids, context=context)
         elif mode == 'cancel':
             registration_obj.write(cr, uid, registration_ids, {'state': 'cancel'})            
@@ -151,54 +165,67 @@ class account_invoice(osv.osv):
         mv_line_obj = self.pool.get('account.move.line')
         acc_analytic_obj = self.pool.get('account.analytic.account')
 
-        for invoice in self.browse(cr, uid, ids, context):
+        try:
+            for invoice in self.browse(cr, uid, ids, context):
+                
+                jrn_obj = self.pool.get('account.journal')
+                jrn_ids = jrn_obj.search(cr, uid, [('code','=','OGON'),])
+                jrn = jrn_obj.browse(cr, uid, jrn_ids[0])
+                
+                if mv_obj.search(cr,uid,[('journal_id','=',jrn.id),('ref','=',invoice.number)]):
+                   raise osv.except_osv(_('Error!'), _("OGONE journal entry already exists:"%(invoice.move_id.name)))
+               
+                if check_validate_event_ogone_payment(invoice, jrn):
+                    raise osv.except_osv(_('Error!'), _("Event invoice can not be paid with OGONE."))
 
-            jrn_obj = self.pool.get('account.journal')
-            jrn_ids = jrn_obj.search(cr, uid, [('code','=','OGON'),])
-            jrn = jrn_obj.browse(cr, uid, jrn_ids[0])
+                self._sync_registration(cr, uid, ids, mode='confirm', context=context)
 
-            mv_vals = {
-                'journal_id': jrn.id,
-                'date': datetime.date.today(),
-                'company_id': invoice.company_id.id,
-            }
-            mv_id = mv_obj.create(cr, uid, mv_vals)
-            mv = mv_obj.browse(cr, uid, mv_id)
+                mv_vals = {
+                    'ref': invoice.number,
+                    'journal_id': jrn.id,
+                    'date': datetime.date.today(),
+                    'company_id': invoice.company_id.id,
+                }
+                mv_id = mv_obj.create(cr, uid, mv_vals)
+                mv = mv_obj.browse(cr, uid, mv_id)
 
-            debit_mv_line_vals = {
-               'move_id': mv_id,
-               'name': invoice.number,
-               'ref': mv.name.replace('/',''),
-               'partner_id': invoice.partner_id.id,
-               'account_id': jrn.default_debit_account_id.id,
-               'debit': invoice.residual,
-            }
-            debit_mv_line_id = mv_line_obj.create(cr, uid, debit_mv_line_vals)
-            
-            credit_mv_line_vals = {
-               'move_id': mv_id,
-               'name': invoice.number,
-               'ref': mv.name.replace('/',''),
-               'partner_id': invoice.partner_id.id,
-               'account_id': jrn.default_credit_account_id.id,
-               'analytic_dimension_1_id': account_configurator(cr,uid)(acc_analytic_obj,'analytic_dimension_1_id'),
-               'credit': invoice.residual,
-               'quantity': 1,
-            }
-            credit_mv_line_id = mv_line_obj.create(cr, uid, credit_mv_line_vals)
-            
-            mv_obj.button_validate(cr, uid, [mv_id], context=context)
-            rec_line_id = False
-            for line in invoice.move_id.line_id:
-                if line.account_id == invoice.account_id:
-                    rec_line_id = line.id
-            if not rec_line_id:
-                raise osv.except_osv(_('Error!'), _('No recociliation account could be found for the journal entry:'%(invoice.move_id.name)))
+                debit_mv_line_vals = {
+                   'move_id': mv_id,
+                   'name': invoice.number,
+                   'ref': mv.name.replace('/',''),
+                   'partner_id': invoice.partner_id.id,
+                   'account_id': jrn.default_debit_account_id.id,
+                   'debit': invoice.residual,
+                }
+                debit_mv_line_id = mv_line_obj.create(cr, uid, debit_mv_line_vals)
+                
+                credit_mv_line_vals = {
+                   'move_id': mv_id,
+                   'name': invoice.number,
+                   'ref': mv.name.replace('/',''),
+                   'partner_id': invoice.partner_id.id,
+                   'account_id': jrn.default_credit_account_id.id,
+                   'analytic_dimension_1_id': account_configurator(cr,uid)(acc_analytic_obj,'analytic_dimension_1_id'),
+                   'credit': invoice.residual,
+                   'quantity': 1,
+                }
+                credit_mv_line_id = mv_line_obj.create(cr, uid, credit_mv_line_vals)
+                
+                mv_obj.button_validate(cr, uid, [mv_id], context=context)
+                rec_line_id = False
+                for line in invoice.move_id.line_id:
+                    if line.account_id == invoice.account_id:
+                        rec_line_id = line.id
+                if not rec_line_id:
+                    raise osv.except_osv(_('Error!'), _('No recociliation account could be found for the journal entry:'%(invoice.move_id.name)))
 
-            #reconcile_ids = [credit_mv_line_id, rec_line_id]
-            # Reconcile the journal entry
-            #return mv_line_obj.reconcile(cr, uid, reconcile_ids, 'auto', False, False, False, context=context)
-            return True
+                #reconcile_ids = [credit_mv_line_id, rec_line_id]
+                # Reconcile the journal entry
+                #return mv_line_obj.reconcile(cr, uid, reconcile_ids, 'auto', False, False, False, context=context)
+        except:
+            return {'move_id':0}
+        else:
+            return {'move_id':mv_id}
 
 account_invoice()
 
