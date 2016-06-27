@@ -296,8 +296,9 @@ class res_partner(osv.osv):
         res['street_id'] = False
         res['zip_id'] = False
         res['state_id'] = False
-        if not crab_used:
-            res['country_id'] = False
+# Fix ticket #1929, commented out next two lines
+#         if not crab_used:
+#             res['country_id'] = False
         return {'value':res}
 
     def onchange_no_address(self, cr, uid, ids, no_address, country_id, context=None):
