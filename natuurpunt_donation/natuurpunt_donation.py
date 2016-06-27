@@ -338,7 +338,9 @@ class res_partner(osv.osv):
 
     _columns = {
         'donation_ids': fields.one2many('donation.partner.account', 'partner_id', 'Giften'),
-        'donation_line_ids': fields.one2many('donation.donation.line', 'partner_id', 'Giftfacturen', domain=[('state','in',('draft','open','paid'))]),
+        #'donation_line_ids': fields.one2many('donation.donation.line', 'partner_id', 'Giftfacturen', domain=[('state','in',('draft','open','paid'))]),
+        # performance issue revert - fix todo
+        'donation_line_ids': fields.one2many('donation.donation.line', 'partner_id', 'Giftfacturen'),
     }
 
 res_partner()
