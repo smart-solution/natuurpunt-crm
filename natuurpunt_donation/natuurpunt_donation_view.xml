@@ -56,15 +56,15 @@
 			</field> 
 			<newline/>
 	                <label for="donation_line_ids"/>
-        	        <field name="donation_line_ids" readonly="True">
-			    <tree string="Giftfacturen" context="{'default_partner_id':active_id}">
-        	                <field name="partner_id" invisible="True"/> 
-				<field name="date_invoice"/>
-				<field name="invoice_id"/>
-        	            	<field name="analytic_account_id"/>
-        	        	<field name="amount_total"/>
-        	            </tree>
-			</field> 
+					<field name="donation_line_ids" readonly="True">
+                       <tree string="Giftfacturen">
+                            <field name="partner_id" invisible="True"/>
+                            <field name="date_invoice"/>
+                            <field name="invoice_id"/>
+                            <field name="analytic_account_id"/>
+                            <field name="amount_total"/>
+                       </tree>										
+					</field>
 		    </page> 
                 </page>
             </field>
