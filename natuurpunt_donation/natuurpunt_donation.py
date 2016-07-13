@@ -316,7 +316,6 @@ class donation_donation_line(osv.osv):
 	    'date_invoice': fields.date('Datum Factuur'),
 	    'amount_total': fields.float('Bedrag'),
 	    'analytic_account_id': fields.many2one('account.analytic.account', 'Analytic Account', select=True),
-            'state': fields.related('invoice_id', 'state', string='State', type='char'),
     }
 
     _order = 'date_invoice desc'
@@ -336,11 +335,24 @@ account_invoice()
 class res_partner(osv.osv):
     _inherit = 'res.partner'
 
+    def _get_donation_line_ids(self, cr, uid, ids, field_name, arg, context):
+        result = {}
+        if not ids: 
+            return result
+        don_line_obj = self.pool.get("donation.donation.line")
+        valid_states = ['draft','open','paid']
+        for partner in self.browse(cr, uid, ids, context=context):
+            donation_line_ids = don_line_obj.search(cr, uid, [('partner_id', '=', partner.id)])
+            filtered_donation_line_ids = []
+            for don_line in don_line_obj.browse(cr, uid, donation_line_ids, context=context):
+                if don_line.invoice_id.donation_invoice and don_line.invoice_id.state in valid_states:
+                    filtered_donation_line_ids.append(don_line.id)
+            result[partner.id] = filtered_donation_line_ids
+        return result
+
     _columns = {
         'donation_ids': fields.one2many('donation.partner.account', 'partner_id', 'Giften'),
-        #'donation_line_ids': fields.one2many('donation.donation.line', 'partner_id', 'Giftfacturen', domain=[('state','in',('draft','open','paid'))]),
-        # performance issue revert - fix todo
-        'donation_line_ids': fields.one2many('donation.donation.line', 'partner_id', 'Giftfacturen'),
+        'donation_line_ids': fields.function(_get_donation_line_ids, type='one2many', method=True, relation='donation.donation.line', string='Giftfacturen'),
     }
 
 res_partner()

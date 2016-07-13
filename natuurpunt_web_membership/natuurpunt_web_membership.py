@@ -112,6 +112,7 @@ class res_partner(osv.osv):
         org_ids = [
             OrganisatiePartnerEnum.AFDELING,
             OrganisatiePartnerEnum.WERKGROEP,
+            OrganisatiePartnerEnum.REGIONALE,
             OrganisatiePartnerEnum.BEZOEKERSCENTRUM,
         ]
         if recruiting_organisation_obj.search(cr, uid, [('id','in',ids),('organisation_type_id','in',org_ids)],context=context):

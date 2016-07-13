@@ -105,51 +105,58 @@ class account_invoice(osv.osv):
         if res and invoice[0].get('event_invoice',False):
             if invoice[0].get('type',False) == 'out_invoice':
                 self._sync_registration(cr, uid, ids, mode='confirm', context=context)
-            elif invoice[0].get('type',False) == 'out_refund':
-                self._sync_registration(cr, uid, ids, mode='cancel', context=context)
             else:
                 return res 
         return res
+
+    def get_refund_mode(self, cr, uid, ids, context=None):
+        registration_obj = self.pool.get('event.registration')
+        registration_ids = registration_obj.search(cr, uid, [('invoice_id', 'in', ids)])
+        for registration in registration_obj.browse(cr, uid, registration_ids, context=context):
+            if registration.state == 'open':
+                return 'refund'
+            else:
+                return False
+        else:
+            return False
     
     def cancel_event_payment(self, cr, uid, ids, context=None):
         refund_inv_id = 0        
         try:        
             for invoice in self.browse(cr, uid, ids, context=context):
-                vals={}
-                vals['filter_refund'] = 'refund'
-                vals['description'] = _('refund invoice {0}').format(invoice.internal_number)
-                vals['date'] = time.strftime('%Y-%m-%d')
-                vals['period'] = self.pool.get('account.period').find(cr, uid, dt=vals['date'], context=context)[0]          
-                
-                #TO DO config journal on refund?                            
-                #default journaal van invoice
-                journal_ids = self.pool.get('account.journal').search(cr, uid, [('code','=','VFC')])
-                if journal_ids and len(journal_ids) == 1:
-                
-                    vals['journal_id'] = journal_ids[0]            
-                          
-                    refund_wiz_id = self.pool.get('account.invoice.refund').create(cr, uid, vals, context=context)
+                if invoice.state == 'open':
+                    refund_mode = 'cancel'
+                elif invoice.state == 'paid':
+                    refund_mode = self.get_refund_mode(cr, uid, ids, context=context)
+                else:
+                    refund_mode = False
 
-                    context['skip_write'] = True
-                    context['active_ids'] = [invoice.id]
+                if refund_mode:
+                    vals={}
+                    vals['filter_refund'] = 'cancel'
+                    vals['description'] = _('refund invoice {0}').format(invoice.internal_number)
+                    vals['date'] = time.strftime('%Y-%m-%d')
+                    vals['period'] = self.pool.get('account.period').find(cr, uid, dt=vals['date'], context=context)[0]          
+                
+                    #TO DO config journal on refund?                            
+                    #default journaal van invoice
+                    journal_ids = self.pool.get('account.journal').search(cr, uid, [('code','=','VFC')])
+                    if journal_ids and len(journal_ids) == 1:
+                
+                        vals['journal_id'] = journal_ids[0]            
+                          
+                        refund_wiz_id = self.pool.get('account.invoice.refund').create(cr, uid, vals, context=context)
+
+                        context['skip_write'] = True
+                        context['active_ids'] = [invoice.id]
                         
-                    refund_result = self.pool.get('account.invoice.refund').compute_refund(cr, uid, [refund_wiz_id], mode='refund', context=context)
-                                                    
-                    # extract refund invoice id from domain [('type', '=', 'out_refund'), ('id', 'in', [135663L])]    
-                    refund_inv_id_list = [tup[2] for tup in refund_result['domain'] if tup[0] == 'id'][0]
-                    if refund_inv_id_list:
-                        refund_inv_id = refund_inv_id_list.pop()
-                        wf_service = netsvc.LocalService('workflow')
-                        # Move to state 'open'
-                        wf_service.trg_validate(uid, 'account.invoice', refund_inv_id,'invoice_open', cr)
+                        refund_result = self.pool.get('account.invoice.refund').compute_refund(cr, uid, [refund_wiz_id], mode=refund_mode, context=context)
+
+                        self._sync_registration(cr, uid, ids, mode='cancel', context=context)
         except:
             return {'id':refund_inv_id}
         else:
-            if refund_inv_id:
-                invoice = self.browse(cr, uid, refund_inv_id, context=context)
-                return {'id':invoice.partner_id.id,'invoice_id':invoice.id,'supplier_invoice_number':invoice.supplier_invoice_number}
-            else:
-                return {'id':refund_inv_id}
+            return {'id':invoice.partner_id.id,'invoice_id':invoice.id,'supplier_invoice_number':invoice.supplier_invoice_number}
             
     def cancel_event(self, cr, uid, ids, context=None):
         try:
