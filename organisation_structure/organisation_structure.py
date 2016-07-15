@@ -75,6 +75,18 @@ class res_function_type(osv.osv):
         	'categ_id': fields.many2one('res.function.categ', 'Functiecategorie', select=True, ondelete='cascade'),
 	}
 
+        def write(self, cr, uid, ids, vals, context=None):
+            """
+            sync name function type with name in res.org.function
+            double field exists to have an advanced filter field
+            issue #1277
+            """ 
+            if 'name' in vals and vals['name']:
+                res_org_fnc_obj = self.pool.get('res.organisation.function')
+                for res_org_fnc_ids in res_org_fnc_obj.search(cr, uid, [('function_type_id', 'in', ids)]):
+                    res_org_fnc_obj.write(cr, uid, [res_org_fnc_ids], {'name':vals['name']}, context=context)
+            return super(res_function_type, self).write(cr, uid, ids, vals, context=context)
+
 res_function_type()
 
 class res_radius_action(osv.osv):
