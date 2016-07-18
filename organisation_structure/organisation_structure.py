@@ -85,6 +85,8 @@ class res_function_type(osv.osv):
                 res_org_fnc_obj = self.pool.get('res.organisation.function')
                 for res_org_fnc_ids in res_org_fnc_obj.search(cr, uid, [('function_type_id', 'in', ids)]):
                     res_org_fnc_obj.write(cr, uid, [res_org_fnc_ids], {'name':vals['name']}, context=context)
+                for res_org_fnc_ids in res_org_fnc_obj.search(cr, uid, [('function_type_id', 'in', ids),('active','=',False)]):
+                    res_org_fnc_obj.write(cr, uid, [res_org_fnc_ids], {'name':vals['name']}, context=context)
             return super(res_function_type, self).write(cr, uid, ids, vals, context=context)
 
 res_function_type()
