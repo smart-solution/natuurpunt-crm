@@ -11,7 +11,7 @@
                         <field name="product_id" domain="['|',('membership_product','=',True),('magazine_product','=',True)]" widget="selection" on_change="onchange_product(product_id)"/>
                         <field name="member_price"/>
 		        <field name="invoice_organisation"/>
-                        <field name="recruiting_organisation_id" domain="[('organisation_type_id','=','Afdeling')]"/>
+						<field name="recruiting_organisation_id" domain="[('organisation_type_id','in',['Afdeling','Werkgroep','Bezoekerscentrum','Regionaal samenwerkingsverband'])]"/>
                     </group>
                     <footer>
                         <button string="Invoice Membership" name="membership_invoice" type="object" class="oe_highlight"/>

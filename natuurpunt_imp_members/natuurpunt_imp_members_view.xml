@@ -71,7 +71,7 @@
 				<group colspan="4" col="2">
 					<group>
 			    		<field name="name"/>
-					    <field name="recruiting_organisation_id" domain="[('organisation_type_id','=',1)]"/>
+                        <field name="recruiting_organisation_id" domain="[('organisation_type_id','in',['Afdeling','Werkgroep','Bezoekerscentrum','Regionaal samenwerkingsverband'])]"/>
 					    <field name="membership_origin_id"/>
 					    <field name="address_origin_id"/>
 					    <field name="imported" invisible="True"/>
