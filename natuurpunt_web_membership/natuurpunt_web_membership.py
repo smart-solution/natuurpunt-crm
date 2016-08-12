@@ -27,6 +27,7 @@ import urllib2
 import xml.etree.ElementTree as ET
 import re
 import logging
+from natuurpunt_tools import difflib_cmp, AttrDict, compose
 
 _logger = logging.getLogger('natuurpunt_web_membership')
 
@@ -37,6 +38,16 @@ class OrganisatiePartnerEnum():
     WERKGROEP = 5
     REGIONALE = 7
     BEZOEKERSCENTRUM = 10
+
+def get_matching_vals(vals):
+    """
+    subset of fields needed to match
+    """
+    match_fields = ['first_name','last_name','street_id',
+                    'zip_id','street','zip','street_nbr']
+    ref = AttrDict()
+    [setattr(ref,k,v) for k,v in vals.iteritems() if k in match_fields]
+    return ref
 
 class res_partner(osv.osv):
     _inherit = 'res.partner'
@@ -153,6 +164,50 @@ class res_partner(osv.osv):
                             #    return [long(regex_match.group(1)[::-1])]
         return False
 
+    def partner_match(self,cr,uid,ids,vals,context=None):
+            """
+            when we could not find a partner by its unique identifier = email
+            we do an extra check if we can find it based on address
+            """
+            def match_on_fullname(target_ids):
+                match_str = lambda p: "{0}_{1}".format(p.first_name, p.last_name)
+                match_target_list = []
+                for partner in self.browse(cr,uid,target_ids,context=context):
+                    match_target_list.append((partner.id, match_str(partner)))
+                return difflib_cmp(match_str(ref_vals), match_target_list)[0] if match_target_list else False
+
+            def match_names_seperatly(cmp_res):
+                if cmp_res and cmp_res[1] > 0.5:
+                    partner = self.browse(cr,uid,cmp_res[0],context=context)
+                    cmp_res_first_name = difflib_cmp(ref_vals.first_name, [(partner.id, partner.first_name)])[0]
+                    cmp_res_last_name = difflib_cmp(ref_vals.last_name, [(partner.id, partner.last_name)])[0]
+                    return partner if cmp_res_first_name[1] >= 0.7 and cmp_res_last_name[1] >= 0.85 else False
+                else:
+                    return False
+            if not ids:    
+                ref_vals = get_matching_vals(vals)
+                if vals['street_id']:
+                    target_domain = [
+                            ('street_id','=',vals['street_id']),
+                            ('zip_id','=',vals['zip_id']),
+                            ('street_nbr','=',vals['street_nbr']),
+                    ]
+                else:
+                    target_domain = [
+                            ('street','=',vals['street']),
+                            ('zip','=',vals['zip']),
+                            ('street_nbr','=',vals['street_nbr']),
+                    ]
+                partner = compose(
+                            match_on_fullname,
+                            match_names_seperatly,                                
+                            lambda p: p if p and p.membership_state in ['old','none'] else False,
+                            lambda p: p if p and not(p.donation_line_ids) else False
+                          )(self.search(cr,uid,target_domain,context=context))
+                return [partner.id] if partner else []
+            else:
+                return ids
+
     def _web_membership_partner(self,cr,uid,ids,vals,context=None):
         if ids:
             # address update via website resets status
@@ -162,7 +217,6 @@ class res_partner(osv.osv):
             # address via website
             vals['address_origin_id'] = self.address_origin_website(cr,uid,context=context)
             ids.append(self.create(cr,uid,vals,context=context))
-
         return ids
 
     def _bban2bic(self,bank_account_number=None):
@@ -238,8 +292,10 @@ class res_partner(osv.osv):
         vals['customer'] = False
 
         # membership partner update or create
-        _logger.info(ids)
         _logger.info(vals)
+        _logger.info("partner ids voor match = {}".format(ids))
+        ids = self.partner_match(cr,uid,ids,vals,context=context)
+        _logger.info("partner ids na match = {}".format(ids))
         ids = self._web_membership_partner(cr,uid,ids,vals,context=context)
 
         methods = {'OGONE':self.create_membership_invoice,
