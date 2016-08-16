@@ -28,6 +28,7 @@ import xml.etree.ElementTree as ET
 import re
 import logging
 from natuurpunt_tools import difflib_cmp, AttrDict, compose
+from functools import partial
 
 _logger = logging.getLogger('natuurpunt_web_membership')
 
@@ -39,15 +40,65 @@ class OrganisatiePartnerEnum():
     REGIONALE = 7
     BEZOEKERSCENTRUM = 10
 
-def get_matching_vals(vals):
+def get_match_vals(vals):
     """
     subset of fields needed to match
     """
-    match_fields = ['first_name','last_name','street_id',
-                    'zip_id','street','zip','street_nbr']
+    match_fields = ['first_name','last_name']
     ref = AttrDict()
     [setattr(ref,k,v) for k,v in vals.iteritems() if k in match_fields]
     return ref
+
+def match_with_existing_partner(obj,cr,uid,vals):
+    """
+    when we could not find a partner by its unique identifier = email
+    we do an extra check if we can find it based on address and name
+    """
+    def match_on_fullname(target_ids):
+        match_str = lambda p: "{0}_{1}".format(p.first_name, p.last_name)
+        match_target_list = []
+        for partner in obj.browse(cr,uid,target_ids):
+            match_target_list.append((partner.id, match_str(partner)))
+        return difflib_cmp(match_str(ref_vals), match_target_list)[0] if match_target_list else False
+
+    def match_names_seperatly(cmp_res):
+        if cmp_res and cmp_res[1] > 0.5:
+            partner = obj.browse(cr,uid,cmp_res[0])
+            cmp_res_first_name = difflib_cmp(ref_vals.first_name, [(partner.id, partner.first_name)])[0]
+            cmp_res_last_name = difflib_cmp(ref_vals.last_name, [(partner.id, partner.last_name)])[0]
+            return partner if cmp_res_first_name[1] >= 0.7 and cmp_res_last_name[1] >= 0.85 else False
+        else:
+            return False
+
+    ref_vals = get_match_vals(vals)
+    if vals['street_id']:
+       target_domain = [
+            ('street_id','=',vals['street_id']),
+            ('zip_id','=',vals['zip_id']),
+            ('street_nbr','=',vals['street_nbr']),
+       ]
+    else:
+       target_domain = [
+            ('street','=',vals['street']),
+            ('zip','=',vals['zip']),
+            ('street_nbr','=',vals['street_nbr']),
+       ]
+    partner = compose(
+                match_on_fullname,
+                match_names_seperatly,
+                lambda p: p if p and p.membership_state in ['old','none'] else False,
+                lambda p: p if p and not(p.donation_line_ids) else False
+              )(obj.search(cr,uid,target_domain))
+    return partner if partner else False
+
+def alert_when_customer_or_supplier(obj,cr,uid,partner):
+    """
+    when partner is known as customer or supplier
+    raise an exception so we can inform website API that we can't
+    use this partner for memberships without manual interaction    
+    """
+    # TODO
+    return partner
 
 class res_partner(osv.osv):
     _inherit = 'res.partner'
@@ -139,75 +190,6 @@ class res_partner(osv.osv):
         else:
             return False
 
-    def partner_match_in_onchange_street_warning(self,cr,uid,name,onchange_street_res,context=None):
-        #http://stackoverflow.com/questions/3429086/python-regex-to-get-all-text-until-a-and-get-text-inside-brackets        
-        #{'message': u'De volgende contacten zijn reeds geregistreerd op dit adres: Truus Van Kelst (131822) \n', 'title': u'Waarschuwing!'}
-        if 'warning' in onchange_street_res:
-            warning = onchange_street_res['warning']
-            # split string on first occurrence ':'
-            regex = re.compile("(.*?:)")
-            regex_match = regex.match(warning['message'])
-            if regex_match:
-                # process string after ':' by slicing on length
-                double_address_list = warning['message'][len(regex_match.group(0)):].strip().split('\n')
-                regex = re.compile("(.*?\s)*")
-                for w in double_address_list:
-                    regex_match = regex.match(w.strip())
-                    if regex_match and name.strip().upper() == regex_match.group(0).strip().upper():
-                        return True
-                            # if name match return id between (123)
-                            # reverse string and regex match on )321(
-                            # return reverse string 123                     
-                            #regex_id = re.compile("\)(.*?)\(")
-                            #regex_match = regex_id.match(w[::-1].strip())
-                            #if regex_match:
-                            #    return [long(regex_match.group(1)[::-1])]
-        return False
-
-    def partner_match(self,cr,uid,ids,vals,context=None):
-            """
-            when we could not find a partner by its unique identifier = email
-            we do an extra check if we can find it based on address
-            """
-            def match_on_fullname(target_ids):
-                match_str = lambda p: "{0}_{1}".format(p.first_name, p.last_name)
-                match_target_list = []
-                for partner in self.browse(cr,uid,target_ids,context=context):
-                    match_target_list.append((partner.id, match_str(partner)))
-                return difflib_cmp(match_str(ref_vals), match_target_list)[0] if match_target_list else False
-
-            def match_names_seperatly(cmp_res):
-                if cmp_res and cmp_res[1] > 0.5:
-                    partner = self.browse(cr,uid,cmp_res[0],context=context)
-                    cmp_res_first_name = difflib_cmp(ref_vals.first_name, [(partner.id, partner.first_name)])[0]
-                    cmp_res_last_name = difflib_cmp(ref_vals.last_name, [(partner.id, partner.last_name)])[0]
-                    return partner if cmp_res_first_name[1] >= 0.7 and cmp_res_last_name[1] >= 0.85 else False
-                else:
-                    return False
-            if not ids:    
-                ref_vals = get_matching_vals(vals)
-                if vals['street_id']:
-                    target_domain = [
-                            ('street_id','=',vals['street_id']),
-                            ('zip_id','=',vals['zip_id']),
-                            ('street_nbr','=',vals['street_nbr']),
-                    ]
-                else:
-                    target_domain = [
-                            ('street','=',vals['street']),
-                            ('zip','=',vals['zip']),
-                            ('street_nbr','=',vals['street_nbr']),
-                    ]
-                partner = compose(
-                            match_on_fullname,
-                            match_names_seperatly,                                
-                            lambda p: p if p and p.membership_state in ['old','none'] else False,
-                            lambda p: p if p and not(p.donation_line_ids) else False
-                          )(self.search(cr,uid,target_domain,context=context))
-                return [partner.id] if partner else []
-            else:
-                return ids
-
     def _web_membership_partner(self,cr,uid,ids,vals,context=None):
         if ids:
             # address update via website resets status
@@ -293,9 +275,18 @@ class res_partner(osv.osv):
 
         # membership partner update or create
         _logger.info(vals)
-        _logger.info("partner ids voor match = {}".format(ids))
-        ids = self.partner_match(cr,uid,ids,vals,context=context)
-        _logger.info("partner ids na match = {}".format(ids))
+        _logger.info("partner ids:{}".format(ids))
+        if not ids:
+            try:
+                ids = compose(
+                        partial(match_with_existing_partner,self,cr,uid),
+                        partial(alert_when_customer_or_supplier,self,cr,uid),
+                        lambda p:[p.id] if p else ids
+                      )(vals)
+                _logger.info("partner match ids:{}".format(ids))
+            except:
+                return {'id':0}
+
         ids = self._web_membership_partner(cr,uid,ids,vals,context=context)
 
         methods = {'OGONE':self.create_membership_invoice,
