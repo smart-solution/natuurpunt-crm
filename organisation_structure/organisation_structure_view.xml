@@ -560,6 +560,20 @@
                 </search>
             </field>
         </record> 
+        
+    <record model="ir.ui.view" id="view_organisation_function_tree_filter">
+        <field name="name">view.account_organisation_function_tree.filter</field>
+        <field name="model">res.organisation.function</field>
+        <field name="type">search</field>
+        <field name="arch" type="xml">
+            <search string="Search Invoice">
+                <field name="name" string="Description"/>
+                <field name="function_type_id" string="Functietype"/>
+                <field name="person_id" string="Persoon"/>
+                <field name="partner_id" string="Partner"/>
+           </search>
+        </field>
+    </record>
 
 	<record model="ir.actions.act_window" id="action_organisation_partner">
             <field name="sequence" eval="20"/>
