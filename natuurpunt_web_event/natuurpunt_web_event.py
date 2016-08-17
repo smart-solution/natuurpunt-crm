@@ -370,20 +370,22 @@ class res_partner(osv.osv):
                     invoice_line_ids.append(invoice_line_id)
 
                 # options           
-                def invoice_line_option(name,amount):
+                def invoice_line_option(index=1):
+                    name = datas.get('name_option'+str(index),False)
                     if name:
-                        line_value = invoice_line(amount)
+                        line_value = invoice_line(datas.get('amount_option'+str(index),0.0))
                         line_value['name'] = name
                         invoice_line_id = invoice_line_obj.create(cr, uid, line_value, context=context)
                         invoice_line_ids.append(invoice_line_id)
-                        
-                invoice_line_option(datas.get('name_option1',False), datas.get('amount_option1',0.0))
-                invoice_line_option(datas.get('name_option2',False), datas.get('amount_option2',0.0))
-            
-                # register event
-                registration_id = register_event()        
+                        invoice_line_option(index=index+1)
+                    return True
 
-                invoice_obj.write(cr, uid, [invoice_id], 
+                invoice_line_option()
+
+                # register event
+                registration_id = register_event()
+
+                invoice_obj.write(cr, uid, [invoice_id],
                                   {
                                    'invoice_line': [(6,0,invoice_line_ids)],
                                    'supplier_invoice_number': 'event_id={0}/reg_id={1}'.format(event_id,registration_id)

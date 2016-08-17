@@ -13,7 +13,7 @@
 		<field name="member_price" position="after">
 		    <field name="membership_renewal"/>
 		    <field name="invoice_organisation"/>
-                    <field name="recruiting_organisation_id" domain="[('organisation_type_id','=','Afdeling')]"/>
+					<field name="recruiting_organisation_id" domain="[('organisation_type_id','in',['Afdeling','Werkgroep','Bezoekerscentrum','Regionaal samenwerkingsverband'])]"/>
 		</field>
             </field>
         </record>
