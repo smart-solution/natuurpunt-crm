@@ -19,6 +19,7 @@
 ##############################################################################
 
 from osv import osv, fields
+from openerp import SUPERUSER_ID
 import datetime
 from mx import DateTime
 import time
@@ -28,6 +29,7 @@ import xml.etree.ElementTree as ET
 import re
 import logging
 from natuurpunt_tools import difflib_cmp, AttrDict, compose
+from natuurpunt_tools import uids_in_group
 from functools import partial
 
 _logger = logging.getLogger('natuurpunt_web_membership')
@@ -95,10 +97,85 @@ def alert_when_customer_or_supplier(obj,cr,uid,partner):
     """
     when partner is known as customer or supplier
     raise an exception so we can inform website API that we can't
-    use this partner for memberships without manual interaction    
+    use this partner for memberships without manual interaction
     """
     # TODO
-    return partner
+    if partner and (partner.customer or partner.supplier):
+        link = "<b><a href='{}?db={}#id={}&view_type=form&model=res.partner'>{}</a></b>"
+        base_url = obj.pool.get('ir.config_parameter').get_param(cr, SUPERUSER_ID, 'web.base.url')
+        alert = 'Lidmaatschap aanvraag van contact met klant/lev. status'
+        body = link.format(base_url,cr.dbname,partner.id,partner.name + ' : ' + alert)
+        mail_group_id = obj.pool.get('mail.group').group_word_lid_alerts(cr,uid)
+        message_id = obj.pool.get('mail.group').message_post(cr, uid, mail_group_id,
+                                body=body,
+                                subtype='mail.mt_comment', context={})
+        obj.pool.get('mail.message').set_message_read(cr, uid, [message_id], False)
+        return partner, alert
+    else:
+        return partner, False
+
+class mail_group(osv.osv):
+    _inherit = 'mail.group'
+
+    def group_word_lid_alerts(self, cr, uid, context=None):
+        vals = {'name':'website meldingen'}
+        mail_group_id = self.search(cr, uid, [('name','=',vals['name'])])
+        if mail_group_id:
+            return mail_group_id
+        else:
+            # first automatic creation of discussion group
+            # or when group is removed
+            mail_alias = self.pool.get('mail.alias')
+            if not vals.get('alias_id'):
+                vals.pop('alias_name', None)  # prevent errors during copy()
+                alias_id = mail_alias.create_unique_alias(cr, uid,
+                              # Using '+' allows using subaddressing for those who don't
+                              # have a catchall domain setup.
+                              {'alias_name': "group+" + vals['name']},
+                              model_name=self._name, context=context)
+                vals['alias_id'] = alias_id
+
+            # get parent menu
+            menu_parent = self.pool.get('ir.model.data').get_object_reference(cr, uid, 'membership', 'menu_membership')
+            menu_parent = menu_parent and menu_parent[1] or False
+
+            # Create menu id
+            mobj = self.pool.get('ir.ui.menu')
+            menu_id = mobj.create(cr, SUPERUSER_ID, {'name': vals['name'], 'parent_id': menu_parent}, context=context)
+            vals['menu_id'] = menu_id
+
+            # Create group and alias
+            mail_group_id = super(mail_group, self).create(cr, uid, vals, context=context)
+            mail_alias.write(cr, uid, [vals['alias_id']], {"alias_force_thread_id": mail_group_id}, context)
+            group = self.browse(cr, uid, mail_group_id, context=context)
+
+            # Create client action for this group and link the menu to it
+            ref = self.pool.get('ir.model.data').get_object_reference(cr, uid, 'mail', 'action_mail_group_feeds')
+            if ref:
+                search_ref = self.pool.get('ir.model.data').get_object_reference(cr, uid, 'mail', 'view_message_search')
+                params = {
+                    'search_view_id': search_ref and search_ref[1] or False,
+                    'domain': [
+                        ('model', '=', 'mail.group'),
+                        ('res_id', '=', mail_group_id),
+                    ],
+                    'context': {
+                        'default_model': 'mail.group',
+                        'default_res_id': mail_group_id,
+                    },
+                    'res_model': 'mail.message',
+                    'thread_level': 1,
+                    'header_description': self._generate_header_description(cr, uid, group, context=context),
+                    'view_mailbox': True,
+                    'compose_placeholder': 'Send a message to the group',
+                }
+                cobj = self.pool.get('ir.actions.client')
+                newref = cobj.copy(cr, SUPERUSER_ID, ref[1], default={'params': str(params), 'name': vals['name']}, context=context)
+                mobj.write(cr, SUPERUSER_ID, menu_id, {'action': 'ir.actions.client,' + str(newref), 'mail_group_id': mail_group_id}, context=context)
+
+            crm_users = uids_in_group(self, cr, uid, 'group_natuurpunt_crm_manager', partner=True, context=context)
+            self.message_subscribe(cr, uid, [mail_group_id], crm_users, context=context)
+            return [mail_group_id]
 
 class res_partner(osv.osv):
     _inherit = 'res.partner'
@@ -277,17 +354,24 @@ class res_partner(osv.osv):
         _logger.info(vals)
         _logger.info("partner ids:{}".format(ids))
         if not ids:
-            try:
-                ids = compose(
-                        partial(match_with_existing_partner,self,cr,uid),
-                        partial(alert_when_customer_or_supplier,self,cr,uid),
-                        lambda p:[p.id] if p else ids
-                      )(vals)
-                _logger.info("partner match ids:{}".format(ids))
-            except:
-                return {'id':0}
+            ids,website_alert = compose(
+                    partial(match_with_existing_partner,self,cr,uid),
+                    partial(alert_when_customer_or_supplier,self,cr,uid),
+                    lambda (p,a):([p.id],a) if p else (ids,a)
+            )(vals)
+            _logger.info("partner match ids:{}".format(ids))
+        else:
+            ids,website_alert = compose(
+                    lambda ids: self.browse(cr,uid,ids[0],context=context),
+                    partial(alert_when_customer_or_supplier,self,cr,uid),
+                    lambda (p,a):([p.id],a)
+            )(ids)            
 
-        ids = self._web_membership_partner(cr,uid,ids,vals,context=context)
+        if website_alert:
+            _logger.info("website alert:{}".format(website_alert))
+            return {'id':0,'alert_message':website_alert}
+        else:
+            ids = self._web_membership_partner(cr,uid,ids,vals,context=context)
 
         methods = {'OGONE':self.create_membership_invoice,
                    'SEPA':self.create_web_membership_mandate_invoice,
