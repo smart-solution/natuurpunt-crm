@@ -110,7 +110,10 @@ def alert_when_customer_or_supplier(obj,cr,uid,partner):
                                 body=body,
                                 subtype='mail.mt_comment', context={})
         obj.pool.get('mail.message').set_message_read(cr, uid, [message_id], False)
-        return partner, alert
+        website_alert = """ Er is een probleem opgedoken bij de aanmaak van je lidmaatschap.
+                            We nemen zo snel mogelijk contact op.
+                            Heb je vragen? Stuur een e-mail bericht naar ledenservice@natuurpunt.be"""
+        return partner, website_alert
     else:
         return partner, False
 
