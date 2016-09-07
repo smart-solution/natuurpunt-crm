@@ -89,7 +89,7 @@ class account_invoice(osv.osv):
                         jrn_ids = jrn_obj.search(cr, uid, [('code','=','OGON')])
                         jrn = jrn_obj.browse(cr, uid, jrn_ids[0])
                         ogone_log_obj = self.pool.get('ogone.log')
-                        ogone_ids = ogone_log_obj(cr ,uid, [('invoice_id','=',invoice.id)])
+                        ogone_ids = ogone_log_obj.search(cr ,uid, [('invoice_id','=',invoice.id)])
                         ogone_log_obj.write(cr, uid, ogone_ids, {'state':'paid'}, context=context)
                 else:
                     if invoice.membership_invoice:
