@@ -26,7 +26,7 @@
 """,
     "depends" : ["natuurpunt_sepa",],    
     "init_xml" : [],
-    "update_xml" : [],
+    "update_xml" : ["natuurpunt_web_membership_view.xml",],
     "active": False,
     "installable": True
 }
