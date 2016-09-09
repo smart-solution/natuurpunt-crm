@@ -89,7 +89,7 @@ class account_invoice(osv.osv):
                         jrn_ids = jrn_obj.search(cr, uid, [('code','=','OGON')])
                         jrn = jrn_obj.browse(cr, uid, jrn_ids[0])
                         ogone_log_obj = self.pool.get('ogone.log')
-                        ogone_ids = ogone_log_obj.search(cr ,uid, [('invoice_id','=',invoice.id)])
+                        ogone_ids = ogone_log_obj(cr ,uid, [('invoice_id','=',invoice.id)])
                         ogone_log_obj.write(cr, uid, ogone_ids, {'state':'paid'}, context=context)
                 else:
                     if invoice.membership_invoice:
@@ -502,7 +502,7 @@ where res_partner.id = res_partner_bank.partner_id
   and partner_bank_id = res_partner_bank.id
   and sdd_mandate.state = 'valid'
   and account_payment_term.name = 'Direct debit'
-  and res_partner.id = %d''' % (partner.id, )
+  and res_partner.id = %d order by signature_date desc''' % (partner.id, )
             cr.execute(sql_stat)
             sql_res = cr.dictfetchone()
             if sql_res and sql_res['payment_term_id']:
