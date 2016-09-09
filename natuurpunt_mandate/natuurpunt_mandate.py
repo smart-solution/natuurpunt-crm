@@ -204,7 +204,11 @@ where membership_membership_line.partner = %d and not(membership_membership_line
 
             mandate_obj = self.pool.get('sdd.mandate')
             mandate_ids = mandate_obj.search(cr, uid, [('partner_id','=', partner.partner_id.id),('state','=','valid'),('partner_bank_id','=',partner_bank_id)])
-            mandate_id = mandate_ids[0] if mandate_ids else False
+            if mandate_ids:
+                recent_mandate = sorted([(m.signature_date,m) for m in mandate_obj.browse(cr,uid,mandate_ids)], key=lambda x: x[0])[-1]
+            else:
+                recent_mandate = False
+            mandate_id = recent_mandate[1].id if recent_mandate else False
             if not mandate_id:
                 mandate_id = mandate_obj.create(cr, uid,{
                     'partner_bank_id': partner_bank_id,
