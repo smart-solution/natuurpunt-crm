@@ -21,6 +21,7 @@
 
 from openerp.osv import fields, osv
 from openerp.tools.translate import _
+from openerp import SUPERUSER_ID
 from openerp import netsvc
 from datetime import datetime
 from datetime import time
@@ -344,7 +345,7 @@ class res_partner(osv.osv):
         for partner in self.browse(cr, uid, ids, context=context):
             donation_line_ids = don_line_obj.search(cr, uid, [('partner_id', '=', partner.id)])
             filtered_donation_line_ids = []
-            for don_line in don_line_obj.browse(cr, uid, donation_line_ids, context=context):
+            for don_line in don_line_obj.browse(cr, SUPERUSER_ID, donation_line_ids, context=context):
                 if don_line.invoice_id.donation_invoice and don_line.invoice_id.state in valid_states:
                     filtered_donation_line_ids.append(don_line.id)
             result[partner.id] = filtered_donation_line_ids
