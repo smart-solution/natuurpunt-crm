@@ -73,7 +73,7 @@ def match_with_existing_partner(obj,cr,uid,vals):
             return False
 
     ref_vals = get_match_vals(vals)
-    if vals['street_id']:
+    if 'street_id' in vals and vals['street_id']:
        target_domain = [
             ('street_id','=',vals['street_id']),
             ('zip_id','=',vals['zip_id']),
@@ -91,20 +91,26 @@ def match_with_existing_partner(obj,cr,uid,vals):
                 lambda p: p if p and p.membership_state in ['old','none'] else False,
                 lambda p: p if p and not(p.donation_line_ids) else False
               )(obj.search(cr,uid,target_domain))
-    return partner if partner else False
+    return (partner, vals) if partner else (False, vals)
 
-def alert_when_customer_or_supplier(obj,cr,uid,partner):
+def partner_url(obj, cr):
+    link = "<b><a href='{}?db={}#id={}&view_type=form&model=res.partner'>{}</a></b>"
+    base_url = obj.pool.get('ir.config_parameter').get_param(cr, SUPERUSER_ID, 'web.base.url')
+    return link, base_url
+
+def alert_when_customer_or_supplier(obj,cr,uid,data):
     """
     when partner is known as customer or supplier
     raise an exception so we can inform website API that we can't
     use this partner for memberships without manual interaction
     """
     # TODO
+    partner, vals = data
     if partner and (partner.customer or partner.supplier):
-        link = "<b><a href='{}?db={}#id={}&view_type=form&model=res.partner'>{}</a></b>"
-        base_url = obj.pool.get('ir.config_parameter').get_param(cr, SUPERUSER_ID, 'web.base.url')
+        link, base_url = partner_url(obj, cr)
         alert = 'Lidmaatschap aanvraag van contact met klant/lev. status'
-        body = link.format(base_url,cr.dbname,partner.id,partner.name + ' : ' + alert)
+        contact = '{}[email = {}]'.format(partner.name, vals['email'])
+        body = link.format(base_url,cr.dbname,partner.id,contact + ' : ' + alert)
         mail_group_id = obj.pool.get('mail.group').group_word_lid_alerts(cr,uid)
         message_id = obj.pool.get('mail.group').message_post(cr, uid, mail_group_id,
                                 body=body,
@@ -116,6 +122,22 @@ def alert_when_customer_or_supplier(obj,cr,uid,partner):
         return partner, website_alert
     else:
         return partner, False
+
+def alert_when_name_matched_existing_partner(obj,cr,uid,data):
+    """
+    when partner was matched on name... send an alert to crm team 
+    """
+    partner, vals = data
+    if partner:
+        link, base_url = partner_url(obj, cr)
+        alert = 'Lidmaatschap aanvraag naam match'
+        body = link.format(base_url,cr.dbname,partner.id,partner.name + ' : ' + alert)
+        mail_group_id = obj.pool.get('mail.group').group_word_lid_alerts(cr,uid)
+        message_id = obj.pool.get('mail.group').message_post(cr, uid, mail_group_id,
+                                body=body,
+                                subtype='mail.mt_comment', context={})
+        obj.pool.get('mail.message').set_message_read(cr, uid, [message_id], False)
+    return partner, vals
 
 class mail_group(osv.osv):
     _inherit = 'mail.group'
@@ -359,6 +381,7 @@ class res_partner(osv.osv):
         if not ids:
             ids,website_alert = compose(
                     partial(match_with_existing_partner,self,cr,uid),
+                    partial(alert_when_name_matched_existing_partner,self,cr,uid),
                     partial(alert_when_customer_or_supplier,self,cr,uid),
                     lambda (p,a):([p.id],a) if p else (ids,a)
             )(vals)

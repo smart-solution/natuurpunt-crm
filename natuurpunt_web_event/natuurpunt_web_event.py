@@ -23,6 +23,9 @@ import datetime
 import time
 from openerp import netsvc
 from tools.translate import _
+import logging
+
+_logger = logging.getLogger('natuurpunt_web_event')
 
 def account_configurator(cr,uid,method=False):
     account_config = {
@@ -399,8 +402,9 @@ class res_partner(osv.osv):
                 wf_service = netsvc.LocalService('workflow')
                 # Move to state 'open'
                 wf_service.trg_validate(uid, 'account.invoice', invoice.id,'invoice_open', cr)
-                            
-        except:
+
+        except Exception, e:
+            _logger.info('Failed with: '+ str(e))
             return {'id':0}
         else:
             return {
