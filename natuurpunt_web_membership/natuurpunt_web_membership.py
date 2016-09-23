@@ -388,12 +388,12 @@ class res_partner(osv.osv):
         if inv_ids:
             invoice_obj = self.pool.get('account.invoice')
             for invoice in invoice_obj.browse(cr,uid,inv_ids,context=context):
-                ogone_log_obj = self.pool.get('ogone.log')
-                ogone_log_vals = {
-                    'invoice_id':invoice.id,
-                    'date_created':time.strftime('%Y-%m-%d %H:%M:%S'),
-                }
-                ogone_log_obj.create(cr, uid, ogone_log_vals, context=context)
+                #ogone_log_obj = self.pool.get('ogone.log')
+                #ogone_log_vals = {
+                #    'invoice_id':invoice.id,
+                #    'date_created':time.strftime('%Y-%m-%d %H:%M:%S'),
+                #}
+                #ogone_log_obj.create(cr, uid, ogone_log_vals, context=context)
                 return {'id':invoice.partner_id.id,'invoice_id':invoice.id,'reference':invoice.reference}
         else:
             return {'id':ids[0]}
