@@ -57,7 +57,7 @@ def match_with_existing_partner(obj,cr,uid,vals):
     we do an extra check if we can find it based on address and name
     """
     def match_on_fullname(target_ids):
-        match_str = lambda p: "{0}_{1}".format(p.first_name, p.last_name)
+        match_str = lambda p: p.first_name + '_' + p.last_name
         match_target_list = []
         for partner in obj.browse(cr,uid,target_ids):
             match_target_list.append((partner.id, match_str(partner)))
