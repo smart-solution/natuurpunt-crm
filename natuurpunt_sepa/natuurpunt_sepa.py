@@ -88,6 +88,9 @@ class account_invoice(osv.osv):
                         jrn_obj = self.pool.get('account.journal')
                         jrn_ids = jrn_obj.search(cr, uid, [('code','=','OGON')])
                         jrn = jrn_obj.browse(cr, uid, jrn_ids[0])
+                        #ogone_log_obj = self.pool.get('ogone.log')
+                        #ogone_ids = ogone_log_obj(cr ,uid, [('invoice_id','=',invoice.id)])
+                        #ogone_log_obj.write(cr, uid, ogone_ids, {'state':'paid'}, context=context)
                 else:
                     if invoice.membership_invoice:
                             jrn_obj = self.pool.get('account.journal')
@@ -499,7 +502,7 @@ where res_partner.id = res_partner_bank.partner_id
   and partner_bank_id = res_partner_bank.id
   and sdd_mandate.state = 'valid'
   and account_payment_term.name = 'Direct debit'
-  and res_partner.id = %d''' % (partner.id, )
+  and res_partner.id = %d order by signature_date desc''' % (partner.id, )
             cr.execute(sql_stat)
             sql_res = cr.dictfetchone()
             if sql_res and sql_res['payment_term_id']:
@@ -610,7 +613,6 @@ where res_partner.id = res_partner_bank.partner_id
             if third_payer_one_time:
                 sql_stat = '''update res_partner set third_payer_processed = True where id = %d''' % (invoice.partner_id.id, )
                 cr.execute(sql_stat)
-            """
             renewal_prod_id = self._np_membership_renewal_product(cr, uid, invoice.partner_id, context=context)
             if renewal_prod_id:
                 sql_stat = '''update res_partner set membership_renewal_product_id = %d where id = %d''' % (renewal_prod_id[0], invoice.partner_id.id, )
@@ -618,6 +620,7 @@ where res_partner.id = res_partner_bank.partner_id
                 sql_stat = '''update res_partner set membership_renewal_product_id = %d where id = %d''' % (product_id, invoice.partner_id.id, )
             """
             sql_stat = '''update res_partner set membership_renewal_product_id = %d where id = %d''' % (product_id, invoice.partner_id.id, )
+            """
             cr.execute(sql_stat)
 
             values = {}
@@ -729,8 +732,10 @@ class banking_export_sdd_wizard(orm.TransientModel):
 
             self.pool['sdd.mandate'].write(
                 cr, uid, to_expire_ids, {'state': 'expired'}, context=context)
+
+            unique_first_mandate_ids = [k for k, _ in groupby(sorted(first_mandate_ids, key=lambda x: first_mandate_ids.index(x)))]
             self.pool['sdd.mandate'].write(
-                cr, uid, first_mandate_ids, {
+                cr, uid, unique_first_mandate_ids, {
                     'recurrent_sequence_type': 'recurring',
                     'sepa_migrated': True,
                 }, context=context)
@@ -748,5 +753,24 @@ class banking_export_sdd_wizard(orm.TransientModel):
         return {'type': 'ir.actions.act_window_close'}
 
 banking_export_sdd_wizard()
+
+#class ogone_log(osv.osv):
+#    _name = 'ogone.log'
+#
+#    _columns = {
+#        'invoice_id': fields.many2one('account.invoice', 'Invoice', select=True),
+#        'date_created': fields.date('Creation date', select=True),
+#        'state': fields.selection([('open','Open'),
+#                                   ('paid', 'Paid')],
+#                                   'Status',
+#                                   help='When OGONE payment is created the status will be \'Open\'.\n'
+#                                        'And the website processes the OGONE request it changes to the \'Paid\' status.'),
+#    }
+#
+#    _defaults = {
+#        'state': 'open',
+#    }
+#
+#ogone_log()
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
