@@ -732,8 +732,10 @@ class banking_export_sdd_wizard(orm.TransientModel):
 
             self.pool['sdd.mandate'].write(
                 cr, uid, to_expire_ids, {'state': 'expired'}, context=context)
+
+            unique_first_mandate_ids = [k for k, _ in groupby(sorted(first_mandate_ids, key=lambda x: first_mandate_ids.index(x)))]
             self.pool['sdd.mandate'].write(
-                cr, uid, first_mandate_ids, {
+                cr, uid, unique_first_mandate_ids, {
                     'recurrent_sequence_type': 'recurring',
                     'sepa_migrated': True,
                 }, context=context)
