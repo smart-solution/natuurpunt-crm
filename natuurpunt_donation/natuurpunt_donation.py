@@ -188,7 +188,7 @@ where res_partner.id = res_partner_bank.partner_id
   and sdd_mandate.state = 'valid'
   and account_payment_term.name = 'Direct debit'
   and res_partner.id = %d
-order by res_partner_bank.sequence''' % (partner_id, )
+order by signature_date desc, res_partner_bank.sequence''' % (partner_id, )
             cr.execute(sql_stat)
             sql_res = cr.dictfetchone()
             if sql_res and sql_res['payment_term_id']:

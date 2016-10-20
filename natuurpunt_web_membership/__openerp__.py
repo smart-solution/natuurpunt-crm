@@ -24,7 +24,7 @@
     "category" : "Membership",
     "description": """
 """,
-    "depends" : ["natuurpunt_sepa",],    
+    "depends" : ["natuurpunt_sepa",],
     "init_xml" : [],
     "update_xml" : [],
     "active": False,

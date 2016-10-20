@@ -112,6 +112,7 @@ class res_partner(osv.osv):
 #        membership_end_date = self._membership_end_date(cr, uid, [partner_id], None, None, context=context)
 #        membership_end_date = membership_end_date[partner_id] if membership_end_date else None
 #        
+
         membership_pay_date = None
         if membership_state_field == 'paid' and mline.account_invoice_line.invoice_id:
             ids = self.pool.get('account.invoice').search(cr, uid, [('id','=',mline.account_invoice_line.invoice_id.id)])
@@ -127,8 +128,6 @@ class res_partner(osv.osv):
 #            update_partner = True
 #        if membership_stop_date != partner.membership_stop_b:
 #            update_partner = True
-#        if membership_cancel_date != partner.membership_cancel_b:
-#            update_partner = True
         if membership_pay_date != partner.membership_pay_date:
             update_partner = True
 #        if membership_end_date != partner.membership_end_b:
@@ -136,12 +135,7 @@ class res_partner(osv.osv):
 #
         if update_partner:
             vals = {
-#                'membership_state_b': membership_state_field,
-#                'membership_start_b': membership_start_date,
-#                'membership_stop_b': membership_stop_date,
-#                'membership_cancel_b': membership_cancel_date,
                 'membership_pay_date': membership_pay_date,
-#                'membership_end_b': membership_end_date,
             }
             self.write(cr, uid, [partner.id], vals)
             cr.commit()
@@ -243,10 +237,7 @@ class res_partner(osv.osv):
 
         def membership_is_canceled_or_refunded(mline,fstate):
             inv = mline.account_invoice_line.invoice_id
-            if ( fstate == 'cancel'
-               or mline.membership_cancel_id
-
-               ):
+            if fstate == 'cancel' or mline.membership_cancel_id or mline.date_cancel:
                 membership_product = mline.membership_id
                 return (membership_product.id,) if membership_product and not(membership_product.magazine_product) else False
             else:
@@ -255,9 +246,9 @@ class res_partner(osv.osv):
 
         def apply_renewal_rules_to_membership_lines(ids, rules):
             mproducts = []
-            migrated_fstate = lambda : 'cancel' if mline.membership_cancel_id else 'paid'
+            migrated_fstate = lambda : 'cancel' if mline.membership_cancel_id or mline.date_cancel else 'paid'
             for mline in self.pool.get('membership.membership_line').browse(cr, uid, ids, context=context):
-                fstate = mline.account_invoice_line.invoice_id.state if not(mline.membership_cancel_id) and mline.account_invoice_line.invoice_id else migrated_fstate()
+                fstate = mline.account_invoice_line.invoice_id.state if not(mline.membership_cancel_id or mline.date_cancel) and mline.account_invoice_line.invoice_id else migrated_fstate()
                 mproducts.append([func(mline,fstate) for func in rules])
             flatten_func = lambda set1,set2 : set1 + set2 if all([set1,set2]) else set1 if set1 else set2
             return recursive_flatten_list(mproducts[0], mproducts[1:], flatten_func) if mproducts else []
@@ -378,17 +369,17 @@ class res_partner(osv.osv):
 
         def membership_fstate(mline):
             inv = mline.account_invoice_line.invoice_id
-            if not(mline.membership_cancel_id):
-                return 'cancel' if any([payment.invoice.type == 'out_refund' for payment in inv.payment_ids]) else inv.state
+            if (mline.membership_cancel_id
+                or mline.date_cancel
+                or any([payment.invoice.type == 'out_refund' for payment in inv.payment_ids])
+               ):
+               return 'cancel'
             else:
-                if mline.date_to <= today or any([payment.invoice.type == 'out_refund' for payment in inv.payment_ids]):
-                    return 'cancel'
-                else:
-                    return inv.state
+                return inv.state
 
         def apply_state_rules_to_membership_lines(ids, rules):
             mstates = []
-            migrated_fstate = lambda : 'cancel' if mline.membership_cancel_id else 'paid'
+            migrated_fstate = lambda : 'cancel' if mline.membership_cancel_id or mline.date_cancel else 'paid'
             for mline in self.pool.get('membership.membership_line').browse(cr, SUPERUSER_ID, ids, context=context):
                 if not(mline.membership_id and mline.membership_id.membership_product):
                     continue
@@ -471,7 +462,6 @@ class res_partner(osv.osv):
         res = {}
         member_line_obj = self.pool.get('membership.membership_line')
         for partner in self.browse(cr, uid, ids, context=context):
-            print "1:",name
             if partner.associate_member:
                 partner_id = partner.associate_member.id
             else:
@@ -484,31 +474,29 @@ class res_partner(osv.osv):
                  'membership_cancel': False
             }
             if name == 'membership_start':
-                print "2"
                 line_id = member_line_obj.search(cr, uid, [('partner', '=', partner_id),('membership_id.membership_product', '=', True)],
                             limit=1, order='date_from', context=context)
-                print "LINEID:",line_id
                 if line_id:
-                        print "3"
-                        res[partner.id]['membership_start'] = member_line_obj.read(cr, uid, line_id[0], ['date_from'], context=context)['date_from']
+                    res[partner.id]['membership_start'] = member_line_obj.read(cr, uid, line_id[0], ['date_from'], context=context)['date_from']
 
             if name == 'membership_stop':
                 line_id1 = member_line_obj.search(cr, uid, [('partner', '=', partner_id),('membership_id.membership_product', '=', True)],
                             limit=1, order='date_to desc', context=context)
                 if line_id1:
-                      res[partner.id]['membership_stop'] = member_line_obj.read(cr, uid, line_id1[0], ['date_to'], context=context)['date_to']
+                    res[partner.id]['membership_stop'] = member_line_obj.read(cr, uid, line_id1[0], ['date_to'], context=context)['date_to']
 
             if name == 'membership_end':
                 line_id3 = member_line_obj.search(cr, uid, [('partner', '=', partner_id),('membership_id.membership_product', '=', True),('state','=','paid')],
                             limit=1, order='date_to desc', context=context)
                 if line_id3:
-                      res[partner.id]['membership_end'] = member_line_obj.read(cr, uid, line_id3[0], ['date_to'], context=context)['date_to']
+                    res[partner.id]['membership_end'] = member_line_obj.read(cr, uid, line_id3[0], ['date_to'], context=context)['date_to']
 
             if name == 'membership_cancel':
-                if partner.membership_state == 'canceled':
+                mline, membership_state_field = self._np_membership_state(cr, uid, partner, context=context)
+                if membership_state_field == 'canceled':
                     line_id2 = member_line_obj.search(cr, uid, [('partner', '=', partner.id),('membership_id.membership_product', '=', True)], limit=1, order='date_cancel', context=context)
                     if line_id2:
-                        res[partner.id]['membership_cancel'] = member_line_obj.read(cr, uid, line_id2[0], ['date_cancel'], context=context)['date_cancel']
+                        res[partner.id]['membership_cancel'] = member_line_obj.read(cr, uid, line_id2[0], ['date_to'], context=context)['date_to']
         print "MEMBERSHIP STATE RES:",res
         return res
 

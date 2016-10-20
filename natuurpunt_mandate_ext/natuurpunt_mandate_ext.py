@@ -137,6 +137,7 @@ class membership_renew(osv.osv_memory):
     def membership_renew(self, cr, uid, ids, context=None):
         mod_obj = self.pool.get('ir.model.data')
         partner_obj = self.pool.get('res.partner')
+        product_obj = self.pool.get('product.product')
         datas = {}
         if context is None:
             context = {}
@@ -145,12 +146,19 @@ class membership_renew(osv.osv_memory):
 
         for partner in self.pool.get('res.partner').browse(cr, uid, context.get('active_ids', [])):
 
-            # If no renewal product is specified use Gewoon Lid
-            datas = { 
-                'membership_product_id': partner.membership_renewal_product_id.id or 2,
-                'membership_renewal':True,
-                'amount': partner.membership_renewal_product_id.list_price or 27.0,
-            }
+            if partner.membership_renewal_product_id:
+                datas = {
+                    'membership_product_id': partner.membership_renewal_product_id.id,
+                    'amount': partner.membership_renewal_product_id.list_price,
+                }
+            else:
+                default_renewal_product_id = self.pool.get('res.partner')._np_membership_renewal_product(cr,uid,partner,context=context)
+                for product in product_obj.browse(cr, uid, default_renewal_product_id, context=context):
+                    datas = { 
+                        'membership_product_id': product.id,
+                        'amount': product.list_price,
+                    }
+            datas['membership_renewal'] = True
             renew_list.append(partner_obj.create_membership_invoice(cr, uid, [partner.id], datas=datas, context=context))
             cr.commit()
 

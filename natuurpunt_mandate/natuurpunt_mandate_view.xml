@@ -83,7 +83,8 @@
 				    <field name="next_year_mandate"/>
 				    <field name="membership_product_id" attrs="{'required': [('next_year_mandate', '=', False),('mandate_only', '=', False)], 'invisible': ['|',('next_year_mandate', '=', True),('mandate_only', '=', True)]}" domain="[('membership_product','=',True)]"/>
 				    <field name="membership_origin_id" attrs="{'invisible': ['|',('next_year_mandate', '=', True),('mandate_only', '=', True)]}"/>
-                    <field name="recruiting_organisation_id" attrs="{'invisible': ['|',('next_year_mandate', '=', True),('mandate_only', '=', True)]}" domain="[('organisation_type_id','=','Afdeling')]"/>
+					<field name="recruiting_organisation_id" attrs="{'invisible': ['|',('next_year_mandate', '=', True),('mandate_only', '=', True)]}" 
+						   domain="[('organisation_type_id','in',['Afdeling','Werkgroep','Bezoekerscentrum','Regionaal samenwerkingsverband'])]"/>
 			        </group>
 			    </group>
                 <!--

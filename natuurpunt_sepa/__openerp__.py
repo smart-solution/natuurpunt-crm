@@ -32,6 +32,7 @@
         ],
     "update_xml" : [
         'natuurpunt_sepa_view.xml',
+        'security/ir.model.access.csv',
         ],
     "active": False,
     "installable": True

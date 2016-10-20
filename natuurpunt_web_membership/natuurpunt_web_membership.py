@@ -57,7 +57,7 @@ def match_with_existing_partner(obj,cr,uid,vals):
     we do an extra check if we can find it based on address and name
     """
     def match_on_fullname(target_ids):
-        match_str = lambda p: "{0}_{1}".format(p.first_name, p.last_name)
+        match_str = lambda p: p.first_name + '_' + p.last_name
         match_target_list = []
         for partner in obj.browse(cr,uid,target_ids):
             match_target_list.append((partner.id, match_str(partner)))
@@ -411,6 +411,12 @@ class res_partner(osv.osv):
         if inv_ids:
             invoice_obj = self.pool.get('account.invoice')
             for invoice in invoice_obj.browse(cr,uid,inv_ids,context=context):
+                #ogone_log_obj = self.pool.get('ogone.log')
+                #ogone_log_vals = {
+                #    'invoice_id':invoice.id,
+                #    'date_created':time.strftime('%Y-%m-%d %H:%M:%S'),
+                #}
+                #ogone_log_obj.create(cr, uid, ogone_log_vals, context=context)
                 return {'id':invoice.partner_id.id,'invoice_id':invoice.id,'reference':invoice.reference}
         else:
             return {'id':ids[0]}
