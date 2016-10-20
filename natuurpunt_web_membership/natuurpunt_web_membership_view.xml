@@ -2,26 +2,6 @@
 <openerp>
     <data>
     
-        <record id="view_ogone_log_tree" model="ir.ui.view">
-            <field name='name'>view.ogone.log.tree</field>
-            <field name='model'>ogone.log</field>
-            <field name='arch' type='xml'>
-                <tree string="OGONE log">
-					<field name="invoice_id"/>
-					<field name="date_created"/>
-					<field name="state"/>
-                </tree>
-            </field>
-        </record>
-
-        <record model="ir.actions.act_window" id="action_ogone_log_tree">
-            <field name="name">OGONE Log</field>
-            <field name="res_model">ogone.log</field>
-            <field name="view_mode">tree,form</field>
-            <field name="view_type">form</field>
-        </record>
-
-        <menuitem name="OGONE log" parent="membership.menu_membership" id="ogone_log" sequence="50" action="action_ogone_log_tree"/>
-
+		
     </data>
 </openerp>
