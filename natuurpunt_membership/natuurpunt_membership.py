@@ -179,10 +179,10 @@ class res_partner(osv.osv):
         list_partner = []
         for data in data_inv:
             list_partner.append(data.partner.id)
-        ids2 = list_partner
-        while ids2:
-            ids2 = res_obj.search(cr, uid, [('associate_member', 'in', ids2)], context=context)
-            list_partner += ids2
+        #ids2 = list_partner
+        #while ids2:
+        #    ids2 = res_obj.search(cr, uid, [('associate_member', 'in', ids2)], context=context)
+        #    list_partner += ids2
         return list_partner
 
     def _get_invoice_partner(self, cr, uid, ids, context=None):
@@ -195,10 +195,10 @@ class res_partner(osv.osv):
                 list_partner.append(data.membership_partner_id.id)
             else:
                 list_partner.append(data.partner_id.id)
-        ids2 = list_partner
-        while ids2:
-            ids2 = res_obj.search(cr, uid, [('associate_member', 'in', ids2)], context=context)
-            list_partner += ids2
+        #ids2 = list_partner
+        #while ids2:
+        #    ids2 = res_obj.search(cr, uid, [('associate_member', 'in', ids2)], context=context)
+        #    list_partner += ids2
         return list_partner
 
     def _np_membership_renewal_product(self, cr, uid, partner_data, context=None):
@@ -333,8 +333,11 @@ class res_partner(osv.osv):
         assert len(renewal_product_id) == 1, 'no renewal product for partner {}'.format(partner_data.id)
         return renewal_product_id
 
-    def _np_membership_state(self, cr, uid, partner_data, context=None):
-        today = time.strftime('%Y-%m-%d')
+    def _np_membership_state(self, cr, uid, partner_data, date=None, context=None):
+        if date == None:
+            today = time.strftime('%Y-%m-%d')
+        else:
+            today = date
 
         if partner_data.free_member:
             return (None,'free')
@@ -369,8 +372,7 @@ class res_partner(osv.osv):
 
         def membership_fstate(mline):
             inv = mline.account_invoice_line.invoice_id
-            if (mline.membership_cancel_id
-                or mline.date_cancel
+            if ((mline.membership_cancel_id or mline.date_cancel) and mline.date_to <= today
                 or any([payment.invoice.type == 'out_refund' for payment in inv.payment_ids])
                ):
                return 'cancel'
