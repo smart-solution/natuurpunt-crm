@@ -73,20 +73,31 @@ def match_with_existing_partner(obj,cr,uid,vals):
         return difflib_cmp(concat_names(ref_vals), match_target_list)[0] if match_target_list else False
 
     def match_names_seperatly(cmp_res):
+        """
+        return tuple partner object,boolean full match
+        """
+        _logger.info("partner fullname match diff:{}".format(cmp_res))
         if cmp_res:
             partner = obj.browse(cr,uid,cmp_res[0])
             if cmp_res[1] == 1.0:
-                return partner,cmp_res[1]
+                return (partner,True)
             if cmp_res[1] > 0.5:
                 first_name = partner.first_name if partner.first_name else ''
                 cmp_res_first_name = difflib_cmp(ref_vals.first_name, [(partner.id, first_name)])[0]
                 last_name =  partner.last_name if partner.last_name else ''
                 cmp_res_last_name = difflib_cmp(ref_vals.last_name, [(partner.id, last_name)])[0]
-                return partner,cmp_res[1] if cmp_res_first_name[1] >= 0.7 and cmp_res_last_name[1] >= 0.85 else False,0
+                _logger.info("partner firstname match diff:{}".format(cmp_res_first_name))
+                _logger.info("partner lastname match diff:{}".format(cmp_res_last_name))
+                # rules, priority full match to less match
+                rules = [lambda f,l : f == 0 and l == 1.0,    # no firstname, 100% lastname
+                         lambda f,l : f >= 0.7 and l >= 0.85] # seperate firstname/lastname
+                res = [func(cmp_res_first_name[1],cmp_res_last_name[1]) for func in rules]
+                # return partner,full match or partial match
+                return (partner,res[0]) if any(res) else (False,False)
             else:
-                return False,0
+                return (False,False)
         else:
-            return False,0
+            return (False,False)
 
     ref_vals = get_match_vals(vals)
     if 'street_id' in vals and vals['street_id']:
@@ -104,7 +115,7 @@ def match_with_existing_partner(obj,cr,uid,vals):
     partner = compose(
                 match_on_fullname,
                 match_names_seperatly,
-                lambda (p,diff): p if p and (not(p.donation_line_ids) or diff == 1.0) else False
+                lambda (p,full_match): p if p and (not(p.donation_line_ids) or full_match) else False
               )(obj.search(cr,uid,target_domain))
     log = {'alert':['Lidmaatschap aanvraag naam match'] if partner else []}
     return (partner if partner else False, vals, log)
@@ -151,9 +162,9 @@ def send_internal_alerts(obj,cr,uid,data):
     """
     partner, vals, log = data
     for alert in log['alert']:
-        link, base_url = partner_url(obj, cr)
-        contact = '{}[email = {}]'.format(partner.name, vals['email'])
-        body = link.format(base_url,cr.dbname,partner.id,contact + ' : ' + alert)
+        link, base_url, html_end = partner_url(obj, cr)
+        contact = partner.name + '[email = ' + vals['email'] + ']'
+        body = link.format(base_url,cr.dbname,partner.id) + contact + ' : ' + alert + html_end
         mail_group_id = obj.pool.get('mail.group').group_word_lid_alerts(cr,uid)
         message_id = obj.pool.get('mail.group').message_post(cr, uid, mail_group_id,
                                 body=body,
@@ -162,9 +173,10 @@ def send_internal_alerts(obj,cr,uid,data):
     return partner, vals, log
 
 def partner_url(obj, cr):
-    link = "<b><a href='{}?db={}#id={}&view_type=form&model=res.partner'>{}</a></b>"
+    link = "<b><a href='{}?db={}#id={}&view_type=form&model=res.partner'>"
+    html_end = "</a></b>"
     base_url = obj.pool.get('ir.config_parameter').get_param(cr, SUPERUSER_ID, 'web.base.url')
-    return link, base_url
+    return link, base_url, html_end
 
 class mail_group(osv.osv):
     _inherit = 'mail.group'
