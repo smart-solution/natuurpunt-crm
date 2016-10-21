@@ -104,7 +104,7 @@ def match_with_existing_partner(obj,cr,uid,vals):
     partner = compose(
                 match_on_fullname,
                 match_names_seperatly,
-                lambda p,diff: p if p and (not(p.donation_line_ids) or diff == 1.0) else False
+                lambda (p,diff): p if p and (not(p.donation_line_ids) or diff == 1.0) else False
               )(obj.search(cr,uid,target_domain))
     log = {'alert':['Lidmaatschap aanvraag naam match'] if partner else []}
     return (partner if partner else False, vals, log)
