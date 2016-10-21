@@ -42,6 +42,10 @@ class OrganisatiePartnerEnum():
     REGIONALE = 7
     BEZOEKERSCENTRUM = 10
 
+website_alert = """ Er is een probleem opgedoken bij de aanmaak van je lidmaatschap.
+                    We nemen zo snel mogelijk contact op.
+                    Heb je vragen? Stuur een e-mail bericht naar ledenservice@natuurpunt.be"""
+
 def get_match_vals(vals):
     """
     subset of fields needed to match
@@ -56,21 +60,33 @@ def match_with_existing_partner(obj,cr,uid,vals):
     when we could not find a partner by its unique identifier = email
     we do an extra check if we can find it based on address and name
     """
+    def concat_names(p):
+        try:
+            return p.first_name + '_' + p.last_name
+        except:
+            return ''
+
     def match_on_fullname(target_ids):
-        match_str = lambda p: p.first_name + '_' + p.last_name
         match_target_list = []
         for partner in obj.browse(cr,uid,target_ids):
-            match_target_list.append((partner.id, match_str(partner)))
-        return difflib_cmp(match_str(ref_vals), match_target_list)[0] if match_target_list else False
+            match_target_list.append((partner.id, concat_names(partner)))
+        return difflib_cmp(concat_names(ref_vals), match_target_list)[0] if match_target_list else False
 
     def match_names_seperatly(cmp_res):
-        if cmp_res and cmp_res[1] > 0.5:
+        if cmp_res:
             partner = obj.browse(cr,uid,cmp_res[0])
-            cmp_res_first_name = difflib_cmp(ref_vals.first_name, [(partner.id, partner.first_name)])[0]
-            cmp_res_last_name = difflib_cmp(ref_vals.last_name, [(partner.id, partner.last_name)])[0]
-            return partner if cmp_res_first_name[1] >= 0.7 and cmp_res_last_name[1] >= 0.85 else False
+            if cmp_res[1] == 1.0:
+                return partner,cmp_res[1]
+            if cmp_res[1] > 0.5:
+                first_name = partner.first_name if partner.first_name else ''
+                cmp_res_first_name = difflib_cmp(ref_vals.first_name, [(partner.id, first_name)])[0]
+                last_name =  partner.last_name if partner.last_name else ''
+                cmp_res_last_name = difflib_cmp(ref_vals.last_name, [(partner.id, last_name)])[0]
+                return partner,cmp_res[1] if cmp_res_first_name[1] >= 0.7 and cmp_res_last_name[1] >= 0.85 else False,0
+            else:
+                return False,0
         else:
-            return False
+            return False,0
 
     ref_vals = get_match_vals(vals)
     if 'street_id' in vals and vals['street_id']:
@@ -88,27 +104,54 @@ def match_with_existing_partner(obj,cr,uid,vals):
     partner = compose(
                 match_on_fullname,
                 match_names_seperatly,
-                lambda p: p if p and p.membership_state in ['old','none'] else False,
-                lambda p: p if p and not(p.donation_line_ids) else False
+                lambda p,diff: p if p and (not(p.donation_line_ids) or diff == 1.0) else False
               )(obj.search(cr,uid,target_domain))
-    return (partner, vals) if partner else (False, vals)
+    log = {'alert':['Lidmaatschap aanvraag naam match'] if partner else []}
+    return (partner if partner else False, vals, log)
 
-def partner_url(obj, cr):
-    link = "<b><a href='{}?db={}#id={}&view_type=form&model=res.partner'>{}</a></b>"
-    base_url = obj.pool.get('ir.config_parameter').get_param(cr, SUPERUSER_ID, 'web.base.url')
-    return link, base_url
+def can_use_an_existing_invoice(obj,cr,uid,partner):
+    """
+    """
+    mline, membership_state_field = obj._np_membership_state(cr, uid, partner)
+    mline.membership_id.name == 'Gewoon lid'
+    return True
 
-def alert_when_customer_or_supplier(obj,cr,uid,data):
+def verify_partner_membership_state(obj,cr,uid,data):
+    """
+    does partner have a membership invoice that we can use
+    set 'alert_website' so we can inform website API that we can't
+    use this partner for memberships without manual interaction
+    """
+    partner, vals, log = data
+    good_membership_states = ['none','old','canceled','waiting']
+    if partner and not partner.membership_state in good_membership_states:
+        if partner.membership_state in ['invoiced','paid']:
+            log['alert'].append('Lidmaatschap aanvraag van betaald lid')
+            log['alert_website'] = True
+        if partner.membership_state in ['wait_member']:
+            log['alert'].append('Lidmaatschap aanvraag van contact met wachtend lidmaatschap')
+            log['wait_member'] = True
+    return partner, vals, log
+
+def verify_if_customer_or_supplier(obj,cr,uid,data):
     """
     when partner is known as customer or supplier
-    raise an exception so we can inform website API that we can't
+    set 'alert_website' so we can inform website API that we can't
     use this partner for memberships without manual interaction
     """
     # TODO
-    partner, vals = data
+    partner, vals, log = data
     if partner and (partner.customer or partner.supplier):
+        log['alert'].append('Lidmaatschap aanvraag van contact met klant/lev. status')
+        log['alert_website'] = True
+    return partner, vals, log
+
+def send_internal_alerts(obj,cr,uid,data):
+    """
+    """
+    partner, vals, log = data
+    for alert in log['alert']:
         link, base_url = partner_url(obj, cr)
-        alert = 'Lidmaatschap aanvraag van contact met klant/lev. status'
         contact = '{}[email = {}]'.format(partner.name, vals['email'])
         body = link.format(base_url,cr.dbname,partner.id,contact + ' : ' + alert)
         mail_group_id = obj.pool.get('mail.group').group_word_lid_alerts(cr,uid)
@@ -116,28 +159,12 @@ def alert_when_customer_or_supplier(obj,cr,uid,data):
                                 body=body,
                                 subtype='mail.mt_comment', context={})
         obj.pool.get('mail.message').set_message_read(cr, uid, [message_id], False)
-        website_alert = """ Er is een probleem opgedoken bij de aanmaak van je lidmaatschap.
-                            We nemen zo snel mogelijk contact op.
-                            Heb je vragen? Stuur een e-mail bericht naar ledenservice@natuurpunt.be"""
-        return partner, website_alert
-    else:
-        return partner, False
+    return partner, vals, log
 
-def alert_when_name_matched_existing_partner(obj,cr,uid,data):
-    """
-    when partner was matched on name... send an alert to crm team 
-    """
-    partner, vals = data
-    if partner:
-        link, base_url = partner_url(obj, cr)
-        alert = 'Lidmaatschap aanvraag naam match'
-        body = link.format(base_url,cr.dbname,partner.id,partner.name + ' : ' + alert)
-        mail_group_id = obj.pool.get('mail.group').group_word_lid_alerts(cr,uid)
-        message_id = obj.pool.get('mail.group').message_post(cr, uid, mail_group_id,
-                                body=body,
-                                subtype='mail.mt_comment', context={})
-        obj.pool.get('mail.message').set_message_read(cr, uid, [message_id], False)
-    return partner, vals
+def partner_url(obj, cr):
+    link = "<b><a href='{}?db={}#id={}&view_type=form&model=res.partner'>{}</a></b>"
+    base_url = obj.pool.get('ir.config_parameter').get_param(cr, SUPERUSER_ID, 'web.base.url')
+    return link, base_url
 
 class mail_group(osv.osv):
     _inherit = 'mail.group'
@@ -379,21 +406,22 @@ class res_partner(osv.osv):
         _logger.info(vals)
         _logger.info("partner ids:{}".format(ids))
         if not ids:
-            ids,website_alert = compose(
+            ids,vals,log = compose(
                     partial(match_with_existing_partner,self,cr,uid),
-                    partial(alert_when_name_matched_existing_partner,self,cr,uid),
-                    partial(alert_when_customer_or_supplier,self,cr,uid),
-                    lambda (p,a):([p.id],a) if p else (ids,a)
+                    partial(verify_partner_membership_state,self,cr,uid),
+                    partial(verify_if_customer_or_supplier,self,cr,uid),
+                    partial(send_internal_alerts,self,cr,uid),
+                    lambda (p,v,l):([p.id],v,l) if p else (ids,v,l)
             )(vals)
             _logger.info("partner match ids:{}".format(ids))
         else:
-            ids,website_alert = compose(
-                    lambda ids: self.browse(cr,uid,ids[0],context=context),
-                    partial(alert_when_customer_or_supplier,self,cr,uid),
-                    lambda (p,a):([p.id],a)
-            )(ids)            
+            ids,vals,log = compose(
+                    lambda ids:(self.browse(cr,uid,ids[0],context=context),vals,{'alert':[]}),
+                    partial(verify_if_customer_or_supplier,self,cr,uid),
+                    lambda (p,v,l):([p.id],v,l)
+            )(ids)
 
-        if website_alert:
+        if 'alert_website' in log:
             _logger.info("website alert:{}".format(website_alert))
             return {'id':0,'alert_message':website_alert}
         else:
