@@ -7,10 +7,10 @@
             <field name="model">wizard.partner.to.renew</field>
             <field name="arch" type="xml">
                 <form string="Lidmaatschappen te hernieuwen" version="7.0">
-                    <p class="oe_grey">
-                    Lidmaatschappen te hernieuwen
-                    </p>
-                    <field name="end_date_membership"/>
+					<group>
+                        <field name="end_date_membership"/>
+	    				<field name="export" label="Export via CSV"/>
+					</group>
                     <footer>
                         <button string="Memberships to renew" name="find_members_to_renew" type="object" default_focus="1" class="oe_highlight"/>
                         or
@@ -37,7 +37,7 @@
             <field name="arch" type="xml">
                 <form string="Lidmaatschappen hernieuwen" version="7.0">
                     <group>
-                        <label string="Lidmaatschappen hernieuwen ?"/>
+						<field name="import_file" label="Import via CSV"/>
                     </group>
                     <footer>
                         <button string="Renew Membership" name="membership_renew" type="object" class="oe_highlight"  />
@@ -65,7 +65,27 @@
             view_mode="form"
             id="action_membership_renew_view"/>
 
-    
+     <menuitem name="Lidmaatschappen te hernieuwen" id="menu_find_members_to_renew" parent="base.menu_report_association" action="action_find_members_to_renew" sequence="2"/>
+
+        <record id="partner_to_renew_feedback_view" model="ir.ui.view">
+    	  <field name="name">partner.to.renew.feedback.form</field>
+	      <field name="model">wizard.partner.to.renew.feedback</field>
+	      <field name="arch" type="xml">
+    	    <form string="Lidmaatschappen hernieuwen feedback" version="7.0">
+        	  <field name="message" nolabel="1"/>
+	          <div class="header">
+    	        <field name="feedback_stream" nolabel="1" filename="feedback_fname"/>
+	          </div>
+    	      <footer>
+                <button string="Memberships to renew" name="put_members_to_renew" type="object" default_focus="1" class="oe_highlight"/>
+				or
+				<button string="Cancel" class="oe_link" special="cancel"/>
+	          </footer>
+	        </form>
+	      </field>
+        </record>
+
     </data>
+
 </openerp>
 
