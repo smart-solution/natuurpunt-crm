@@ -257,7 +257,7 @@ order by signature_date desc, res_partner_bank.sequence''' % (partner_id, )
                 last_invoice_date = datetime.today().strftime('%Y-%m-%d')
 
                 # Do not set a next invoice date if after the end date
-                if donation.donation_end and time.strftime(donation.donation_end, '%Y%') <= last_invoice_date:
+                if donation.donation_end and time.strftime(donation.donation_end, '%Y%') <= date.today():
                     self.write(cr, uid, donation.id, {'last_invoice_date': last_invoice_date, 'next_invoice_date': False}, context=context)
                 else:
                     self.write(cr, uid, donation.id, {'last_invoice_date': last_invoice_date, 'next_invoice_date': next_invoice_date}, context=context)
