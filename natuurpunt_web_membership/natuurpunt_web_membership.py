@@ -135,13 +135,15 @@ def verify_partner_membership_state(obj,cr,uid,data):
     """
     partner, vals, log = data
     good_membership_states = ['none','old','canceled','waiting']
-    if partner and not partner.membership_state in good_membership_states:
-        if partner.membership_state in ['invoiced','paid']:
-            log['alert'].append('Lidmaatschap aanvraag van betaald lid')
-            log['alert_website'] = True
-        if partner.membership_state in ['wait_member']:
-            log['alert'].append('Lidmaatschap aanvraag van contact met wachtend lidmaatschap')
-            log['wait_member'] = True
+    if vals['membership_renewal'] == False:
+        good_membership_states = ['none','old','canceled','waiting']
+        if partner and not partner.membership_state in good_membership_states:
+            if partner.membership_state in ['invoiced','paid']:
+                log['alert'].append('Lidmaatschap aanvraag van betaald lid')
+                log['alert_website'] = True
+            if partner.membership_state in ['wait_member']:
+                log['alert'].append('Lidmaatschap aanvraag van contact met wachtend lidmaatschap')
+                log['wait_member'] = True
     return partner, vals, log
 
 def verify_if_customer_or_supplier(obj,cr,uid,data):
@@ -409,7 +411,10 @@ class res_partner(osv.osv):
 
         # renewal product...? , update contact  
         if datas.get('membership_renewal', False):
+            vals['membership_renewal'] = True
             vals['membership_renewal_product_id'] = product_id
+        else:
+            vals['membership_renewal'] = False
 
         # override default from website            
         vals['customer'] = False
