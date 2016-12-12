@@ -134,7 +134,6 @@ def verify_partner_membership_state(obj,cr,uid,data):
     use this partner for memberships without manual interaction
     """
     partner, vals, log = data
-    good_membership_states = ['none','old','canceled','waiting']
     if vals['membership_renewal'] == False:
         good_membership_states = ['none','old','canceled','waiting']
         if partner and not partner.membership_state in good_membership_states:
