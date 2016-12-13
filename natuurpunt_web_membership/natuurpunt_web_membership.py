@@ -117,7 +117,7 @@ def match_with_existing_partner(obj,cr,uid,vals):
                 match_names_seperatly,
                 lambda (p,full_match): p if p and (not(p.donation_line_ids) or full_match) else False
               )(obj.search(cr,uid,target_domain))
-    log = {'alert':['Lidmaatschap aanvraag naam match'] if partner else []}
+    log = {'alert':['Lidmaatschap aanvraag naam match'] if partner else [],'renewal':False}
     return (partner if partner else False, vals, log)
 
 def can_use_an_existing_invoice(obj,cr,uid,partner):
@@ -134,15 +134,14 @@ def verify_partner_membership_state(obj,cr,uid,data):
     use this partner for memberships without manual interaction
     """
     partner, vals, log = data
-    if vals['membership_renewal'] == False:
-        good_membership_states = ['none','old','canceled','waiting']
-        if partner and not partner.membership_state in good_membership_states:
-            if partner.membership_state in ['invoiced','paid']:
-                log['alert'].append('Lidmaatschap aanvraag van betaald lid')
-                log['alert_website'] = True
-            if partner.membership_state in ['wait_member']:
-                log['alert'].append('Lidmaatschap aanvraag van contact met wachtend lidmaatschap')
-                log['wait_member'] = True
+    good_membership_states = ['none','old','canceled','waiting']
+    if partner and not partner.membership_state in good_membership_states:
+        if partner.membership_state in ['invoiced','paid']:
+            log['alert'].append('Lidmaatschap aanvraag van betaald lid')
+            log['alert_website'] = True
+        if partner.membership_state in ['wait_member']:
+            log['alert'].append('Lidmaatschap aanvraag van contact met wachtend lidmaatschap')
+            log['wait_member'] = True
     return partner, vals, log
 
 def verify_if_customer_or_supplier(obj,cr,uid,data):
@@ -154,8 +153,11 @@ def verify_if_customer_or_supplier(obj,cr,uid,data):
     # TODO
     partner, vals, log = data
     if partner and (partner.customer or partner.supplier):
-        log['alert'].append('Lidmaatschap aanvraag van contact met klant/lev. status')
-        log['alert_website'] = True
+        if log['renewal'] == False:
+            log['alert'].append('Lidmaatschap aanvraag van contact met klant/lev. status')
+            log['alert_website'] = True
+        else:
+            log['alert'].append('Website hernieuwing van contact met klant/lev. status')
     return partner, vals, log
 
 def send_internal_alerts(obj,cr,uid,data):
@@ -410,18 +412,15 @@ class res_partner(osv.osv):
 
         # renewal product...? , update contact  
         if datas.get('membership_renewal', False):
-            vals['membership_renewal'] = True
             vals['membership_renewal_product_id'] = product_id
-        else:
-            vals['membership_renewal'] = False
 
         # override default from website            
         vals['customer'] = False
 
         # membership partner update or create
         _logger.info(vals)
-        _logger.info("partner ids:{}".format(ids))
         if not ids:
+            _logger.info("partner niet aangemeld")
             ids,vals,log = compose(
                     partial(match_with_existing_partner,self,cr,uid),
                     partial(verify_partner_membership_state,self,cr,uid),
@@ -431,9 +430,15 @@ class res_partner(osv.osv):
             )(vals)
             _logger.info("partner match ids:{}".format(ids))
         else:
+            _logger.info("partner aangemeld ids:{}".format(ids))
+            log = {
+                'alert':[],
+                'renewal':datas.get('membership_renewal', False)
+            }
             ids,vals,log = compose(
-                    lambda ids:(self.browse(cr,uid,ids[0],context=context),vals,{'alert':[]}),
+                    lambda ids:(self.browse(cr,uid,ids[0],context=context),vals,log),
                     partial(verify_if_customer_or_supplier,self,cr,uid),
+                    partial(send_internal_alerts,self,cr,uid),
                     lambda (p,v,l):([p.id],v,l)
             )(ids)
 
