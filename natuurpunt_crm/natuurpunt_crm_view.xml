@@ -116,7 +116,7 @@
 			    </tree>
 			</field>
 		    </page>
-		    <page string="Interessegebieden" groups="natuurpunt_crm.group_natuurpunt_crm_user">
+		    <page string="Interessegebieden">
 			<field name="interest_ids" nolabel="1" context="{'default_partner_id':active_id}">
 			    <tree string="Interessegebieden">
 				<field name="name"/>
