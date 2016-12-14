@@ -24,6 +24,9 @@ import time
 from openerp import netsvc
 from tools.translate import _
 import logging
+from natuurpunt_tools import compose
+from natuurpunt_tools import match_with_existing_partner
+from functools import partial
 
 _logger = logging.getLogger('natuurpunt_web_event')
 
@@ -414,21 +417,32 @@ class res_partner(osv.osv):
                 'registration_id':registration_id
             }
 
-    def create_web_registration(self,cr,uid,ids,vals,datas,context=None):        
+    def create_web_registration(self,cr,uid,ids,vals,datas,context=None):
         context = context or {}
         if ids == None:
             ids = []
 
+        # if no ids => try to match on name
+        if not ids:
+            _logger.info(vals)
+            _logger.info("geen partner match via e-mail")
+            data = (vals, _logger, 'Registratie activiteit naam match')
+            ids,log = compose(
+                 partial(match_with_existing_partner,self,cr,uid),
+                 lambda (p,v,l):([p.id],l) if p else (ids,l)
+            )(data)
+            _logger.info("partner match ids:{}".format(ids))
+
         # if ids => no update res_partner, just use it to invoice
         # else create res_partner
-        if not ids:
-            ids.append(self.create(cr,uid,vals,context=context))            
+        if not ids
+            ids.append(self.create(cr,uid,vals,context=context))
 
         # get event product for natuurpunt CVN
         product_obj = self.pool.get('product.product')
         product_id = product_obj.search(cr, uid, [('event_product', '=', True)])
         assert(len(product_id) == 1)
-        
+
         return self.create_event_invoice(cr,uid,ids,selected_product_id=product_id,datas=datas,context=context)
 
 res_partner()
