@@ -435,7 +435,7 @@ class res_partner(osv.osv):
 
         # if ids => no update res_partner, just use it to invoice
         # else create res_partner
-        if not ids
+        if not ids:
             ids.append(self.create(cr,uid,vals,context=context))
 
         # get event product for natuurpunt CVN
