@@ -806,8 +806,9 @@ class bank_statement_create_partner(osv.osv_memory):
                     stmt = stmt_obj.browse(cr, uid, stmt_ids[0])
 
                     mvl_obj = self.pool.get('account.move.line')
-                    mvl_ids = mvl_obj.search(cr, uid, [('partner_id','=', partner_id), ('reconcile_id', '=', False), ('account_id.reconcile', '=', True)])
-
+                    #mvl_ids = mvl_obj.search(cr, uid, [('partner_id','=', partner_id), ('reconcile_id', '=', False), ('account_id.reconcile', '=', True)])
+                    invoice = invoice_obj.browse(cr, uid, invoice_id)
+                    mvl_ids = mvl_obj.search(cr, uid, [('move_id','=', invoice.move_id.id), ('reconcile_id', '=', False), ('account_id.reconcile', '=', True)]) 
                     if mvl_ids:
                         mvl = mvl_obj.browse(cr, uid, mvl_ids[0])
 
