@@ -42,16 +42,55 @@
     <record model="ir.ui.view" id="view_res_partner_inactive_form">
         <field name="name">view.res_partner_inactive.form</field>
         <field name="model">res.partner</field>
-        <field name="inherit_id" ref="base.view_partner_form"/>
-        <field name="type">form</field>
+        <field name="inherit_id" ref="membership.view_partner_form"/>
+		<field name="type">form</field>
         <field name="arch" type="xml">
-		    <field name="active" position="after">
-                <field name="inactive_id" attrs="{'invisible':[('active','=',True)]}" on_change="onchange_inactive(inactive_id)"/>
+
+			<field name="active" position="replace"/>
+			<field name="function" position="before">
+				<field name="active_readonly" invisible="1"/>
+				<field name="active" 
+					   attrs="{'readonly':[('active_readonly','=',True)]}"/>
+				<field name="inactive_id" 
+                       attrs="{'invisible':[('active','=',True)], 'readonly':[('active_readonly','=',True)]}"
+					   on_change="onchange_inactive(inactive_id)"/>
                 <field name="show_active_partner" invisible="1"/>
-                <field name="active_partner_id" attrs="{'invisible':['|',('active','=',True),('show_active_partner','=',False)]}"/>
-            </field>
+				<field name="active_partner_id"
+                       attrs="{'invisible':['|',('active','=',True),('show_active_partner','=',False)], 'readonly':[('active_readonly','=',True)]}"/>
+
+			</field>
         </field>
     </record>
+
+    <record model="ir.ui.view" id="view_res_partner_inactive_mail_form">
+        <field name="name">view.res_partner_inactive.mail.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="mail.view_emails_partner_info_form"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+
+            <field name="notification_email_send" position="replace"/>
+			<xpath expr="//page[@string='Sales &amp; Purchases']//field[@name='company_id']" position="after">			   
+               <field name="notification_email_send" />
+            </xpath>
+
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_res_partner_inactive_opt_out_form">
+        <field name="name">view.res_partner_inactive.opt.out.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="email_template.res_partner_opt_out_form"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+
+			<field name="opt_out" position="replace"/>
+            <xpath expr="//page[@string='Sales &amp; Purchases']//field[@name='company_id']" position="after">
+				<field name="opt_out" />
+	        </xpath>
+
+        </field>
+	</record>
 
     </data>
 </openerp>
