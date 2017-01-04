@@ -48,6 +48,20 @@ class account_move_line(osv.osv):
         'reject_date': fields.date('Weigering Datum'),
     }
 
+    def copy_data(self, cr, uid, id, default=None, context=None):
+        """
+        work-a-round for process_rejects -> copy account_move
+        don't copy one2may field entry_ids. It points to the same model
+        and this will create a query that kills performance
+        happens also in a read of this field. Skipping is not a good fix
+        but a work-a-round
+        """
+        if context and 'reject' in context:
+            if default is None:
+                default = {}
+            default['entry_ids'] = []
+        return super(account_move_line, self).copy_data(cr,uid,id,default=default,context=context)
+
 class account_bank_statement(osv.osv):
 
     _inherit = 'account.bank.statement'
@@ -149,7 +163,8 @@ class account_bank_statement(osv.osv):
                                 move_cancel_id = line.move_id.id
 
                     if move_cancel_id:
-                        dupl_id = move_obj.copy(cr, uid, move_cancel_id, None, context=context)
+                        context['reject'] = True
+                        dupl_id = move_obj.copy(cr, uid, move_cancel_id, context=context)
                         move_obj.button_cancel(cr, uid, [dupl_id], context=context)
                         dupl_line_ids = move_line_obj.search(cr, uid,[('move_id','=',dupl_id)])
                         for dupl_line in move_line_obj.browse(cr, uid, dupl_line_ids):
