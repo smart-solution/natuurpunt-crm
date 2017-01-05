@@ -48,6 +48,18 @@ class account_move_line(osv.osv):
         'reject_date': fields.date('Weigering Datum'),
     }
 
+    def fields_get(self, cr, user, allfields=None, context=None, write_access=True):
+        """
+        work-a-round for process_rejects -> copy account_move
+        don't copy one2may field entry_ids. It points to the same model
+        and this will create a query that kills performance
+        """
+        res = super(account_move_line, self).fields_get(cr,user,allfields=allfields,context=context,write_access=write_access)
+        if context and 'reject' in context:
+            if 'entry_ids' in res:
+                del res['entry_ids']
+        return res
+
     def copy_data(self, cr, uid, id, default=None, context=None):
         """
         work-a-round for process_rejects -> copy account_move
