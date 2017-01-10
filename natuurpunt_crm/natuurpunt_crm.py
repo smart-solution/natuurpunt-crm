@@ -343,6 +343,15 @@ class res_partner(osv.osv):
             res['warning']['message'] = warning 
         return res
 
+    def update_state_id(self,vals,zip_id,cr):
+        if zip_id:
+            sql_stat = "select state_id from res_country_city where id = %d" % (zip_id, )
+            cr.execute(sql_stat)
+            for sql_res in cr.dictfetchall():
+                if sql_res['state_id']:
+                    vals['state_id'] = sql_res['state_id']
+        return vals
+    
     def onchange_street_id(self, cr, uid, ids, zip_id, street_id, street_nbr, street_bus, context=None):
         res = super(res_partner, self).onchange_street_id(cr, uid, ids, zip_id, street_id, street_nbr, street_bus, context=context)
         id_member = 0
@@ -350,13 +359,14 @@ class res_partner(osv.osv):
         if context and 'web' in context:
             web = True
         else:
-            web = False
-        if zip_id:
-            sql_stat = "select state_id from res_country_city where id = %d" % (zip_id, )
-            cr.execute(sql_stat)
-            for sql_res in cr.dictfetchall():
-                if sql_res['state_id']:
-                    res['value']['state_id'] = sql_res['state_id']
+            web = False          
+        res['value'] = self.update_state_id(res['value'],zip_id,cr)
+#         if zip_id:
+#             sql_stat = "select state_id from res_country_city where id = %d" % (zip_id, )
+#             cr.execute(sql_stat)
+#             for sql_res in cr.dictfetchall():
+#                 if sql_res['state_id']:
+#                     res['value']['state_id'] = sql_res['state_id']
         if street_nbr == False:
             street_nbr = ''
         if street_bus == False:
@@ -418,6 +428,8 @@ class res_partner(osv.osv):
         return {'value':res}
 
     def create(self, cr, uid, vals, context=None):
+        if 'zip_id' in vals and vals['zip_id'] and 'state_id' not in vals:
+            vals = self.update_state_id(vals,vals['zip_id'],cr)
         if 'organisation_type_id' in vals:
             vals['crab_used'] = False
             vals['country_id'] = 21
@@ -473,6 +485,8 @@ class res_partner(osv.osv):
         return res
 
     def write(self, cr, uid, ids, vals, context=None):
+        if 'zip_id' in vals and vals['zip_id'] and 'state_id' not in vals:
+            vals = self.update_state_id(vals,vals['zip_id'],cr)
         if 'membership_nbr' in vals:
             vals['membership_nbr_set'] = True
             vals['membership_nbr_num'] = int(vals['membership_nbr'])
