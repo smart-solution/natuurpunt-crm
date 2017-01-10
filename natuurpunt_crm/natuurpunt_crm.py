@@ -418,6 +418,10 @@ class res_partner(osv.osv):
         return {'value':res}
 
     def create(self, cr, uid, vals, context=None):
+        if 'organisation_type_id' in vals:
+            vals['crab_used'] = False
+            vals['country_id'] = 21
+            vals['no_address'] = True
         if 'membership_nbr' in vals:
             vals['membership_nbr_set'] = True
             if vals['membership_nbr']:
