@@ -430,7 +430,7 @@ class res_partner(osv.osv):
     def create(self, cr, uid, vals, context=None):
         if 'zip_id' in vals and vals['zip_id'] and 'state_id' not in vals:
             vals = self.update_state_id(vals,vals['zip_id'],cr)
-        if 'organisation_type_id' in vals:
+        if 'organisation_type_id' in vals and vals['organisation_type_id']:
             vals['crab_used'] = False
             vals['country_id'] = 21
             vals['no_address'] = True
