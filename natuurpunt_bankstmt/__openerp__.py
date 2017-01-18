@@ -6,7 +6,7 @@
 	"description" : "This module updates the account number always based upon the selected partner.",
 	"website" : "http://",
 	"category" : "Account",
-	"depends" : ["account","natuurpunt_coda","natuurpunt_account","l10n_be_coda","multi_analytical_account","natuurpunt_membership","base_iban"],
+	"depends" : ["account","natuurpunt_coda","natuurpunt_account","l10n_be_coda","multi_analytical_account","natuurpunt_membership","base_iban","account_bank_statement_async"],
 	"init_xml" : [],
 	"demo_xml" : [],
 	"update_xml" : ["natuurpunt_bankstmt_view.xml"],
