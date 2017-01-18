@@ -59,14 +59,14 @@
                         </group>
                 </page>
 	    </page>
-
+<!--
             <button name="button_confirm_bank" position="attributes">
                 <attribute name="attrs">{'invisible':[('validated','=',False)]}</attribute>
             </button>
             <button name="button_confirm_bank_async" position="attributes">
                 <attribute name="attrs">{'invisible':['|',('validated','=',False),('state','!=','draft')]}</attribute>
             </button>
-
+-->
         </field>
     </record>
 
