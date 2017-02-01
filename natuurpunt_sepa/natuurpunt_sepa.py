@@ -33,6 +33,7 @@ from openerp.report import report_sxw
 from itertools import groupby
 import openerp.addons.decimal_precision as dp
 import logging
+from natuurpunt_tools import sql_wrapper
 
 logger = logging.getLogger(__name__)
 
@@ -497,20 +498,27 @@ where p1.id = %d
             payment_term_id = None
             mandate_id = None
             partner_bank_id = None
-            sql_stat = '''select sdd_mandate.id as mandate_id, account_payment_term.id as payment_term_id, res_partner_bank.id as partner_bank_id from res_partner, res_partner_bank, sdd_mandate, account_payment_term
-where res_partner.id = res_partner_bank.partner_id
-  and partner_bank_id = res_partner_bank.id
-  and sdd_mandate.state = 'valid'
-  and account_payment_term.name = 'Direct debit'
-  and res_partner.id = %d order by signature_date desc''' % (partner.id, )
-            cr.execute(sql_stat)
-            sql_res = cr.dictfetchone()
-            if sql_res and sql_res['payment_term_id']:
-                payment_term_id = sql_res['payment_term_id']
-                mandate_id = sql_res['mandate_id']
-                partner_bank_id = sql_res['partner_bank_id']
+            if not('web' in context):
+                sql_stat = '''
+                           select
+                           sdd_mandate.id as mandate_id,
+                           account_payment_term.id as payment_term_id,
+                           res_partner_bank.id as partner_bank_id
+                           from res_partner, res_partner_bank, sdd_mandate, account_payment_term
+                           where res_partner.id = res_partner_bank.partner_id
+                           and partner_bank_id = res_partner_bank.id
+                           and sdd_mandate.state = 'valid'
+                           and account_payment_term.name = 'Direct debit'
+                           and res_partner.id = {} order by signature_date desc
+                           '''
+                sql_res = sql_wrapper(sql_stat.format(partner.id), method='dictfetchone')(cr)
+                if sql_res and sql_res['payment_term_id']:
+                    payment_term_id = sql_res['payment_term_id']
+                    mandate_id = sql_res['mandate_id']
+                    partner_bank_id = sql_res['partner_bank_id']
+
             amount_inv = amount_to_inv - third_payer_amount
-            
+
             inv_org = False
             if invoice_organisation:
                 if recruiting_organisation_id:
