@@ -21,11 +21,10 @@
 
 from osv import osv, fields
 from openerp.tools.translate import _
-
-
+from natuurpunt_tools import uids_in_group
 
 class partner_inactive(osv.osv):
-	
+
 	_name = 'partner.inactive'
 	_description = 'Partner Inactive Reason'
 	_columns = {
@@ -36,11 +35,24 @@ partner_inactive()
 
 class res_partner(osv.osv):
 
+    def _active_readonly(self,cr,uid,ids,fieldnames,args,context=None):
+        res = dict.fromkeys(ids)
+        for partner in self.browse(cr, uid, ids, context=context):
+            contact_creators = uids_in_group(self, cr, uid, 'group_partner_manager', context=context)
+            res[partner.id] = False if uid in contact_creators else True
+        return res
+
     _inherit = 'res.partner'
     _columns = {
         'inactive_id': fields.many2one('partner.inactive', 'Inactivity Reason'),
         'show_active_partner': fields.related('inactive_id', 'show_active_partner', type="boolean", string='Show Active Partner', readonly=True),
         'active_partner_id': fields.many2one('res.partner', 'Active Partner'),
+        'active_readonly':fields.function(
+                             _active_readonly,
+                             method=True,
+                             type='boolean',
+                             string='active_readonly',
+                          ),
     }
 
     def onchange_inactive(self, cr, uid, ids, inactive_id, context=None):

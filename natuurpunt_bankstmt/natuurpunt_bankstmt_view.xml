@@ -41,7 +41,7 @@
 			    <field name="mandate_ref"/>
 			    <field name="pay_reason"/>
 			    <field name="type"/>
-			    <field name="sdd_mandate_id"/>
+			    <field name="name"/>
 			    <field name="reason"/>
 			    <field name="type_R"/>
 			    <field name="comm"/>
@@ -52,7 +52,21 @@
 			</tree>
 		    </field> 
 		</page>
+                <page string="Logs">
+                        <field name="process_log" nolabel="1" colspant="4"/>
+                        <group>
+                        <field name="validated"/>
+                        </group>
+                </page>
 	    </page>
+<!--
+            <button name="button_confirm_bank" position="attributes">
+                <attribute name="attrs">{'invisible':[('validated','=',False)]}</attribute>
+            </button>
+            <button name="button_confirm_bank_async" position="attributes">
+                <attribute name="attrs">{'invisible':['|',('validated','=',False),('state','!=','draft')]}</attribute>
+            </button>
+-->
         </field>
     </record>
 

@@ -27,7 +27,7 @@
     "category" : "Generic Modules/Base",
     "description": """
 """,
-    "depends" : ["base",],
+    "depends" : ["base","membership","mail","email_template"],
     "data" : [
         'partner_inactive_view.xml',
 #        'partner_inactive_data.xml',

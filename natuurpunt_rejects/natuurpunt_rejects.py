@@ -48,6 +48,32 @@ class account_move_line(osv.osv):
         'reject_date': fields.date('Weigering Datum'),
     }
 
+    def fields_get(self, cr, user, allfields=None, context=None, write_access=True):
+        """
+        work-a-round for process_rejects -> copy account_move
+        don't copy one2may field entry_ids. It points to the same model
+        and this will create a query that kills performance
+        """
+        res = super(account_move_line, self).fields_get(cr,user,allfields=allfields,context=context,write_access=write_access)
+        if context and 'reject' in context:
+            if 'entry_ids' in res:
+                del res['entry_ids']
+        return res
+
+    def copy_data(self, cr, uid, id, default=None, context=None):
+        """
+        work-a-round for process_rejects -> copy account_move
+        don't copy one2may field entry_ids. It points to the same model
+        and this will create a query that kills performance
+        happens also in a read of this field. Skipping is not a good fix
+        but a work-a-round
+        """
+        if context and 'reject' in context:
+            if default is None:
+                default = {}
+            default['entry_ids'] = []
+        return super(account_move_line, self).copy_data(cr,uid,id,default=default,context=context)
+
 class account_bank_statement(osv.osv):
 
     _inherit = 'account.bank.statement'
@@ -98,21 +124,16 @@ class account_bank_statement(osv.osv):
                         immediate_reject = sql_res['immediate_reject']
 
                     payment_line_id = None
-                    invoice_id = None
-                    sdd_reject_count = 0
-                    payment_line_id = None
                     move_id = None
                     move_cancel_id = None
                     reconcile_id = None
 
-                    sql_stat = "select payment_line.id as payment_line_id, account_invoice.id as invoice_id, account_invoice.sdd_reject_count, account_move.id as move_id from payment_line, account_move_line, account_move, account_invoice where payment_line.partner_id = %d and payment_line.sdd_mandate_id = %d and rtrim(upper(payment_line.communication)) = rtrim(upper('%s')) and payment_line.move_line_id = account_move_line.id and account_move_line.move_id = account_move.id and account_move.name = account_invoice.number order by account_invoice.id desc limit 1" % (reject.partner_id.id, reject.sdd_mandate_id.id, reject.comm, )
-                    cr.execute(sql_stat)
-                    sql_res = cr.dictfetchone()
-                    if sql_res:
-                        payment_line_id = sql_res['payment_line_id']
-                        invoice_id = sql_res['invoice_id']
-                        sdd_reject_count = sql_res['sdd_reject_count']
-                        move_id = sql_res['move_id']
+                    payment_line_ids = payment_line_obj.search(cr, uid, [('name','=',reject.name)], context=context)
+                    for payment_line in payment_line_obj.browse(cr, uid, payment_line_ids):
+                        payment_line_id = payment_line.id
+                        move_id = payment_line.move_line_id.move_id.id
+
+                        invoice_id = payment_line.move_line_id.invoice_line_id.invoice_id.id
 
                     if move_id:
                         sql_stat = "select reconcile_id from account_move_line where move_id = %d and not(reconcile_id IS NULL)" % (move_id, )
@@ -121,18 +142,18 @@ class account_bank_statement(osv.osv):
                         if sql_res:
                             reconcile_id = sql_res['reconcile_id']
 
-
                     if payment_line_id:
                         sql_stat = "delete from payment_line where id = %d" % (payment_line_id, )
                         cr.execute(sql_stat)
 
-                    if invoice_id:
+                    for invoice in invoice_obj.browse(cr,uid, [invoice_id]):
+                        sdd_reject_count = invoice.sdd_reject_count
                         if sdd_reject_count == 0:
-                            invoice_obj.write(cr, uid, invoice_id, {'sdd_reject_count': 1, 'sdd_reject1_id': reject_code, 'sdd_reject1_date': stmt.date, 'sdd_reject1_bankstmt_id': stmt.id}, context=context)
+                            invoice_obj.write(cr, uid, invoice.id, {'sdd_reject_count': 1, 'sdd_reject1_id': reject_code, 'sdd_reject1_date': stmt.date, 'sdd_reject1_bankstmt_id': stmt.id}, context=context)
                         if sdd_reject_count == 1:
-                            invoice_obj.write(cr, uid, invoice_id, {'sdd_reject_count': 2, 'sdd_reject2_id': reject_code, 'sdd_reject2_date': stmt.date, 'sdd_reject2_bankstmt_id': stmt.id}, context=context)
+                            invoice_obj.write(cr, uid, invoice.id, {'sdd_reject_count': 2, 'sdd_reject2_id': reject_code, 'sdd_reject2_date': stmt.date, 'sdd_reject2_bankstmt_id': stmt.id}, context=context)
                         if sdd_reject_count == 2 or immediate_reject:
-                            invoice_obj.write(cr, uid, invoice_id,
+                            invoice_obj.write(cr, uid, invoice.id,
                                               {'definitive_reject': True,
                                                'sdd_reject_count': 3,
                                                'sdd_reject3_id': reject_code,
@@ -149,7 +170,8 @@ class account_bank_statement(osv.osv):
                                 move_cancel_id = line.move_id.id
 
                     if move_cancel_id:
-                        dupl_id = move_obj.copy(cr, uid, move_cancel_id, None, context=context)
+                        context['reject'] = True
+                        dupl_id = move_obj.copy(cr, uid, move_cancel_id, context=context)
                         move_obj.button_cancel(cr, uid, [dupl_id], context=context)
                         dupl_line_ids = move_line_obj.search(cr, uid,[('move_id','=',dupl_id)])
                         for dupl_line in move_line_obj.browse(cr, uid, dupl_line_ids):
