@@ -265,6 +265,7 @@ class res_partner(osv.osv):
     _columns = {
         'mailing_list_partner_ids': fields.one2many('mailing.list.partner', 'partner_id', 'Mailing Lijsten'),
         'mailing_subscription_ids': fields.one2many('mailing.subscription', 'partner_id', 'Digitale abonnementen'),
+        'iets_te_verbergen': fields.boolean('Iets te verbergen', required=False),
         'welkomstpakket': fields.boolean('Welkomstpakket'),
         'date_welkomstpakket': fields.date('Datum welkomstpakket', required=False),
         'lidkaart': fields.boolean('Lidkaart'),
