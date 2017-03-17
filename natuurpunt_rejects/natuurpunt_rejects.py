@@ -168,12 +168,15 @@ class account_bank_statement(osv.osv):
                         for line in move_line_obj.browse(cr, uid, move_line_ids):
                             if line.move_id.id != move_id:
                                 move_cancel_id = line.move_id.id
+                                period_id = line.move_id.period_id.id
 
                     if move_cancel_id:
                         context['reject'] = True
                         dupl_id = move_obj.copy(cr, uid, move_cancel_id, context=context)
+                        move_obj.write(cr, uid, [dupl_id], {'period_id':period_id}, context=context)
                         move_obj.button_cancel(cr, uid, [dupl_id], context=context)
                         dupl_line_ids = move_line_obj.search(cr, uid,[('move_id','=',dupl_id)])
+                        move_line_obj.write(cr, uid, dupl_line_ids, {'period_id':period_id}, context=context)
                         for dupl_line in move_line_obj.browse(cr, uid, dupl_line_ids):
                             debit = dupl_line.credit
                             credit = dupl_line.debit
