@@ -328,8 +328,8 @@ where membership_membership_line.partner = %d and not(membership_membership_line
             cr.commit()
          
         if not('web' in context):
-            view_id = self.pool.get('ir.ui.view').search(cr, uid, [('model','=','document.cmis.link'),
-                                                                ('name','=','document.cmis.link.form')])
+            view_id = self.pool.get('ir.ui.view').search(cr, uid, [('model','=','memory.cmis.dropoff'),
+                                                                ('name','=','natuurpunt_cmis_dropoff_form')])
 
             return {
                 'type': 'ir.actions.act_window',
@@ -337,7 +337,7 @@ where membership_membership_line.partner = %d and not(membership_membership_line
                 'view_mode': 'form',
                 'view_type': 'form',
                 'view_id': view_id[0],
-                'res_model': 'document.cmis.link',
+                'res_model': 'memory.cmis.dropoff',
                 'target': 'new',
                 'context': context,
             }
