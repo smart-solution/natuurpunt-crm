@@ -170,7 +170,7 @@ class res_partner(osv.osv):
 		'organisation_function_parent_ids': fields.one2many('res.organisation.function', 'partner_id', 'Functies voor vzw'),
 		'organisation_function_child_ids': fields.one2many('res.organisation.function', 'person_id', 'Functies voor persoon'),
         	'radius_action_ids': fields.many2many('res.radius.action', 'res_organisation_radius_action_rel', 'partner_id', 'radius_action_id', 'Werkingsveld'),
-        	'niche_categ_ids': fields.many2many('res.niche.categ', 'res_organisation_niche_categ_rel', 'partner_id', 'niche_categ_id', 'Niches'),
+        	'niche_categ_ids': fields.many2many('res.niche.categ', 'res_organisation_niche_categ_rel', 'partner_id', 'niche_categ_id', 'Nichecategorie'),
         	'niche_ids': fields.many2many('res.niche', 'res_organisation_niche_rel', 'partner_id', 'niche_id', 'Niches'),
         	'zip_ids': fields.many2many('res.country.city', 'res_organisation_city_rel', 'partner_id', 'zip_id', 'Gemeentes'),
         	'm2m_zip_ids': fields.many2many('res.country.city', 'res_organisation_city_m2m_rel', 'partner_id', 'zip_id', 'Gemeentes'),
