@@ -31,7 +31,7 @@ class res_organisation_type(osv.osv):
 		'unique_type': fields.boolean('Uniek'),
 		'organisation': fields.boolean('Organisatie'),
 		'remittance': fields.boolean('Afdracht'),
-		'radius_of_action': fields.boolean('Werkingsveld'),
+		#'radius_of_action': fields.boolean('Werkingsveld'),
 		'organisation_relation_ids': fields.many2many('res.organisation.relation', 'res_organisation_type_relation_rel', 'organisation_type_id', 'relation_type_id', 'Organisatierelaties'),
 		'nature_area': fields.boolean('Natuurgebied'),
 		'display_functions_company': fields.boolean('Toon functies vzw'),
@@ -40,9 +40,9 @@ class res_organisation_type(osv.osv):
 		'display_relations': fields.boolean('Toon relaties-tab'),
 		'display_relations_vertical': fields.boolean('Toon verticale relaties'),
 		'display_relations_horizontal': fields.boolean('Toon horizontale relaties'),
-		'display_radius_action': fields.boolean('Toon werkingsveld'),
+		#'display_radius_action': fields.boolean('Toon werkingsveld'),
 		'display_niche': fields.boolean('Toon niche'),
-		'display_niche_category': fields.boolean('Toon niche categorie'),
+		#'display_niche_category': fields.boolean('Toon niche categorie'),
 		'display_reference': fields.boolean('Toon referentie'),
 		'display_npca': fields.boolean('Toon NPCA'),
 		'display_regional_level': fields.boolean('Toon regionaal niveau'),
@@ -92,32 +92,31 @@ class res_function_type(osv.osv):
 
 res_function_type()
 
-class res_radius_action(osv.osv):
-	_name = 'res.radius.action'
-	
-	_columns = {
-		'name': fields.char('Werkingsveld', size=128, required=True),
-        	'partner_ids': fields.many2many('res.partner', 'res_partner_radius_action_rel', 'radius_action_id', 'partner_id', 'Partners'),
-	}
-
-res_radius_action()
+# class res_radius_action(osv.osv):
+# 	_name = 'res.radius.action'
+# 	
+# 	_columns = {
+# 		'name': fields.char('Werkingsveld', size=128, required=True),
+#         	'partner_ids': fields.many2many('res.partner', 'res_partner_radius_action_rel', 'radius_action_id', 'partner_id', 'Partners'),
+# 	}
+# 
+# res_radius_action()
 
 class res_niche_categ(osv.osv):
 	_name = 'res.niche.categ'
 	
 	_columns = {
 		'name': fields.char('Nichecategorie', size=128, required=True),
-		'partner_ids': fields.many2many('res.partner', 'res_partner_niche_categ_rel', 'niche_categ_id', 'partner_id', 'Partners'),
 	}
 
-res_function_categ()
+res_niche_categ()
 
 class res_niche(osv.osv):
 	_name = 'res.niche'
 	
 	_columns = {
 		'name': fields.char('Niche', size=128, required=True),
-        'partner_ids': fields.many2many('res.partner', 'res_partner_niche_rel', 'niche_id', 'partner_id', 'Partners'),
+        #'partner_ids': fields.many2many('res.partner', 'res_partner_niche_rel', 'niche_id', 'partner_id', 'Partners'),
         'categ_id': fields.many2one('res.niche.categ', 'Nichecategorie', select=True, ondelete='cascade'),
 	}
 
@@ -169,8 +168,8 @@ class res_partner(osv.osv):
         	'partner_down_ids': fields.one2many('res.partner', 'partner_up_id', 'Onderliggende relaties'),
 		'organisation_function_parent_ids': fields.one2many('res.organisation.function', 'partner_id', 'Functies voor vzw'),
 		'organisation_function_child_ids': fields.one2many('res.organisation.function', 'person_id', 'Functies voor persoon'),
-        	'radius_action_ids': fields.many2many('res.radius.action', 'res_organisation_radius_action_rel', 'partner_id', 'radius_action_id', 'Werkingsveld'),
-        	'niche_categ_ids': fields.many2many('res.niche.categ', 'res_organisation_niche_categ_rel', 'partner_id', 'niche_categ_id', 'Nichecategorie'),
+        	#'radius_action_ids': fields.many2many('res.radius.action', 'res_organisation_radius_action_rel', 'partner_id', 'radius_action_id', 'Werkingsveld'),
+        	#'niche_categ_ids': fields.many2many('res.niche.categ', 'res_organisation_niche_categ_rel', 'partner_id', 'niche_categ_id', 'Nichecategorie'),
         	'niche_ids': fields.many2many('res.niche', 'res_organisation_niche_rel', 'partner_id', 'niche_id', 'Niches'),
         	'zip_ids': fields.many2many('res.country.city', 'res_organisation_city_rel', 'partner_id', 'zip_id', 'Gemeentes'),
         	'm2m_zip_ids': fields.many2many('res.country.city', 'res_organisation_city_m2m_rel', 'partner_id', 'zip_id', 'Gemeentes'),
@@ -185,9 +184,9 @@ class res_partner(osv.osv):
 		'display_relations': fields.related('organisation_type_id','display_relations',type='boolean',string='Toon relaties'),
 		'display_relations_vertical': fields.related('organisation_type_id','display_relations_vertical',type='boolean',string='Toon verticale relaties'),
 		'display_relations_horizontal': fields.related('organisation_type_id','display_relations_horizontal',type='boolean',string='Toon horizontale relaties'),
-		'display_radius_action': fields.related('organisation_type_id','display_radius_action',type='boolean',string='Toon werkingsveld'),
+		#'display_radius_action': fields.related('organisation_type_id','display_radius_action',type='boolean',string='Toon werkingsveld'),
 		'display_niche': fields.related('organisation_type_id','display_niche',type='boolean',string='Toon niche'),
-		'display_niche_category': fields.related('organisation_type_id','display_niche_category',type='boolean',string='Toon niche categorie'),
+		#'display_niche_category': fields.related('organisation_type_id','display_niche_category',type='boolean',string='Toon niche categorie'),
 		'display_reference': fields.related('organisation_type_id','display_reference',type='boolean',string='Toon referentie'),
 		'display_npca': fields.related('organisation_type_id','display_npca',type='boolean',string='Toon NPCA'),
 		'display_regional_level': fields.related('organisation_type_id','display_regional_level',type='boolean',string='Toon regionaal niveau'),
@@ -241,6 +240,3 @@ class account_analytic_account(osv.osv):
                 cr.execute(sql_stat)
 
         return res
-
-account_analytic_account()
-

@@ -38,7 +38,7 @@
 				<field name="display_relations_horizontal"/>
 				<!--<field name="display_radius_action"/>-->
 				<field name="display_niche"/>
-				<field name="display_niche_category"/>
+				<!--<field name="display_niche_category"/>-->
 				<field name="display_reference"/>
 				<field name="display_npca"/>
 				<field name="display_regional_level"/>
@@ -418,8 +418,9 @@
 			<field name="display_relations" invisible="True"/>
 			<field name="display_relations_vertical" invisible="True"/>
 			<field name="display_relations_horizontal" invisible="True"/>
-			<field name="display_radius_action" invisible="True"/>
+			<!--<field name="display_radius_action" invisible="True"/>-->
 			<field name="display_niche" invisible="True"/>
+			<!--<field name="display_niche_category" invisible="True"/>-->
 			<field name="display_reference" invisible="True"/> 
 			<field name="display_npca" invisible="True"/>
 			<field name="display_regional_level" invisible="True"/>
@@ -479,9 +480,9 @@
 			    </field>
                         </group>
                     </page>	
-		    <page string="Niche" attrs="{'invisible': [('display_radius_action','=',False),('display_niche','=',False)]}">   
+		    <page string="Niche" attrs="{'invisible': [('display_niche','=',False)]}">   
                         <group colspan="1" col="2">
-			    <!--<field name="radius_action_ids" attrs="{'invisible': [('display_radius_action','=',False)]}"/>-->
+			    <!--<field name="niche_categ_ids" attrs="{'invisible': [('display_niche_category','=',False)]}"/>-->
 			    <field name="niche_ids" attrs="{'invisible': [('display_niche','=',False)]}"/>
                         </group>
                     </page>	
