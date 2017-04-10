@@ -73,7 +73,7 @@ class res_function_type(osv.osv):
 		'name': fields.char('Functietype', size=128, required=True),
 		'organisation_type_ids': fields.many2many('res.organisation.type', 'res_organisation_type_function_rel', 'function_type_id', 'organisation_type_id', 'Organisatietypes'),
 		'unique_type': fields.boolean('Uniek'),
-        	'categ_id': fields.many2one('res.function.categ', 'Functiecategorie', select=True, ondelete='cascade'),
+        'categ_id': fields.many2one('res.function.categ', 'Functiecategorie', select=True, ondelete='cascade'),
 	}
 
         def write(self, cr, uid, ids, vals, context=None):
@@ -161,21 +161,21 @@ class res_partner(osv.osv):
 	_inherit = 'res.partner'
 
 	_columns = {
-        	'organisation_type_id': fields.many2one('res.organisation.type', 'Organisatietype', select=True),
-        	'organisation_relation_ids': fields.many2many('res.partner', 'res_partner_organisation_rel', 'partner_id', 'relation_id', 'Relaties'),
+        'organisation_type_id': fields.many2one('res.organisation.type', 'Organisatietype', select=True),
+        'organisation_relation_ids': fields.many2many('res.partner', 'res_partner_organisation_rel', 'partner_id', 'relation_id', 'Relaties'),
 		'relation_ids': fields.many2many('res.organisation.relation', 'res_organisation_relation_rel', 'partner_id', 'relation_id', 'Partners'),
-        	'partner_up_id': fields.many2one('res.partner', 'Bovenliggende relatie', select=True, ondelete='cascade'),
-        	'partner_down_ids': fields.one2many('res.partner', 'partner_up_id', 'Onderliggende relaties'),
+        'partner_up_id': fields.many2one('res.partner', 'Bovenliggende relatie', select=True, ondelete='cascade'),
+        'partner_down_ids': fields.one2many('res.partner', 'partner_up_id', 'Onderliggende relaties'),
 		'organisation_function_parent_ids': fields.one2many('res.organisation.function', 'partner_id', 'Functies voor vzw'),
 		'organisation_function_child_ids': fields.one2many('res.organisation.function', 'person_id', 'Functies voor persoon'),
-        	#'radius_action_ids': fields.many2many('res.radius.action', 'res_organisation_radius_action_rel', 'partner_id', 'radius_action_id', 'Werkingsveld'),
-        	#'niche_categ_ids': fields.many2many('res.niche.categ', 'res_organisation_niche_categ_rel', 'partner_id', 'niche_categ_id', 'Nichecategorie'),
-        	'niche_ids': fields.many2many('res.niche', 'res_organisation_niche_rel', 'partner_id', 'niche_id', 'Niches'),
-        	'zip_ids': fields.many2many('res.country.city', 'res_organisation_city_rel', 'partner_id', 'zip_id', 'Gemeentes'),
-        	'm2m_zip_ids': fields.many2many('res.country.city', 'res_organisation_city_m2m_rel', 'partner_id', 'zip_id', 'Gemeentes'),
-        	'analytic_account_id': fields.many2one('account.analytic.account', 'Analytische code', select=True, ondelete='cascade'),
-        	'regional_level': fields.selection([('L','Lokaal'),('G','Gewestelijk'),('R','Regionaal'),('P','Provinciaal')], string='Regionaal niveau', size=1),
-        	'nature_up_id': fields.many2one('res.partner', 'Bovenliggend natuurgebied', select=True, ondelete='cascade'),
+        'niche_categ_ids': fields.many2many('res.niche.categ', 'res_organisation_niche_cat_rel', 'partner_id', 'categ_id', 'Niche Categorie'),
+        #'niche_categ_ids': fields.many2many('res.niche.categ', 'res_organisation_niche_categ_rel', 'partner_id', 'niche_categ_id', 'Nichecategorie'),
+        'niche_ids': fields.many2many('res.niche', 'res_organisation_niche_rel', 'partner_id', 'niche_id', 'Niches'),
+        'zip_ids': fields.many2many('res.country.city', 'res_organisation_city_rel', 'partner_id', 'zip_id', 'Gemeentes'),
+        'm2m_zip_ids': fields.many2many('res.country.city', 'res_organisation_city_m2m_rel', 'partner_id', 'zip_id', 'Gemeentes'),
+        'analytic_account_id': fields.many2one('account.analytic.account', 'Analytische code', select=True, ondelete='cascade'),
+        'regional_level': fields.selection([('L','Lokaal'),('G','Gewestelijk'),('R','Regionaal'),('P','Provinciaal')], string='Regionaal niveau', size=1),
+        'nature_up_id': fields.many2one('res.partner', 'Bovenliggend natuurgebied', select=True, ondelete='cascade'),
 		'remittance_new_member': fields.float('Afdracht nieuw lid'),
 		'remittance_exist_member': fields.float('Afdracht bestaand lid'),
 		'display_functions_company': fields.related('organisation_type_id','display_functions_company',type='boolean',string='Toon functies vzw'),
@@ -200,18 +200,19 @@ class res_partner(osv.osv):
 		'display_regional_partnership': fields.related('organisation_type_id','display_regional_partnership',type='boolean',string='Toon regionaal samenwerkingsverband'),
 	}
 
-# 	def write(self, cr, uid, ids, vals, context=None):
-# 		print "in WRITE in ORGANISATION STRUCTURE"
-# 		context['skip_write'] = True 
-# 
-# 		if 'zip_ids' in vals:
-# 			print 'organisation structure ids', ids
-# 			print 'organisation structure vals', vals
-# 			for organisation in ids:
-# 				org = self.browse(cr, uid, [organisation], context=context)
-# 				print 'organisation structure org', org.zip_ids
-# 		res = super(res_partner, self).write(cr, uid, ids, vals, context=context)
-# 		return res
+ 	def write(self, cr, uid, ids, vals, context=None):
+ 		if 'niche_ids' in vals:
+ 			#append bijhorende niche_cat_ids
+ 			print 'append niche_categ_ids to vals'
+ 			niche_obj = self.pool.get('res.niche')
+ 			cat_ids = []
+ 			for niche in niche_obj.browse(cr,uid,vals['niche_ids'][0][2]):
+			 	cat_ids.append(niche.categ_id.id)
+			cat_ids = list(set(cat_ids))
+			cat_list = [6,False,cat_ids]
+ 			vals['niche_categ_ids'] = [cat_list]
+ 		res = super(res_partner, self).write(cr, uid, ids, vals, context=context)
+ 		return res
 
 res_partner()
 
