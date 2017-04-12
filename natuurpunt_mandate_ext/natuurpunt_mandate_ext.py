@@ -31,6 +31,7 @@ import cStringIO
 import base64, os
 from tempfile import mkstemp
 from contextlib import contextmanager
+from natuurpunt_tools import get_included_product_ids
 
 logger = logging.getLogger(__name__)
 
@@ -77,8 +78,8 @@ def invoice_partner_renewal(obj,cr,uid,partner_id,context=None):
             'amount': partner.membership_renewal_product_id.list_price,
         }
     else:
-        default_renewal_product_id = partner_obj._np_membership_renewal_product(cr,uid,partner,context=context)
-        for product in product_obj.browse(cr, uid, default_renewal_product_id, context=context):
+        default_renewal_product = get_included_product_ids(product_obj,cr,uid,False)
+        for product in product_obj.browse(cr, uid, default_renewal_product, context=context):
             datas = {
                 'membership_product_id': product.id,
                 'amount': product.list_price,

@@ -28,6 +28,8 @@ from datetime import date
 from mx import DateTime
 import time
 import logging
+from functools import partial
+from natuurpunt_tools import get_included_product_ids
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +63,43 @@ def recursive_flatten_list(baselist, cmplist, func):
 
 def compose(*functions):
     return reduce(lambda f, g: lambda x: g(f(x)), functions, lambda x: x)
+
+def split_memberships_and_magazines(prod_object, cr, uid, prod_id):
+    if prod_id:
+        is_membership_prod = lambda prod_id : prod_object.search(cr, uid, [('id','=',prod_id),('membership_product','=',True)])
+        membership_prod_ids = is_membership_prod(prod_id)
+        is_magazine_prod = lambda prod_id : prod_object.search(cr, uid, [('id','=',prod_id),('magazine_product','=',True)])
+        magazine_prod_ids = is_magazine_prod(prod_id)
+        return (membership_prod_ids,magazine_prod_ids)
+    else:
+        return False
+
+def convert_memberships_and_magazines_to_included_products(obj, cr, uid, mem_mag_set):
+    if isinstance(mem_mag_set, tuple):
+        mem = [get_included_product_ids(obj,cr,uid,mem) for mem in mem_mag_set[0]] if mem_mag_set[0] else [get_included_product_ids(obj,cr,uid,False)]
+        mag = [get_included_product_ids(obj,cr,uid,mag) for mag in mem_mag_set[1]] if mem_mag_set[1] else mem_mag_set[1]
+        return (mem,[item for sublist in mag for item in sublist])
+    else:
+        return False
+
+def join_memberships_with_magazines(mem_mag_set):
+    if isinstance(mem_mag_set, tuple):
+        return [sorted(set(mem_mag + mem_mag_set[1])) for mem_mag in mem_mag_set[0]]
+    else:
+        return False
+
+class membership_membership_magazine(osv.osv):
+    _name = 'membership.membership_magazine'
+
+    _columns = {
+        'partner_id': fields.many2one('res.partner', 'Membership', select=True),
+        'product_id': fields.many2one('product.product', 'Magazine', select=True),
+        'date_to': fields.date('Datum tot'),
+        'date_cancel': fields.date('Datum opgezegd'),
+        'magazine_product': fields.boolean('Magazine'),
+    }
+
+membership_membership_magazine()
 
 class product_product(osv.osv):
     _inherit = 'product.product'
@@ -174,7 +213,6 @@ class res_partner(osv.osv):
 
     def _get_partner_id(self, cr, uid, ids, context=None):
         member_line_obj = self.pool.get('membership.membership_line')
-        res_obj =  self.pool.get('res.partner')
         data_inv = member_line_obj.browse(cr, uid, ids, context=context)
         list_partner = []
         for data in data_inv:
@@ -187,7 +225,6 @@ class res_partner(osv.osv):
 
     def _get_invoice_partner(self, cr, uid, ids, context=None):
         inv_obj = self.pool.get('account.invoice')
-        res_obj = self.pool.get('res.partner')
         data_inv = inv_obj.browse(cr, uid, ids, context=context)
         list_partner = []
         for data in data_inv:
@@ -201,137 +238,10 @@ class res_partner(osv.osv):
         #    list_partner += ids2
         return list_partner
 
-    def _np_membership_renewal_product(self, cr, uid, partner_data, context=None):
-        """This Function returns current membership_renewal_product based on actual membership lines.
-        @param self: The object pointer
-        @param cr: the current row, from the database cursor,
-        @param uid: the current user-id for security checks,
-        @param partner_data: Partner obj
-        @param context: A standard dictionary for contextual values
-        @param return: product.product id renewal product
-        """
-
-        today = time.strftime('%Y-%m-%d')
-        prod_object = self.pool.get('product.product')
-
-        if partner_data.free_member:
-            return False
-
-        """ start define rules """
-        def membership_is_paid_or_does_not_need_to_be_paid(mline,fstate):
-            if fstate == 'paid' or mline.account_invoice_line.invoice_id and mline.account_invoice_line.invoice_id.amount_total == 0.00:
-                inv = mline.account_invoice_line.invoice_id
-                if inv and any([payment.invoice.type == 'out_refund' for payment in inv.payment_ids]):
-                    return False
-                else:
-                    return (mline.membership_id.id,) if mline.membership_id else False
-            else:
-                return False
-
-        def membership_is_invoiced(mline,fstate):
-            if fstate == 'open':
-                membership_product = mline.membership_id
-                return (membership_product.id,) if membership_product and not(membership_product.magazine_product) else False
-            else:
-                return False
-
-        def membership_is_canceled_or_refunded(mline,fstate):
-            inv = mline.account_invoice_line.invoice_id
-            if fstate == 'cancel' or mline.membership_cancel_id or mline.date_cancel:
-                membership_product = mline.membership_id
-                return (membership_product.id,) if membership_product and not(membership_product.magazine_product) else False
-            else:
-                return False
-        """ end define rules """
-
-        def apply_renewal_rules_to_membership_lines(ids, rules):
-            mproducts = []
-            migrated_fstate = lambda : 'cancel' if mline.membership_cancel_id or mline.date_cancel else 'paid'
-            for mline in self.pool.get('membership.membership_line').browse(cr, uid, ids, context=context):
-                fstate = mline.account_invoice_line.invoice_id.state if not(mline.membership_cancel_id or mline.date_cancel) and mline.account_invoice_line.invoice_id else migrated_fstate()
-                mproducts.append([func(mline,fstate) for func in rules])
-            flatten_func = lambda set1,set2 : set1 + set2 if all([set1,set2]) else set1 if set1 else set2
-            return recursive_flatten_list(mproducts[0], mproducts[1:], flatten_func) if mproducts else []
-
-        def split_memberships_and_magazines(prod_set):
-            if isinstance(prod_set, tuple):
-                is_membership_prod = lambda prod_id : prod_object.search(cr, uid, [('id','=',prod_id),('membership_product','=',True)])
-                membership_prod_ids = [prod_id for prod_id in prod_set if is_membership_prod(prod_id)]
-                is_magazine_prod = lambda prod_id : prod_object.search(cr, uid, [('id','=',prod_id),('magazine_product','=',True)])
-                magazine_prod_ids = [prod_id for prod_id in prod_set if is_magazine_prod(prod_id)]
-                return (membership_prod_ids,magazine_prod_ids)
-            else:
-                return False
-
-        def get_included_product_ids(prod_id):
-            """returns included product ids from combined product.
-            all except 'gewoon lid' have included products
-            @param mem: id of combined product
-            @param return: list ids or membership_product id list if empty
-            """
-            if prod_id:
-                included_prod_ids = prod_object.read(cr, uid, prod_id, ['included_product_ids'], context=context)['included_product_ids']
-                return sorted(included_prod_ids) if included_prod_ids else [prod_id]
-            else:
-                included_prod_ids = prod_object.search(cr, uid, [('membership_product','=',True),('included_product_ids','=',False)])
-                return included_prod_ids
-
-        def convert_memberships_and_magazines_to_included_products(mem_mag_set):
-            if isinstance(mem_mag_set, tuple):
-                mem = [get_included_product_ids(mem) for mem in mem_mag_set[0]] if mem_mag_set[0] else [get_included_product_ids(False)]
-                mag = [get_included_product_ids(mag) for mag in mem_mag_set[1]] if mem_mag_set[1] else mem_mag_set[1]
-                return (mem,[item for sublist in mag for item in sublist])
-            else:
-                return False
-        
-        def join_memberships_with_magazines(mem_mag_set):
-            if isinstance(mem_mag_set, tuple):
-                return [sorted(set(mem_mag + mem_mag_set[1])) for mem_mag in mem_mag_set[0]]
-            else:
-                return False
-
-        def products_to_renew_from_membership_lines():
-            """loop througt membership lines and return
-            list of products that should be renewed with next invoice
-            We can only renew 1 product so the return value still needs to be
-            converted to a membership product that includes all to renew products
-            @param return: list of products to renew or False
-            """
-            # loop the current membership lines
-            ids = self.pool.get('membership.membership_line').search(cr, SUPERUSER_ID, [('partner','=',partner_data.id),('date_to','>=',today)])
-            if ids:
-                mline_membership_magazines = apply_renewal_rules_to_membership_lines(ids,
-                                                 [membership_is_paid_or_does_not_need_to_be_paid,
-                                                  membership_is_invoiced,
-                                                  membership_is_canceled_or_refunded])
-                products = [compose(split_memberships_and_magazines,
-                                    convert_memberships_and_magazines_to_included_products,
-                                    join_memberships_with_magazines)(mem_mag) for mem_mag in mline_membership_magazines]
-                # return first product
-                product = [product[0] for product in products if product]
-                return product[0] if product else False
-            else:
-                return False
-
-        def products_to_renew_to_renewal_product(renewal_products):
-            """
-            convert list of products to final renewal product id
-            supports empty 'included_product_ids as default or a default
-            membership product that includes itself (gewoon lid)
-            @param renewal_products: list of products id to compare with included products of membership product
-            @param return: product.product id
-            """
-            membership_product_ids = prod_object.search(cr, uid, [('membership_product','=',True)])
-            for membership_product in prod_object.browse(cr, uid, membership_product_ids, context=context):
-                if get_included_product_ids(membership_product.id) == renewal_products:
-                    return [membership_product.id]
-            else:
-                return get_included_product_ids(False)
-
-        renewal_products = products_to_renew_from_membership_lines()
-        renewal_product_id = products_to_renew_to_renewal_product(renewal_products)
-        assert len(renewal_product_id) == 1, 'no renewal product for partner {}'.format(partner_data.id)
-        return renewal_product_id
+    def _get_magazine_partner(self, cr, uid, ids, context=None):
+        magazines = self.pool.get('membership.membership_magazine').browse(cr, uid, ids, context=context)
+        list_partner = [magazine.partner_id.id for magazine in magazines]
+        return list(set(list_partner))
 
     def _np_membership_state(self, cr, uid, partner_data, date=None, context=None):
         if date == None:
@@ -454,7 +364,7 @@ class res_partner(osv.osv):
             partner_data = self.browse(cr, SUPERUSER_ID, id, context=context)
             mline, membership_state = self._np_membership_state(cr, uid, partner_data, context=context)
             res[id] = membership_state
-        return res       
+        return res
 
     def _membership_date(self, cr, uid, ids, name, args, context=None):
         print 'CALC MEMBERSHIP DATE:', ids
@@ -570,6 +480,39 @@ class res_partner(osv.osv):
     def __get_membership_state(self, *args, **kwargs):
         return self._membership_state(*args, **kwargs)
 
+    def _membership_renewal_product_id(self, cr, uid, ids, name, args, context=None):
+        res = {}
+        for id in ids:
+            res[id] = self.get_membership_renewal_product(cr,uid,id,context=context)
+        return res
+
+    def get_membership_renewal_product(self, cr, uid, partner_id, context=None):
+        """
+        convert list of products to final renewal product id
+        supports empty 'included_product_ids as default or a default
+        membership product that includes itself (gewoon lid)
+        @param partner_id: partner id
+        @param return: product.product id
+        """
+        magazines = []
+        prod_object = self.pool.get('product.product')
+        default_renewal_product = get_included_product_ids(prod_object,cr,uid,False)
+        for product in prod_object.browse(cr,uid,default_renewal_product):
+            membership_date_to = product.membership_date_to
+        partner = self.browse(cr, uid, [partner_id], context=context)[0]
+        for magazine in partner.magazine_ids:
+            if not magazine.date_cancel:
+                magazines.append(magazine)
+        magazine_ids = [m.product_id.id for m in magazines if m.date_to >= membership_date_to]
+        if magazine_ids:
+            renewal_products = sorted(default_renewal_product + magazine_ids)
+            membership_product_ids = prod_object.search(cr, uid, [('membership_product','=',True)])
+            for membership_product in prod_object.browse(cr, uid, membership_product_ids):
+                if get_included_product_ids(prod_object,cr,uid,membership_product.id) == renewal_products:
+                    return membership_product.id
+        else:
+            return default_renewal_product[0]
+
     _columns = {
         'third_payer_flag': fields.boolean('3de Betaler'),
         'third_payer_one_time': fields.boolean('Eenmalige 3de Betaler'),
@@ -580,8 +523,17 @@ class res_partner(osv.osv):
         'third_payer_processed': fields.boolean('3de Betaler Verwerkt'),
         'abo_company': fields.boolean('Abonnementfirma'),
         'company_deal': fields.boolean('Bedrijfsdeal'),
-		'membership_renewal_product_id': fields.many2one('product.product', 'Product Hernieuwing Lidmaatschap', select=True),
+        #'membership_renewal_product_id': fields.many2one('product.product', 'Product Hernieuwing Lidmaatschap', select=True),
+        'membership_renewal_product_id': fields.function(_membership_renewal_product_id,
+                        string='Product Hernieuwing Lidmaatschap',
+                        type='many2one',
+                        relation='product.product',
+                        store = {
+                           'membership.membership_magazine': (_get_magazine_partner, ['date_cancel'], 12),
+                        },
+                        select=True),
 		'free_membership_class_id': fields.many2one('res.partner.free.class', 'Gratis Lid Categorie', select=True),
+        'magazine_ids': fields.one2many('membership.membership_magazine', 'partner_id', 'magazines', domain=[('magazine_product','=', True)]),
         'membership_state': fields.function(
                     _membership_state,
                     string = 'Current Membership Status', type = 'selection',
@@ -734,6 +686,98 @@ class membership_membership_line(osv.osv):
                 list_membership_line += member_line_obj.search(cr, uid, [('account_invoice_line', 'in', [ l.id for l in invoice.invoice_line])], context=context)
         return list_membership_line
 
+    def _np_membership_line_state(self, cr, uid, mline, context=None):
+
+        """This Function returns current membership_renewal_product based on actual membership lines.
+        @param self: The object pointer
+        @param cr: the current row, from the database cursor,
+        @param uid: the current user-id for security checks,
+        @param mline: membership_line obj
+        @param context: A standard dictionary for contextual values
+        @param return: product.product id renewal product
+        """
+
+        prod_object = self.pool.get('product.product')
+
+        """ start define rules """
+        def membership_is_paid_or_does_not_need_to_be_paid(fstate):
+            if fstate == 'paid' or mline.account_invoice_line.invoice_id and mline.account_invoice_line.invoice_id.amount_total == 0.00:
+                inv = mline.account_invoice_line.invoice_id
+                if inv and any([payment.invoice.type == 'out_refund' for payment in inv.payment_ids]):
+                    return (mline.membership_id.id,'canceled') if mline.membership_id else False
+                else:
+                    return (mline.membership_id.id,'paid') if mline.membership_id else False
+            else:
+                return False
+
+        def membership_is_invoiced(fstate):
+            if fstate == 'open':
+                membership_product = mline.membership_id
+                return (membership_product.id,'invoiced') if membership_product else False
+            else:
+                return False
+
+        def membership_is_canceled_or_refunded(fstate):
+            inv = mline.account_invoice_line.invoice_id
+            if fstate == 'cancel' or mline.membership_cancel_id or mline.date_cancel:
+                membership_product = mline.membership_id
+                return (membership_product.id,'canceled') if membership_product else False
+            else:
+                return False
+        """ end define rules """
+
+        def apply_renewal_rules_to_membership_line(mline, rules):
+            mproducts = []
+            migrated_fstate = lambda : 'cancel' if mline.membership_cancel_id or mline.date_cancel else 'paid'
+            fstate = mline.account_invoice_line.invoice_id.state if not(mline.membership_cancel_id or mline.date_cancel) and mline.account_invoice_line.invoice_id else migrated_fstate()
+            mproducts.append([func(fstate) for func in rules])
+            flatten_func = lambda set1,set2 : set1 + set2 if all([set1,set2]) else set1 if set1 else set2
+            state_prod_list = recursive_flatten_list(mproducts[0], mproducts[1:], flatten_func) if mproducts else []
+            state_prod_list = [state_prod for state_prod in state_prod_list if state_prod]
+            return state_prod_list[0] if state_prod_list else (False,False)
+
+        def products_to_renew_from_membership_line():
+            """loop througt membership lines and return
+            list of products that should be renewed with next invoice
+            We can only renew 1 product so the return value still needs to be
+            converted to a membership product that includes all to renew products
+            @param return: list of products to renew or False
+            """
+            # process membership lines
+            membership_magazines,state = apply_renewal_rules_to_membership_line(mline,
+                                             [membership_is_paid_or_does_not_need_to_be_paid,
+                                              membership_is_invoiced,
+                                              membership_is_canceled_or_refunded])
+            return state,compose(partial(split_memberships_and_magazines,prod_object,cr,uid),
+                                 partial(convert_memberships_and_magazines_to_included_products,prod_object,cr,uid),
+                                 join_memberships_with_magazines)(membership_magazines)
+        state, product_ids = products_to_renew_from_membership_line()
+        return state, product_ids[0] if product_ids else False
+
+    def set_magazine_subscriptions(self, cr, uid, mline, product_ids, state, context=None):
+        partner_id = mline.partner.id
+        magazine_obj = self.pool.get('membership.membership_magazine')
+        for product in self.pool.get('product.product').browse(cr, uid, product_ids, context=context):
+             magazine_subscription_domain = [('partner_id','=',partner_id),('product_id','=',product.id)]
+             magazine_subscription_id = magazine_obj.search(cr,uid,magazine_subscription_domain)
+             if product.magazine_product and state == 'paid' or not product.magazine_product:
+                 if magazine_subscription_id:
+                    vals = {
+                       'date_to':mline.date_to,
+                       'date_cancel':False,
+                       'magazine_product':product.magazine_product,
+                    }
+                    magazine_obj.write(cr, uid, magazine_subscription_id, vals, context=context)
+                 else:
+                    vals = {
+                       'partner_id':partner_id,
+                       'product_id':product.id,
+                       'date_to':mline.date_to,
+                       'magazine_product':product.magazine_product,
+                    }
+                 magazine_obj.create(cr, uid, vals, context=context)
+        return True
+
     def _state(self, cr, uid, ids, name, args, context=None):
         """Compute the state lines
         @param self: The object pointer
@@ -745,47 +789,11 @@ class membership_membership_line(osv.osv):
         @param return: Dictionary of state Value
         """
         res = {}
-        inv_obj = self.pool.get('account.invoice')
-        for line in self.browse(cr, SUPERUSER_ID, ids, context=context):
-            if line.npca_migrated:
-                if line.membership_cancel_id:
-                    res[line.id] = 'canceled'
-                else:
-                    res[line.id] = 'paid'
-            else:
-                cr.execute('''
-                SELECT i.state, i.id FROM
-                account_invoice i
-                WHERE
-                i.id = (
-                    SELECT l.invoice_id FROM
-                    account_invoice_line l WHERE
-                    l.id = (
-                        SELECT  ml.account_invoice_line FROM
-                        membership_membership_line ml WHERE
-                        ml.id = %s
-                        )
-                    )
-                ''', (line.id,))
-                fetched = cr.fetchone()
-                if not fetched:
-                    res[line.id] = 'canceled'
-                    continue
-                istate = fetched[0]
-                state = 'none'
-                if (istate == 'draft') | (istate == 'proforma'):
-                    state = 'waiting'
-                elif istate == 'open':
-                    state = 'invoiced'
-                elif istate == 'paid':
-                    state = 'paid'
-                    inv = inv_obj.browse(cr, SUPERUSER_ID, fetched[1], context=context)
-                    for payment in inv.payment_ids:
-                        if payment.invoice and payment.invoice.type == 'out_refund':
-                            state = 'canceled'
-                elif istate == 'cancel':
-                    state = 'canceled'
-                res[line.id] = state
+        for mline in self.browse(cr, SUPERUSER_ID, ids, context=context):
+            state, product_ids  = self._np_membership_line_state(cr, SUPERUSER_ID, mline, context=context)
+            res[mline.id] = state
+            if product_ids:
+                self.set_magazine_subscriptions(cr, uid, mline, product_ids, state, context=context)
         return res
 
     _columns = {

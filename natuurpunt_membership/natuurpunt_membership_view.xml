@@ -338,5 +338,28 @@
         </field>
     </record>
 
+    <record model="ir.ui.view" id="natuurpunt_magazine_partner_form">
+        <field name="name">natuurpunt.magazine.partner.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+                <page string="Membership" position="after">
+                    <page string="Magazines" groups="natuurpunt_membership.group_natuurpunt_membership_power_user">
+                        <group name="abbo" string="Abonnementen">
+                            <field name="magazine_ids" colspan="4" nolabel="1">
+								<tree string="Abonnementen" editable="bottom" create="false" delete="false" colors="red:date_cancel != False" >
+									<!--<field name="state"/>-->
+                                    <field name="product_id" readonly="1"/>
+                                    <field name="date_to" readonly="1"/>
+                                    <field name="date_cancel"/>
+                                </tree>
+                            </field>
+                         </group>
+                    </page>
+                </page>
+        </field>
+    </record>
+
     </data>
 </openerp>
