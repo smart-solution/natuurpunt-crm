@@ -341,7 +341,7 @@
     <record model="ir.ui.view" id="natuurpunt_magazine_partner_form">
         <field name="name">natuurpunt.magazine.partner.form</field>
         <field name="model">res.partner</field>
-        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="inherit_id" ref="natuurpunt_membership_partner_form"/>
         <field name="type">form</field>
         <field name="arch" type="xml">
                 <page string="Membership" position="after">
