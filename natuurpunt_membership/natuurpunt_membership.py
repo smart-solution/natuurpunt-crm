@@ -131,6 +131,33 @@ membership_third_payer_actions()
 class res_partner(osv.osv):
     _inherit = 'res.partner'
 
+
+    def migrate_membership_magazine(self, cr, uid, ids, context=None):
+        """
+        temporary migrate code
+        """
+        for partner in self.browse(cr, uid, ids, context=context):
+            if partner.magazine_ids:
+                raise osv.except_osv(_('Error'), _('Migratie is niet mogelijk'))
+            else:
+                prod_object = self.pool.get('product.product')
+                if partner.membership_renewal_product_id:
+                    gewoon_lid = get_included_product_ids(prod_object,cr,uid,False)
+                    prod_ids = get_included_product_ids(prod_object,cr,uid,partner.membership_renewal_product_id.id)
+                    if prod_ids != gewoon_lid:
+                        magazine_obj = self.pool.get('membership.membership_magazine')
+                        for product in prod_object.browse(cr, uid, prod_ids, context=context):
+                            magazine_subscription_domain = [('partner_id','=',partner.id),('product_id','=',product.id)]
+                            magazine_subscription_id = magazine_obj.search(cr,uid,magazine_subscription_domain)
+                            vals = {
+                               'partner_id':partner.id,
+                               'product_id':product.id,
+                               'date_to':'2017-12-31',
+                               'magazine_product':product.magazine_product,
+                            }
+                            magazine_obj.create(cr, uid, vals, context=context)
+        return True
+
     def recalc_membership(self, cr, uid, partner_id, context=None):
         partner = self.pool.get('res.partner').browse(cr, uid, [partner_id], context=context)[0]
 
