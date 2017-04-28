@@ -163,6 +163,7 @@ class res_partner(osv.osv):
 	_columns = {
         'organisation_type_id': fields.many2one('res.organisation.type', 'Organisatietype', select=True),
         'organisation_relation_ids': fields.many2many('res.partner', 'res_partner_organisation_rel', 'partner_id', 'relation_id', 'Relaties'),
+        'organisation_relation_ids_inv': fields.many2many('res.partner', 'res_partner_organisation_rel', 'relation_id', 'partner_id', 'Relaties (vanuit partner)'),
 		'relation_ids': fields.many2many('res.organisation.relation', 'res_organisation_relation_rel', 'partner_id', 'relation_id', 'Partners'),
         'partner_up_id': fields.many2one('res.partner', 'Bovenliggende relatie', select=True, ondelete='cascade'),
         'partner_down_ids': fields.one2many('res.partner', 'partner_up_id', 'Onderliggende relaties'),

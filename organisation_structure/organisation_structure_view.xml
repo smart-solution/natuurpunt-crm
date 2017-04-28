@@ -452,6 +452,19 @@
 				    <field name="ref"/>
 				</tree>
 			    </field>
+			    
+			   
+			    <field name="organisation_relation_ids_inv" context="{'default_partner_id':active_id, 'default_name':active_id, 'form_view_ref' : 'organisation_structure.organisation_partner_form'}" attrs="{'invisible': [('display_relations_horizontal','=',False)]}" domain="[('organisation_type_id','!=',False)]">
+				<tree string="Relaties (vanuit partner)">
+				    <field name="organisation_type_id"/>
+				    <field name="name" context="{'form_view_ref' : 'organisation_structure.organisation_partner_form'}"/>
+				    <field name="ref"/>
+				</tree>
+			    </field>
+			    
+			    
+			    
+			    
                        </group>
                     </page>	
 		    <page string="Functies" attrs="{'invisible': [('display_functions_company','=',False),('display_functions_person','=',False)]}">   
