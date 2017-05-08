@@ -18,7 +18,7 @@
 		    <field name="name_disp" />
 		</field> 
         <field name="name" position="after">
-			<attribute name="attrs">{'invisible': 1}</attribute>
+			<attribute name="invisible">1</attribute>
         </field>       
 		<field name="phone" position="attributes">
 		    <attribute name="on_change">onchange_phone(phone)</attribute>
