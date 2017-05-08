@@ -15,8 +15,11 @@
         <field name="type">form</field>
         <field name="arch" type="xml">
 		<field name="name" position="after">
-		    <field name="name_disp" attrs="{'invisible': [('first_name', '=', False),('last_name', '=', False)]}"/>
+		    <field name="name_disp" />
 		</field> 
+        <field name="name" position="attributes">
+			<attribute name="invisible">1</attribute>
+        </field>       
 		<field name="phone" position="attributes">
 		    <attribute name="on_change">onchange_phone(phone)</attribute>
 		</field>
@@ -196,7 +199,7 @@
                 <field name="crab_used" on_change="onchange_crab_used(crab_used)"/>
                 <field name="no_address" attrs="{'invisible': [('crab_used', '=', True)]}" on_change="onchange_no_address(no_address, country_id)"/>
                 <field name="first_name" on_change="onchange_name(first_name, last_name)" attrs="{'readonly': [('organisation_type_id','!=',False)]}"/>
-                <field name="last_name" on_change="onchange_name(first_name, last_name)" attrs="{'readonly': [('organisation_type_id','!=',False)]}"/>
+				<field name="last_name" on_change="onchange_name(first_name, last_name)" attrs="{'readonly': [('organisation_type_id','!=',False)]}" required="True"/>
 				<field name="street2" string="Huisnaam" attrs="{'invisible': ['|', ('no_address', '=', True), ('postbus_nbr', '!=', False)]}"/>
             </field>
             <field name="zip_id" position="replace">
