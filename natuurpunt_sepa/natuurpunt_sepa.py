@@ -621,17 +621,6 @@ where p1.id = %d
             if third_payer_one_time:
                 sql_stat = '''update res_partner set third_payer_processed = True where id = %d''' % (invoice.partner_id.id, )
                 cr.execute(sql_stat)
-            renewal_prod_id = self._np_membership_renewal_product(cr, uid, invoice.partner_id, context=context)
-            if renewal_prod_id:
-                sql_stat = '''update res_partner set membership_renewal_product_id = %d where id = %d''' % (renewal_prod_id[0], invoice.partner_id.id, )
-            else:
-                sql_stat = '''update res_partner set membership_renewal_product_id = %d where id = %d''' % (product_id, invoice.partner_id.id, )
-            #"""
-            #sql_stat = '''update res_partner set membership_renewal_product_id = %d where id = %d''' % (product_id, invoice.partner_id.id, )
-            #"""
-            if invoice.partner_id.membership_renewal_product_id.id == False:
-                cr.execute(sql_stat)
-
             values = {}
             amount = invoice_obj.action_date_get(cr, uid, [invoice_id], None)
             if amount:
