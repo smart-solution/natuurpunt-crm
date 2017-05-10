@@ -27,7 +27,7 @@
     "category" : "Generic Modules/Base",
     "description": """
 """,
-    "depends" : ["natuurpunt_sepa","document_cmis_link","account_banking_sepa_direct_debit"],
+    "depends" : ["natuurpunt_sepa","natuurpunt_cmis","account_banking_sepa_direct_debit"],
     "init_xml" : [
         ],
     "update_xml" : [

@@ -487,6 +487,7 @@
         <field name="type">form</field>
         <field name="arch" type="xml">
 			<field name="no_magazine" position="after">
+							<field name="iets_te_verbergen"/>
 							<field name="welkomstpakket"/>
 			                <field name="date_welkomstpakket"/>
 							<field name="lidkaart"/>

@@ -308,7 +308,7 @@ where membership_membership_line.partner = %d and not(membership_membership_line
                     line_value['invoice_id'] = invoice_id
                     context['web_invoice_id'] = invoice_id
                     invoice_line_id = invoice_line_obj.create(cr, uid, line_value, context=context)
-                    invoice_obj.write(cr, uid, invoice_id, {'invoice_line': [(6, 0, [invoice_line_id])]}, context=context)
+                    invoice_obj.write(cr, uid, [invoice_id], {'invoice_line': [(6, 0, [invoice_line_id])]}, context=context)
                     if 'invoice_line_tax_id' in line_value and line_value['invoice_line_tax_id']:
                         tax_value = invoice_tax_obj.compute(cr, uid, invoice_id).values()
                         for tax in tax_value:
@@ -328,8 +328,9 @@ where membership_membership_line.partner = %d and not(membership_membership_line
             cr.commit()
          
         if not('web' in context):
-            view_id = self.pool.get('ir.ui.view').search(cr, uid, [('model','=','document.cmis.link'),
-                                                                ('name','=','document.cmis.link.form')])
+            view_id = self.pool.get('ir.ui.view').search(cr, uid, [('model','=','memory.cmis.dropoff')])
+            context['active_model'] = 'sdd.mandate'
+            context['active_id'] = mandate_id
 
             return {
                 'type': 'ir.actions.act_window',
@@ -337,7 +338,7 @@ where membership_membership_line.partner = %d and not(membership_membership_line
                 'view_mode': 'form',
                 'view_type': 'form',
                 'view_id': view_id[0],
-                'res_model': 'document.cmis.link',
+                'res_model': 'memory.cmis.dropoff',
                 'target': 'new',
                 'context': context,
             }

@@ -51,7 +51,7 @@
        <act_window id="action_document_cmis_link_sdd_mandate"
             name="Search for CMIS Documents"
             src_model="sdd.mandate"
-            res_model="document.cmis.link" 
+            res_model="memory.cmis.dropoff" 
             view_mode="form" 
             view_type="form"
             target="new"

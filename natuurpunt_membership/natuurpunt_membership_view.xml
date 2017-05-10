@@ -66,6 +66,20 @@
 				<field name="membership_cancel" position="replace">
                     <field name="membership_cancel"/>
                 </field>
+                <page string="Membership" position="after">
+                    <page string="Magazines" groups="natuurpunt_membership.group_natuurpunt_membership_power_user">
+                        <group name="abbo" string="Abonnementen">
+                            <button name="migrate_membership_magazine" string="migratie" type="object" attrs="{'invisible': [('magazine_ids', '=', False)]}"/>
+                            <field name="magazine_ids" colspan="4" nolabel="1">
+                                <tree string="Abonnementen" editable="bottom" create="false" delete="false" colors="red:date_cancel != False" >
+                                    <field name="product_id" readonly="1"/>
+                                    <field name="date_to" readonly="1"/>
+                                    <field name="date_cancel"/>
+                                </tree>
+                            </field>
+                         </group>
+                    </page>
+                </page>
                 <page string="Membership" position="before">
 		    <page string="3de Betaler" groups="natuurpunt_membership.group_natuurpunt_membership_power_user">
 			<group colspan="4" col="2">
