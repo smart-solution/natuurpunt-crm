@@ -839,5 +839,23 @@
         </field>
     </record>
 
+    <record model="ir.ui.view" id="organisation_partner_form">
+        <field name="name">organisation.partner.form</field>
+        <field name="model">res.partner</field>
+        <field name="priority" eval="20"/>
+		<field name="inherit_id" ref="organisation_structure.organisation_partner_form"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <field name="name" position="replace">
+                <field name="name" attrs="{'readonly': [('analytic_account_id','!=',False)]}" invisible="True"/>
+				<field name="last_name" on_change="onchange_name('', last_name)" 
+					   required="True" 
+					   attrs="{'readonly': [('analytic_account_id','!=',False)]}"
+					   string="Naam"/>
+            </field>
+        </field>
+    </record>
+
+
     </data>
 </openerp>
