@@ -24,7 +24,7 @@
     "category" : "Event",
     "description": """
 """,
-    "depends" : ["natuurpunt_sepa",],    
+    "depends" : ["natuurpunt_sepa","natuurpunt_web_membership"],
     "init_xml" : [],
     "update_xml" : [],
     "active": False,
