@@ -156,8 +156,6 @@
 		</tree>
 	    </field>
         </record>
-
-
         <record id="view_radius_action_form" model="ir.ui.view">
             <field name='name'>view.radius.action.form</field>
             <field name='model'>res.radius.action</field>
@@ -177,15 +175,12 @@
 		</form>
 	    </field>
         </record>
-
-
         <record model="ir.actions.act_window" id="action_radius_action_form">
             <field name="name">Radius of Action</field>
             <field name="res_model">res.radius.action</field>
             <field name="view_mode">tree,form</field>
             <field name="view_type">form</field>
         </record>
-
         <menuitem name="Werkingsveld" parent="base.menu_organisation_configuration" id="base.organisation_radius_action" sequence="15" action="action_radius_action_form"/>
 -->
         <record id="view_niche_categ_tree" model="ir.ui.view">
@@ -451,20 +446,7 @@
 				    <field name="name" context="{'form_view_ref' : 'organisation_structure.organisation_partner_form'}"/>
 				    <field name="ref"/>
 				</tree>
-			    </field>
-			    
-			   
-			    <field name="organisation_relation_ids_inv" context="{'default_partner_id':active_id, 'default_name':active_id, 'form_view_ref' : 'organisation_structure.organisation_partner_form'}" attrs="{'invisible': [('display_relations_horizontal','=',False)]}" domain="[('organisation_type_id','!=',False)]">
-				<tree string="Relaties (vanuit partner)">
-				    <field name="organisation_type_id"/>
-				    <field name="name" context="{'form_view_ref' : 'organisation_structure.organisation_partner_form'}"/>
-				    <field name="ref"/>
-				</tree>
-			    </field>
-			    
-			    
-			    
-			    
+			    </field>    
                        </group>
                     </page>	
 		    <page string="Functies" attrs="{'invisible': [('display_functions_company','=',False),('display_functions_person','=',False)]}">   

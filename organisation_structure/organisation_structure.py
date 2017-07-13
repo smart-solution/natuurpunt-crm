@@ -201,8 +201,33 @@ class res_partner(osv.osv):
 		'display_regional_partnership': fields.related('organisation_type_id','display_regional_partnership',type='boolean',string='Toon regionaal samenwerkingsverband'),
 	}
 
- 	def write(self, cr, uid, ids, vals, context=None):
- 		if 'niche_ids' in vals:
+ 	def write(self, cr, uid, ids, vals, context=None): 		
+ 		if 'organisation_relation_ids' in vals:
+ 			for partner in self.browse(cr,uid,vals['organisation_relation_ids'][0][2]):
+ 				partner_ids = [ids[0]]
+ 				for relation in partner.organisation_relation_ids:
+ 					 partner_ids.append(relation.id)
+	 			partner_ids = list(set(partner_ids))
+	 			partner_list = [6,False,partner_ids]
+	 			vals_partner = {'organisation_relation_ids': [partner_list]} 				
+	 			res = super(res_partner, self).write(cr, uid, partner.id, vals_partner, context=context)
+	 		related_partners = self.search(cr,uid,[('organisation_relation_ids','in',ids[0])])
+	 		for partner in self.browse(cr,uid,vals['organisation_relation_ids'][0][2]):
+	 			if partner.id in related_partners: related_partners.remove(partner.id)
+	 		if len(related_partners) > 0:
+	 			for partner in related_partners:
+		 			partner_ids = []
+		 			for relation in self.search(cr,uid,[('organisation_relation_ids','in',partner)]):
+	 					 partner_ids.append(relation)
+	 				if ids[0] in partner_ids: partner_ids.remove(ids[0])
+		 			partner_ids = list(set(partner_ids))
+		 			partner_list = [6,False,partner_ids]
+		 			vals_partner = {'organisation_relation_ids': [partner_list]} 				
+		 			res = super(res_partner, self).write(cr, uid, partner, vals_partner, context=context)
+	 			
+	 		
+	 	
+  		if 'niche_ids' in vals:
  			#append bijhorende niche_cat_ids
  			print 'append niche_categ_ids to vals'
  			niche_obj = self.pool.get('res.niche')
