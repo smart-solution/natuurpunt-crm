@@ -108,8 +108,12 @@
 		            <field name="street_id" string="Straat (CRAB)" on_change="onchange_street_id(street_id, street_nbr, street_bus)" domain="[('city_id','=',zip_id)]" attrs="{'invisible':[('partner_id','!=',False)], 'required': [('partner_id','==',False)]}"/>
 		            <field name="street" attrs="{'invisible':[('partner_id','!=',False)]}"/>
 		            <field name="street_nbr" on_change="onchange_street_id(street_id, street_nbr, street_bus)" attrs="{'invisible':[('partner_id','!=',False)], 'required': [('partner_id','==',False)]}"/>
-		            <field name="street_bus" on_change="onchange_street_id(street_id, street_nbr, street_bus)" attrs="{'invisible':[('partner_id','!=',False)]}"/>
-		            <field name="double_address" attrs="{'invisible':[('partner_id','!=',False)]}" readonly="True"/>
+					<field name="street_bus" on_change="onchange_street_id(street_id, street_nbr, street_bus)" attrs="{'invisible':[('partner_id','!=',False)]}"/>
+					<group colspan="4">
+                      <field name="double_address_id" attrs="{'invisible':1}"/>
+                      <field name="double_address" attrs="{'invisible':[('partner_id','!=',False)]}" readonly="True"/>
+                      <field name="accept_address" attrs="{'invisible':[('partner_id','!=',False)]}" />
+					</group>
 		        </group>
 	        </group>
 	        <group colspan="4">

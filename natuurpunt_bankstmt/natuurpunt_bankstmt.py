@@ -393,6 +393,7 @@ class bank_statement_create_partner(osv.osv_memory):
                 'membership_state': fields.char('Status Lidmaatschap', translate=True),
                 'partner_address': fields.char('Adres'),
                 'accept_address': fields.boolean('Adres Aanvaarden'),
+                'double_address_id': fields.integer('ID adrescontrole'),
                 'double_address': fields.text('Adrescontrole'),
         'membership_product_amount': fields.related('membership_product_id', 'list_price', type='amount', string="List price"),
                 'stmt_id': fields.many2one('account.bank.statement.line', 'Lijn Rekeninguitreksel', select=True),
@@ -443,6 +444,7 @@ class bank_statement_create_partner(osv.osv_memory):
             res['street'] = street.name
 
         error_msg = ''
+        double_address_id = False
         if street_id and street_nbr:
             address_obj = self.pool.get('res.partner')
             if street_bus:
@@ -451,10 +453,13 @@ class bank_statement_create_partner(osv.osv_memory):
                    address_search = address_obj.search(cr, uid, [('street_id','=',street_id),('street_nbr','=',street_nbr)])
             if address_search:
                 for address_get in address_obj.browse(cr, uid, address_search):
+                    if double_address_id == False:
+                        double_address_id = address_get.id
                     error_msg = error_msg + address_get.name + ' (' + str(address_get.id) + ')'
                     error_msg = error_msg + '''
 '''
         res['double_address'] = error_msg
+        res['double_address_id'] = double_address_id
 
         return {'value':res}
 
@@ -528,27 +533,30 @@ class bank_statement_create_partner(osv.osv_memory):
                         'membership_origin_id': membership_origin_id,
                     }, context=context)
             else:
-                       partner_id = partner_obj.create(cr, uid, {
-                    'name': partner_name,
-                    'last_name': partner.last_name,
-                    'first_name': partner.first_name,
-                    'gender': partner.gender,
-                    'street': street,
-                    'zip': partner.zip,
-                    'city': partner.city,
-                    'zip_id': partner.zip_id.id,
-                    'street_id': partner.street_id.id,
-                    'street_nbr': partner.street_nbr,
-                    'street_bus': partner.street_bus,
-                    'country_id': 21,
-                    'membership_origin_id': membership_origin_id,
-                    'lang': 'nl_BE',
-                    'membership_state': 'none',
-                    'membership_nbr': None,
-                    'crab_used': True,
-                    'bank_ids': False,
-                    'customer': False,
-                    'supplier': False,
+                if partner.accept_address:
+                    partner_id = partner.double_address_id
+                else:
+                    partner_id = partner_obj.create(cr, uid, {
+                     'name': partner_name,
+                     'last_name': partner.last_name,
+                     'first_name': partner.first_name,
+                     'gender': partner.gender,
+                     'street': street,
+                     'zip': partner.zip,
+                     'city': partner.city,
+                     'zip_id': partner.zip_id.id,
+                     'street_id': partner.street_id.id,
+                     'street_nbr': partner.street_nbr,
+                     'street_bus': partner.street_bus,
+                     'country_id': 21,
+                     'membership_origin_id': membership_origin_id,
+                     'lang': 'nl_BE',
+                     'membership_state': 'none',
+                     'membership_nbr': None,
+                     'crab_used': True,
+                     'bank_ids': False,
+                     'customer': False,
+                     'supplier': False,
                     }, context)
             res['partner_id'] = partner_id
 
@@ -599,6 +607,7 @@ class bank_statement_create_partner(osv.osv_memory):
         return {'type':'ir.actions.act_window_close'}
 
     def create_partner_invoice(self, cr, uid, ids, context=None):
+        import pdb; pdb.set_trace()
         res = {}
         partner_obj = self.pool.get('res.partner')
         create_membership = False
