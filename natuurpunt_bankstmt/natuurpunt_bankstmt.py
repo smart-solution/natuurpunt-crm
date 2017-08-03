@@ -607,7 +607,6 @@ class bank_statement_create_partner(osv.osv_memory):
         return {'type':'ir.actions.act_window_close'}
 
     def create_partner_invoice(self, cr, uid, ids, context=None):
-        import pdb; pdb.set_trace()
         res = {}
         partner_obj = self.pool.get('res.partner')
         create_membership = False
