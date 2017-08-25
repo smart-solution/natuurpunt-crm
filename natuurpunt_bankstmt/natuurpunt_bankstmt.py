@@ -35,6 +35,15 @@ def get_street(obj,cr,uid,city_id,street):
     else:
         return False
 
+def get_street_ilike(obj,cr,uid,city_id,street):
+    country_city_street_obj = obj.pool.get('res.country.city.street')
+    ids = country_city_street_obj.search(cr, uid, [('city_id','=',city_id),('name','ilike',street)])
+    if ids:
+        return country_city_street_obj.browse(cr, uid, ids[0])
+    else:
+        return False
+
+
 class account_bank_statement_line(osv.osv):
     _inherit = "account.bank.statement.line"
 
@@ -100,6 +109,7 @@ class account_bank_statement_line(osv.osv):
             koalect_ids = account_coda_koalect_obj.search(cr, uid, [('stat_line_id','=',stmt.id)])
             if koalect_ids:
                 koalect = account_coda_koalect_obj.browse(cr, uid, koalect_ids)[0]
+                context['default_email'] = koalect.email
                 context['default_add_bank_account'] = False
                 context['default_name_coda'] = koalect.firstname + ' ' + koalect.lastname
                 context['default_last_name'] = koalect.lastname
@@ -113,6 +123,11 @@ class account_bank_statement_line(osv.osv):
                     if country_city_street:
                         context['default_street_id']  = country_city_street.id
                         context['default_street']     = country_city_street.name
+                    else:
+                        country_city_street_ilike = get_street_ilike(self,cr,uid,country_city.id,koalect.street)
+                        if country_city_street_ilike:
+                            context['default_street_id']  = country_city_street_ilike.id
+                            context['default_street']     = country_city_street_ilike.name
                 else:
                     context['default_zip_id'] = 0
                     context['default_zip'] = koalect.postal_code
