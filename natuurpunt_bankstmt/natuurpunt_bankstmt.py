@@ -135,6 +135,7 @@ class account_bank_statement_line(osv.osv):
                     context['default_street_id'] = 0
                     context['default_street'] = koalect.street
                 context['default_street_nbr'] = koalect.number
+                context['default_street_bus'] = koalect.box
             else:
                 #context['default_add_bank_account'] = True
                 context['default_bic'] = stmt.lines2_id.t22_BIC
