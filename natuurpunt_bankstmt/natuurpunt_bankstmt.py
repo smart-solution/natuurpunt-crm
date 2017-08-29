@@ -687,6 +687,9 @@ class bank_statement_create_partner(osv.osv_memory):
                         'membership_origin_id': membership_origin_id,
                     }, context=context)
             else:
+                if partner.accept_address:
+                   partner_id = partner.double_address_id
+                else:
                    partner_id = partner_obj.create(cr, uid, {
                     'name': partner_name,
                     'last_name': partner.last_name,
