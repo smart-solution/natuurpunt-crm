@@ -431,7 +431,7 @@ class res_partner(osv.osv):
             ids,log = compose(
                  partial(match_with_existing_partner,self,cr,uid),
                  partial(send_internal_alerts,self,cr,uid),
-                 lambda (p,v):([p.id],l) if p else (ids,l)
+                 lambda (p,l):([p.id],l) if p else (ids,l)
             )(data)
             _logger.info("partner match ids:{}".format(ids))
 
