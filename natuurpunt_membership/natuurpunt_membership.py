@@ -524,13 +524,11 @@ class res_partner(osv.osv):
         magazines = []
         prod_object = self.pool.get('product.product')
         default_renewal_product = get_included_product_ids(prod_object,cr,uid,False)
-        for product in prod_object.browse(cr,uid,default_renewal_product):
-            membership_date_to = product.membership_date_to
         partner = self.browse(cr, uid, [partner_id], context=context)[0]
         for magazine in partner.magazine_ids:
             if not magazine.date_cancel:
                 magazines.append(magazine)
-        magazine_ids = [m.product_id.id for m in magazines if m.date_to >= membership_date_to]
+        magazine_ids = [m.product_id.id for m in magazines if m.date_to >= datetime.today().strftime('%Y-%m-%d')]
         if magazine_ids:
             renewal_products = sorted(default_renewal_product + magazine_ids)
             membership_product_ids = prod_object.search(cr, uid, [('membership_product','=',True)])
