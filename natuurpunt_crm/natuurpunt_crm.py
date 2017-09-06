@@ -93,7 +93,7 @@ class res_partner(osv.osv):
         'gender': fields.selection([('M','Man'),('V','Vrouw'),('O','Ongekend')], string='Geslacht', size=1),
         'birthday': fields.date('Geboortedatum'),
 		'address_origin_id': fields.many2one('res.partner.address.origin', 'Herkomst Adres', select=True),
-		'membership_origin_id': fields.many2one('res.partner.membership.origin', 'Herkomst Lidmaatschap', select=True),
+		'membership_origin_id': fields.many2one('res.partner.membership.origin', 'Herkomst Lidmaatschap', select=True,domain=['|',('date_end','>','now()'),('date_end','=',False)]),
 		'address_state_id': fields.many2one('res.partner.address.state', 'Status', select=True),
 		'address_history_ids': fields.one2many('res.partner.address.history', 'partner_id', 'Verhuishistoriek'),
         'tax_certificate': fields.boolean('Fiscaal attest'),
