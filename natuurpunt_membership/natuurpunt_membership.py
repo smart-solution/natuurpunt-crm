@@ -432,10 +432,7 @@ class res_partner(osv.osv):
 
             if name == 'membership_cancel':
                 mline, membership_state_field = self._np_membership_state(cr, uid, partner, context=context)
-                if membership_state_field == 'canceled':
-                    line_id2 = member_line_obj.search(cr, uid, [('partner', '=', partner.id),('membership_id.membership_product', '=', True)], limit=1, order='date_cancel', context=context)
-                    if line_id2:
-                        res[partner.id]['membership_cancel'] = member_line_obj.read(cr, uid, line_id2[0], ['date_to'], context=context)['date_to']
+                res[partner.id]['membership_cancel'] = datetime.today().strftime('%Y-%m-%d') if mline.date_cancel else False
         print "MEMBERSHIP STATE RES:",res
         return res
 
