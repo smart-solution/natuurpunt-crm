@@ -777,29 +777,32 @@ class membership_membership_line(osv.osv):
         state, product_ids = products_to_renew_from_membership_line()
         return state, product_ids[0] if product_ids else False
 
-    def set_magazine_subscriptions(self, cr, uid, mline, product_ids, state, context=None):
-        partner_id = mline.partner.id
+    def set_magazine_subscriptions(self, cr, uid, partner_id, product_ids, state, context=None):
         magazine_obj = self.pool.get('membership.membership_magazine')
+        res = []
         for product in self.pool.get('product.product').browse(cr, uid, product_ids, context=context):
              magazine_subscription_domain = [('partner_id','=',partner_id),('product_id','=',product.id)]
              magazine_subscription_id = magazine_obj.search(cr,uid,magazine_subscription_domain)
              if product.magazine_product and state == 'paid' or not product.magazine_product:
                  if magazine_subscription_id:
                     vals = {
-                       'date_to':mline.date_to,
+                       'date_to':product.membership_date_to,
                        'date_cancel':False,
                        'magazine_product':product.magazine_product,
                     }
                     magazine_obj.write(cr, uid, magazine_subscription_id, vals, context=context)
+                    res.append(product.membership_date_to)
                  else:
                     vals = {
                        'partner_id':partner_id,
                        'product_id':product.id,
-                       'date_to':mline.date_to,
+                       'date_to':product.membership_date_to,
                        'magazine_product':product.magazine_product,
                     }
                  magazine_obj.create(cr, uid, vals, context=context)
-        return True
+                 res.append(product.membership_date_to)
+        # return higest membership_date_to
+        return max(res) if res else False
 
     def _state(self, cr, uid, ids, name, args, context=None):
         """Compute the state lines
@@ -816,7 +819,30 @@ class membership_membership_line(osv.osv):
             state, product_ids  = self._np_membership_line_state(cr, SUPERUSER_ID, mline, context=context)
             res[mline.id] = state
             if product_ids:
-                self.set_magazine_subscriptions(cr, uid, mline, product_ids, state, context=context)
+                membership_date_to = self.set_magazine_subscriptions(cr, uid, mline.partner.id, product_ids, state, context=context)
+                assert len(membership_date_to) != False, "Expecting a valid date"
+                if state == 'paid':
+                    payments = mline.account_invoice_line.invoice_id.payment_ids
+                    assert len(payments) == 1, "only 1 payment is accepted"
+                    for payment in payments:
+                        # new member
+                        if mline.partner.membership_end == False:
+                            vals = {
+                                'date_from': payment.date,
+                                'date_to': membership_date_to,
+                            }
+                        else:
+                            year = datetime.now().year
+                            d = lambda y,m,d : datetime(y,m,d).strftime('%Y-%m-%d')
+                            cutoff_date = d(year,9,1)
+                            date_from = d(year,1,1) if payment.date < cutoff_date else cutoff_date
+                            offset = 0 if payment.date < cutoff_date else 1
+                            date_to = d(year+offset,12,31)
+                            vals = {
+                                'date_from': date_from,
+                                'date_to': date_to,
+                            }
+                        self.write(cr, uid, ids, vals, context=context)
         return res
 
     _columns = {
