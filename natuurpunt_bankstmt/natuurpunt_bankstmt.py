@@ -43,6 +43,10 @@ def get_street_ilike(obj,cr,uid,city_id,street):
     else:
         return False
 
+def concat_address(*fields):
+    res = reduce(lambda x, y: (x if isinstance(x, basestring) else '') + ' ' \
+                  + (y if isinstance(y, basestring) else ''), fields, lambda x: x)
+    return res.strip()
 
 class account_bank_statement_line(osv.osv):
     _inherit = "account.bank.statement.line"
@@ -195,7 +199,7 @@ class account_bank_statement_line(osv.osv):
                             context['default_street'] = lines3_id.t32_free_comm[0:35].rstrip()
 
             if stmt.partner_id:
-                context['default_partner_address'] = stmt.partner_id.street + ' ' + stmt.partner_id.zip + ' ' + stmt.partner_id.city
+                context['default_partner_address'] = concat_address(stmt.partner_id.street,stmt.partner_id.zip,stmt.partner_id.city)
                 context['default_membership_nbr'] = stmt.partner_id.membership_nbr
                 if stmt.partner_id.membership_state == 'none':
                     membership_state = 'Geen lid'
