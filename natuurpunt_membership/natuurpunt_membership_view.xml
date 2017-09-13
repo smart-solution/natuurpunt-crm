@@ -342,7 +342,7 @@
         <field name="inherit_id" ref="natuurpunt_crm.view_natuurpunt_crm_partner_form" />
         <field name="arch" type="xml">
           <field name="membership_nbr" position="replace">
-				        <field name="membership_nbr" attrs="{'readonly': [('membership_nbr_set', '=', True)]}" widget="char"
+				        <field name="membership_nbr" readonly="True" widget="char"
                   groups="natuurpunt_membership.group_natuurpunt_membership_user"/>
                 <field name="membership_state" string="Lidmaatschap status" readonly="1"
                   groups="natuurpunt_membership.group_natuurpunt_membership_user"/>
