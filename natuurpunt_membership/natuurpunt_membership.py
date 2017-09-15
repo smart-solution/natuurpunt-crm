@@ -778,9 +778,14 @@ class membership_membership_line(osv.osv):
         return state, product_ids[0] if product_ids else False
 
     def set_magazine_subscriptions(self, cr, uid, partner_id, product_ids, state, context=None):
+        """create/update magazine subscriptions
+        @param return: date of longest running magazine subscription
+        """
         magazine_obj = self.pool.get('membership.membership_magazine')
+        prod_object = self.pool.get('product.product')
+        gewoon_lid = get_included_product_ids(prod_object,cr,uid,False)
         res = []
-        for product in self.pool.get('product.product').browse(cr, uid, product_ids, context=context):
+        for product in prod_object.browse(cr, uid, product_ids, context=context):
              magazine_subscription_domain = [('partner_id','=',partner_id),('product_id','=',product.id)]
              magazine_subscription_id = magazine_obj.search(cr,uid,magazine_subscription_domain)
              if product.magazine_product and state == 'paid' or not product.magazine_product:
@@ -791,7 +796,8 @@ class membership_membership_line(osv.osv):
                        'magazine_product':product.magazine_product,
                     }
                     magazine_obj.write(cr, uid, magazine_subscription_id, vals, context=context)
-                    res.append(product.membership_date_to)
+                    if product.id not in gewoon_lid:
+                        res.append(product.membership_date_to)
                  else:
                     vals = {
                        'partner_id':partner_id,
@@ -800,8 +806,9 @@ class membership_membership_line(osv.osv):
                        'magazine_product':product.magazine_product,
                     }
                  magazine_obj.create(cr, uid, vals, context=context)
-                 res.append(product.membership_date_to)
-        # return higest membership_date_to
+                 if product.id not in gewoon_lid:
+                     res.append(product.membership_date_to)
+        # return higest membership_date_to of magazine subscriptions
         return max(res) if res else False
 
     def _state(self, cr, uid, ids, name, args, context=None):
@@ -820,7 +827,6 @@ class membership_membership_line(osv.osv):
             res[mline.id] = state
             if product_ids:
                 membership_date_to = self.set_magazine_subscriptions(cr, uid, mline.partner.id, product_ids, state, context=context)
-                assert len(membership_date_to) != False, "Expecting a valid date"
                 if state == 'paid':
                     payments = mline.account_invoice_line.invoice_id.payment_ids
                     assert len(payments) == 1, "only 1 payment is accepted"
