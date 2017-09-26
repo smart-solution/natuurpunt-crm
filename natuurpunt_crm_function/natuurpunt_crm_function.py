@@ -71,10 +71,13 @@ class res_organisation_function(osv.osv):
         if unique_type and 'partner_id' in vals and vals['partner_id']:
             ids = self.search(cr, uid, [('partner_id', '=', vals['partner_id']),('function_type_id', '=', vals['function_type_id'])])
             if ids:
-                res_partner_obj = self.pool.get('res.partner')
-                partner_name = res_partner_obj.read(cr, uid, vals['partner_id'], fields=['name'],context=context)['name']
-                function_name = function_type_obj.read(cr, uid, vals['function_type_id'], fields=['name'], context=context)['name']
-                raise osv.except_osv(_('Error!'), _('Function %s already exists for %s\nThis is an unique function'%(function_name,partner_name)))
+                if self.browse(cr,uid,ids)[0].person_id.id != vals['person_id']:
+                    res_partner_obj = self.pool.get('res.partner')
+                    partner_name = res_partner_obj.read(cr, uid, vals['partner_id'], fields=['name'],context=context)['name']
+                    function_name = function_type_obj.read(cr, uid, vals['function_type_id'], fields=['name'], context=context)['name']
+                    raise osv.except_osv(_('Error!'), _('Function %s already exists for %s\nThis is an unique function'%(function_name,partner_name)))
+                else:
+                    return True
             else:
                 return True
         else: 

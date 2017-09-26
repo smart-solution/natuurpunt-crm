@@ -88,12 +88,13 @@ class res_partner(osv.osv):
         return res
 
     _columns = {
+        'email': fields.char('Email', size=240, help = 'Opgelet: dit privé mail is nodig om in te loggen op de natuurpunt site en mag niet zomaar gewijzigd worden!'),
         'last_name': fields.char('Familienaam', len=64),
         'first_name': fields.char('Voornaam', len=64),
         'gender': fields.selection([('M','Man'),('V','Vrouw'),('O','Ongekend')], string='Geslacht', size=1),
         'birthday': fields.date('Geboortedatum'),
 		'address_origin_id': fields.many2one('res.partner.address.origin', 'Herkomst Adres', select=True),
-		'membership_origin_id': fields.many2one('res.partner.membership.origin', 'Herkomst Lidmaatschap', select=True),
+		'membership_origin_id': fields.many2one('res.partner.membership.origin', 'Herkomst Lidmaatschap', select=True,domain=['|',('date_end','>','now()'),('date_end','=',False)]),
 		'address_state_id': fields.many2one('res.partner.address.state', 'Status', select=True),
 		'address_history_ids': fields.one2many('res.partner.address.history', 'partner_id', 'Verhuishistoriek'),
         'tax_certificate': fields.boolean('Fiscaal attest'),
@@ -106,7 +107,7 @@ class res_partner(osv.osv):
         'person': fields.boolean('Persoon'),
         'vip': fields.boolean('VIP'),
         'phone_work': fields.char('Telefoon werk', len=32),
-        'email_work': fields.char('Email werk', len=128),
+        'email_work': fields.char('Email werk', len=128, help = "Opgelet: voor professionele medewerkers is het werkmail nodig om in te loggen op NP applicaties. Een @natuurpunt.be adres is vereist!"),
         'year_birth': fields.integer('Geboortejaar'),
         'national_id_nbr': fields.char('Rijksregisternr.', len=16),
         'crab_used': fields.boolean('CRAB-code'),

@@ -26,6 +26,7 @@ from tools.translate import _
 import logging
 from natuurpunt_tools import compose
 from natuurpunt_tools import match_with_existing_partner
+from natuurpunt_tools import send_internal_alerts
 from functools import partial
 
 _logger = logging.getLogger('natuurpunt_web_event')
@@ -429,7 +430,8 @@ class res_partner(osv.osv):
             data = (vals, _logger, 'Registratie activiteit naam match')
             ids,log = compose(
                  partial(match_with_existing_partner,self,cr,uid),
-                 lambda (p,v,l):([p.id],l) if p else (ids,l)
+                 partial(send_internal_alerts,self,cr,uid),
+                 lambda (p,l):([p.id],l) if p else (ids,l)
             )(data)
             _logger.info("partner match ids:{}".format(ids))
 

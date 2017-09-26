@@ -19,6 +19,35 @@ STATE = [
     ('wait_member', 'Wachtend Lidmaatschap'), # pip = payment in process
 ]
 
+def get_country_city_from_zip_code(obj,cr,uid,zip_code):
+    country_city_obj = obj.pool.get('res.country.city')
+    ids = country_city_obj.search(cr, uid, [('zip','=',zip_code)])
+    if ids: 
+        return country_city_obj.browse(cr, uid, ids[0])
+    else:
+        return False
+
+def get_street(obj,cr,uid,city_id,street):
+    country_city_street_obj = obj.pool.get('res.country.city.street')
+    ids = country_city_street_obj.search(cr, uid, [('city_id','=',city_id),('name','=',street)])
+    if ids:
+        return country_city_street_obj.browse(cr, uid, ids[0])
+    else:
+        return False
+
+def get_street_ilike(obj,cr,uid,city_id,street):
+    country_city_street_obj = obj.pool.get('res.country.city.street')
+    ids = country_city_street_obj.search(cr, uid, [('city_id','=',city_id),('name','ilike',street)])
+    if ids:
+        return country_city_street_obj.browse(cr, uid, ids[0])
+    else:
+        return False
+
+def concat_address(*fields):
+    res = reduce(lambda x, y: (x if isinstance(x, basestring) else '') + ' ' \
+                  + (y if isinstance(y, basestring) else ''), fields, lambda x: x)
+    return res.strip()
+
 class account_bank_statement_line(osv.osv):
     _inherit = "account.bank.statement.line"
 
@@ -69,22 +98,111 @@ class account_bank_statement_line(osv.osv):
     def create_partner(self, cr, uid, ids, context=None):
         view_id = self.pool.get('ir.ui.view').search(cr, uid, [('model','=','bank.statement.create.partner'),
                                                             ('name','=','view.bank.statement.create.partner.form')])
-
         stmt = self.browse(cr, uid, ids)[0]
         if stmt.lines2_id and stmt.lines2_id.t23_partner:
             context['stmt_id'] = stmt.id
             context['default_stmt_id'] = stmt.id
-            context['default_partner_id'] = stmt.partner_id.id
-#            context['default_add_bank_account'] = True
-            context['default_bic'] = stmt.lines2_id.t22_BIC
-            context['default_bank_account'] = stmt.lines2_id.t23_account_nbr
-            context['default_coda_amount'] = stmt.lines2_id.t21_amount
             context['default_transaction_amount'] = stmt.amount
+            context['default_coda_amount'] = stmt.lines2_id.t21_amount
             context['default_free_comm'] = stmt.lines2_id.t21_free_comm
             context['default_orig_name'] = stmt.lines2_id.t23_partner
             context['default_orig_name_save'] = stmt.lines2_id.t23_partner
+            context['default_partner_id'] = stmt.partner_id.id
+
+            account_coda_koalect_obj = self.pool.get('account.coda.koalect')
+            koalect_ids = account_coda_koalect_obj.search(cr, uid, [('stat_line_id','=',stmt.id)])
+            if koalect_ids:
+                koalect = account_coda_koalect_obj.browse(cr, uid, koalect_ids)[0]
+                context['default_email'] = koalect.email
+                context['default_add_bank_account'] = False
+                context['default_name_coda'] = koalect.firstname + ' ' + koalect.lastname
+                context['default_last_name'] = koalect.lastname
+                context['default_first_name'] = koalect.firstname
+                country_city = get_country_city_from_zip_code(self,cr,uid,koalect.postal_code)
+                if country_city:
+                    context['default_zip_id'] = country_city.id
+                    context['default_zip'] = country_city.zip
+                    context['default_city'] = country_city.name
+                    country_city_street = get_street(self,cr,uid,country_city.id,koalect.street)
+                    if country_city_street:
+                        context['default_street_id']  = country_city_street.id
+                        context['default_street']     = country_city_street.name
+                    else:
+                        country_city_street_ilike = get_street_ilike(self,cr,uid,country_city.id,koalect.street)
+                        if country_city_street_ilike:
+                            context['default_street_id']  = country_city_street_ilike.id
+                            context['default_street']     = country_city_street_ilike.name
+                        else:
+                            context['default_street_id']  = 0
+                            context['default_street']     = koalect.street
+                else:
+                    context['default_zip_id'] = 0
+                    context['default_zip'] = koalect.postal_code
+                    context['default_city'] = koalect.city
+                    context['default_street_id'] = 0
+                    context['default_street'] = koalect.street
+                context['default_street_nbr'] = koalect.number
+                context['default_street_bus'] = koalect.box
+            else:
+                #context['default_add_bank_account'] = True
+                context['default_bic'] = stmt.lines2_id.t22_BIC
+                context['default_bank_account'] = stmt.lines2_id.t23_account_nbr
+                name = stmt.lines2_id.t23_partner
+                nbr_words_name = len(name.split())
+                if nbr_words_name > 1:
+                    first_name = name.split()[nbr_words_name - 1]
+                    last_name = name.replace((' ' + first_name),'')
+                    first_name_lu = first_name[0:1] + first_name[1:].lower()
+                    last_name_lu = last_name[0:1] + last_name[1:].lower()
+                    context['default_name_coda'] = first_name_lu + ' ' + last_name_lu
+                    context['default_last_name'] = last_name_lu
+                    context['default_first_name'] = first_name_lu
+                else:
+                    context['default_name_coda'] = stmt.lines2_id.t23_partner
+                    context['default_last_name'] = stmt.lines2_id.t23_partner
+                lines3_obj = self.pool.get('account.coda.lines3')
+                lines3 = lines3_obj.search(cr, uid, [('lines2_id','=',stmt.lines2_id.id)])
+                if lines3:
+                    lines3_id = lines3_obj.browse(cr, uid, lines3[0])
+                    if lines3_id.t32_free_comm:
+                        context['default_orig_address'] = lines3_id.t32_free_comm
+                        country_city = get_country_city_from_zip_code(self,cr,uid,lines3_id.t32_free_comm[35:39])
+                        if country_city:
+                            context['default_zip_id'] = country_city.id
+                            context['default_zip'] = country_city.zip
+                            context['default_city'] = country_city.name
+                            street_orig = lines3_id.t32_free_comm[0:35].rstrip()
+                            wrdcount = 0
+                            for i in street_orig.split():
+                                eawrdlen = len(i) / len(i)
+                                wrdcount = wrdcount + eawrdlen
+                            street = ''
+                            street_lu = ''
+                            if wrdcount < 3:
+                                street = street_orig.split()[0]
+                                street_lu = street[0:1] + street[1:].lower()
+                            else:
+                                for i in range(1, wrdcount):
+                                    if street =='':
+                                        street = street_orig.split()[(i - 1)]
+                                        street_lu = street[0:1] + street[1:].lower()
+                                    else:
+                                        street = street + ' ' + street_orig.split()[(i - 1)]
+                                        street_lu = street_lu + ' ' + street_orig.split()[(i - 1)][0:1] + street_orig.split()[(i - 1)][1:].lower()
+                            country_city_street = get_street(self,cr,uid,country_city.id,street_lu)
+                            if country_city_street:
+                                context['default_street_id']  = country_city_street.id
+                                context['default_street']     = country_city_street.name
+                                context['default_street_nbr'] = street_orig.replace((street + ' '),'')
+                            else:
+                                context['default_street'] = lines3_id.t32_free_comm[0:35].rstrip()
+
+                        else:
+                            context['default_city'] = lines3_id.t32_free_comm[35:80].rstrip()
+                            context['default_street'] = lines3_id.t32_free_comm[0:35].rstrip()
+
             if stmt.partner_id:
-                context['default_partner_address'] = stmt.partner_id.street + ' ' + stmt.partner_id.zip + ' ' + stmt.partner_id.city
+                context['default_partner_address'] = concat_address(stmt.partner_id.street,stmt.partner_id.zip,stmt.partner_id.city)
                 context['default_membership_nbr'] = stmt.partner_id.membership_nbr
                 if stmt.partner_id.membership_state == 'none':
                     membership_state = 'Geen lid'
@@ -112,66 +230,6 @@ class account_bank_statement_line(osv.osv):
                                             else:
                                                 membership_state = 'Geen lid'
                 context['default_membership_state'] = membership_state
-            name = stmt.lines2_id.t23_partner
-            nbr_words_name = len(name.split())
-            if nbr_words_name > 1:
-                first_name = name.split()[nbr_words_name - 1]
-                last_name = name.replace((' ' + first_name),'')
-                first_name_lu = first_name[0:1] + first_name[1:].lower()
-                last_name_lu = last_name[0:1] + last_name[1:].lower()
-                context['default_name_coda'] = first_name_lu + ' ' + last_name_lu
-                context['default_last_name'] = last_name_lu
-                context['default_first_name'] = first_name_lu
-            else:
-                context['default_name_coda'] = stmt.lines2_id.t23_partner
-                context['default_last_name'] = stmt.lines2_id.t23_partner
-            lines3_obj = self.pool.get('account.coda.lines3')
-            lines3 = lines3_obj.search(cr, uid, [('lines2_id','=',stmt.lines2_id.id)])
-            if lines3:
-                lines3_id = lines3_obj.browse(cr, uid, lines3[0])
-                if lines3_id.t32_free_comm:
-                    context['default_orig_address'] = lines3_id.t32_free_comm
-                    country_city_obj = self.pool.get('res.country.city')
-                    country_city = country_city_obj.search(cr, uid, [('zip','=',lines3_id.t32_free_comm[35:39])])
-                    if country_city:
-                        city_id = country_city_obj.browse(cr, uid, country_city[0])
-                        context['default_zip_id'] = city_id.id
-                        context['default_zip'] = city_id.zip
-                        context['default_city'] = city_id.name
-                    else:
-#                           context['default_zip'] = lines3_id.t32_free_comm[35:39]
-                        context['default_city'] = lines3_id.t32_free_comm[35:80].rstrip()
-                    if country_city:
-                        street_orig = lines3_id.t32_free_comm[0:35].rstrip()
-                        wrdcount = 0
-                        for i in street_orig.split():
-                            eawrdlen = len(i) / len(i)
-                            wrdcount = wrdcount + eawrdlen
-                        street = ''
-                        street_lu = ''
-                        if wrdcount < 3:
-                            street = street_orig.split()[0]
-                            street_lu = street[0:1] + street[1:].lower()
-                        else:
-                            for i in range(1, wrdcount):
-                                if street =='':
-                                    street = street_orig.split()[(i - 1)]
-                                    street_lu = street[0:1] + street[1:].lower()
-                                else:
-                                    street = street + ' ' + street_orig.split()[(i - 1)]
-                                    street_lu = street_lu + ' ' + street_orig.split()[(i - 1)][0:1] + street_orig.split()[(i - 1)][1:].lower()
-#                        street_lu = street[0:1] + street[1:].lower()
-                        country_city_street_obj = self.pool.get('res.country.city.street')
-                        country_city_street = country_city_street_obj.search(cr, uid, [('city_id','=',city_id.id),('name','=',street_lu)])
-                        if country_city_street:
-                            street_id = country_city_street_obj.browse(cr, uid, country_city_street[0])
-                            context['default_street_id'] = street_id.id
-                            context['default_street'] = street_id.name
-                            context['default_street_nbr'] = street_orig.replace((street + ' '),'')
-                        else:
-                            context['default_street'] = lines3_id.t32_free_comm[0:35].rstrip()
-                    else:
-                          context['default_street'] = lines3_id.t32_free_comm[0:35].rstrip()
 
         return {
             'type': 'ir.actions.act_window',
@@ -393,6 +451,7 @@ class bank_statement_create_partner(osv.osv_memory):
                 'membership_state': fields.char('Status Lidmaatschap', translate=True),
                 'partner_address': fields.char('Adres'),
                 'accept_address': fields.boolean('Adres Aanvaarden'),
+                'double_address_id': fields.integer('ID adrescontrole'),
                 'double_address': fields.text('Adrescontrole'),
         'membership_product_amount': fields.related('membership_product_id', 'list_price', type='amount', string="List price"),
                 'stmt_id': fields.many2one('account.bank.statement.line', 'Lijn Rekeninguitreksel', select=True),
@@ -436,13 +495,15 @@ class bank_statement_create_partner(osv.osv_memory):
     def onchange_street_id(self, cr, uid, ids, street_id, street_nbr, street_bus, context=None):
         res = {}
         if not street_id:
-            res['street'] = ""
+            #res['street'] = ""
+            pass
         else:
             street_obj = self.pool.get('res.country.city.street')
             street = street_obj.browse(cr, uid, street_id, context=context)
             res['street'] = street.name
 
         error_msg = ''
+        double_address_id = False
         if street_id and street_nbr:
             address_obj = self.pool.get('res.partner')
             if street_bus:
@@ -451,10 +512,13 @@ class bank_statement_create_partner(osv.osv_memory):
                    address_search = address_obj.search(cr, uid, [('street_id','=',street_id),('street_nbr','=',street_nbr)])
             if address_search:
                 for address_get in address_obj.browse(cr, uid, address_search):
+                    if double_address_id == False:
+                        double_address_id = address_get.id
                     error_msg = error_msg + address_get.name + ' (' + str(address_get.id) + ')'
                     error_msg = error_msg + '''
 '''
         res['double_address'] = error_msg
+        res['double_address_id'] = double_address_id
 
         return {'value':res}
 
@@ -528,27 +592,30 @@ class bank_statement_create_partner(osv.osv_memory):
                         'membership_origin_id': membership_origin_id,
                     }, context=context)
             else:
-                       partner_id = partner_obj.create(cr, uid, {
-                    'name': partner_name,
-                    'last_name': partner.last_name,
-                    'first_name': partner.first_name,
-                    'gender': partner.gender,
-                    'street': street,
-                    'zip': partner.zip,
-                    'city': partner.city,
-                    'zip_id': partner.zip_id.id,
-                    'street_id': partner.street_id.id,
-                    'street_nbr': partner.street_nbr,
-                    'street_bus': partner.street_bus,
-                    'country_id': 21,
-                    'membership_origin_id': membership_origin_id,
-                    'lang': 'nl_BE',
-                    'membership_state': 'none',
-                    'membership_nbr': None,
-                    'crab_used': True,
-                    'bank_ids': False,
-                    'customer': False,
-                    'supplier': False,
+                if partner.accept_address:
+                    partner_id = partner.double_address_id
+                else:
+                    partner_id = partner_obj.create(cr, uid, {
+                     'name': partner_name,
+                     'last_name': partner.last_name,
+                     'first_name': partner.first_name,
+                     'gender': partner.gender,
+                     'street': street,
+                     'zip': partner.zip,
+                     'city': partner.city,
+                     'zip_id': partner.zip_id.id,
+                     'street_id': partner.street_id.id,
+                     'street_nbr': partner.street_nbr,
+                     'street_bus': partner.street_bus,
+                     'country_id': 21,
+                     'membership_origin_id': membership_origin_id,
+                     'lang': 'nl_BE',
+                     'membership_state': 'none',
+                     'membership_nbr': None,
+                     'crab_used': True,
+                     'bank_ids': False,
+                     'customer': False,
+                     'supplier': False,
                     }, context)
             res['partner_id'] = partner_id
 
@@ -628,6 +695,9 @@ class bank_statement_create_partner(osv.osv_memory):
                         'membership_origin_id': membership_origin_id,
                     }, context=context)
             else:
+                if partner.accept_address:
+                   partner_id = partner.double_address_id
+                else:
                    partner_id = partner_obj.create(cr, uid, {
                     'name': partner_name,
                     'last_name': partner.last_name,
