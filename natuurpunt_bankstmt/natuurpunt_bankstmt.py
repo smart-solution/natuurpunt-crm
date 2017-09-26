@@ -495,7 +495,8 @@ class bank_statement_create_partner(osv.osv_memory):
     def onchange_street_id(self, cr, uid, ids, street_id, street_nbr, street_bus, context=None):
         res = {}
         if not street_id:
-            res['street'] = ""
+            #res['street'] = ""
+            pass
         else:
             street_obj = self.pool.get('res.country.city.street')
             street = street_obj.browse(cr, uid, street_id, context=context)
