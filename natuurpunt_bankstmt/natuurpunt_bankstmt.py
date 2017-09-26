@@ -132,6 +132,9 @@ class account_bank_statement_line(osv.osv):
                         if country_city_street_ilike:
                             context['default_street_id']  = country_city_street_ilike.id
                             context['default_street']     = country_city_street_ilike.name
+                        else:
+                            context['default_street_id']  = 0
+                            context['default_street']     = koalect.street
                 else:
                     context['default_zip_id'] = 0
                     context['default_zip'] = koalect.postal_code
