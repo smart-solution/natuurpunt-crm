@@ -49,6 +49,12 @@
 				<field name="display_analytic"/>
 				<field name="display_address"/>
 				<field name="display_regional_partnership"/>
+				<field name="display_contacts"/>
+				<field name="display_ownership"/>
+				<field name="display_insurance"/>
+				<field name="display_suppliers"/>
+				<field name="display_extra_info"/>
+				<field name="display_building_function"/>
 			</group>
 			<group colspan="4">
 				<separator string="Functietypes" colspan="4"/>
@@ -183,6 +189,25 @@
         </record>
         <menuitem name="Werkingsveld" parent="base.menu_organisation_configuration" id="base.organisation_radius_action" sequence="15" action="action_radius_action_form"/>
 -->
+        
+        <record id="view_building_function_tree" model="ir.ui.view">
+            <field name='name'>view.building.function.tree</field>
+            <field name='model'>res.building.function</field>
+            <field name='arch' type='xml'>
+		<tree string="Function of building">
+			<field name="name"/>
+		</tree>
+	    </field>
+        </record>
+
+        <record model="ir.actions.act_window" id="action_building_function_form">
+            <field name="name">Functie van gebouw</field>
+            <field name="res_model">res.building.function</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_type">form</field>
+        </record>
+        <menuitem name="Functie van gebouw" parent="base.menu_organisation_configuration" id="base.action_building_function" sequence="15" action="action_building_function_form"/>
+
         <record id="view_niche_categ_tree" model="ir.ui.view">
             <field name='name'>view.niche.categ.tree</field>
             <field name='model'>res.niche.categ</field>
@@ -401,6 +426,7 @@
 			<field name="analytic_account_id" attrs="{'invisible': [('display_analytic','=',False)]}"/>
 			<field name="regional_level" attrs="{'invisible': [('display_regional_level','=',False)]}"/>
 			<field name="regional_partnership" attrs="{'invisible': [('display_regional_partnership','=',False)]}"/>
+			<field name="building_function_id" attrs="{'invisible': [('display_building_function','=',False)]}"/>
 			</group>
 			<group>
 			<field name="remittance_new_member" attrs="{'invisible': [('display_remittance','=',False)]}"/>
@@ -426,6 +452,12 @@
 			<field name="display_analytic" invisible="True"/>
 			<field name="display_address" invisible="True"/>
 			<field name="display_regional_partnership" invisible="True"/>
+			<field name="display_contacts" invisible="True"/>
+			<field name="display_ownership" invisible="True"/>
+			<field name="display_insurance" invisible="True"/>
+			<field name="display_extra_info" invisible="True"/>
+			<field name="display_suppliers" invisible="True"/>
+			<field name="display_building_function" invisible="True"/>
 			</group>
                     </group>
 		    <notebook>
@@ -491,7 +523,72 @@
 			    <field name="m2m_zip_ids"/>
                         </group>
                     </page>	
-		    </notebook>
+		    
+            <page string="Contactpersonen" attrs="{'invisible': [('display_contacts','=',False)]}">   
+            	<group colspan="1" col="2">
+		            <field name="building_resp_id"/>
+                    <field name="building_user_ids" colspan="4" nolabel="1" options="{'always_reload': true}">
+                        <tree string="gebruikers" editable="bottom" create="false" delete="false" >
+                            <field name="name"/>
+                            <field name="street"/>
+                            <field name="city"/>
+                            <field name="phone"/>
+                        </tree>
+                    </field>
+	            </group>
+            </page>	
+            <page string="Eigendomssituatie en toegankelijkheid" attrs="{'invisible': [('display_ownership','=',False)]}"> 
+                 <group colspan="1" col="2">
+		            <field name="building_resp_vzw"/>
+		            <field name="building_ownership_id"/>
+		            <field name="building_spatial_planning_id"/>
+		            <field name="building_to_break_down"/>
+		            <field name="building_heritage_id"/>
+		            <field name="building_accessibility"/>    
+	            </group>  		
+            </page>	
+            <page string="Verzekeringen" attrs="{'invisible': [('display_insurance','=',False)]}">
+				<group colspan="1" col="2">
+                    <field name="building_insurance_ids" colspan="4" nolabel="1" options="{'always_reload': true}">
+                        <tree string="verzekeringen" editable="bottom" create="false" delete="false" >
+                            <field name="type"/>
+                            <field name="provider"/>
+                            <field name="valid_from_date"/>
+                            <field name="valid_to_date"/>
+                            <field name="analytic_account_id"/>
+                            <field name="reference_number"/>
+                        </tree>
+                    </field>
+		            <field name="building_theft"/>
+		            <field name="building_capital"/>
+		            <field name="building_capital_content"/>
+		            <field name="building_abex"/>
+		            <field name="building_annual_prem"/>
+		            <field name="building_extra_info"/>    
+	            </group>             
+            </page>	
+            <page string="Nutsleveranciers" attrs="{'invisible': [('display_suppliers','=',False)]}">
+				<group colspan="1" col="2">
+                    <field name="building_public_utility_ids" colspan="4" nolabel="1" options="{'always_reload': true}">
+                        <tree string="nutsvoorzieningen" editable="bottom" create="false" delete="false" >
+                            <field name="type"/>
+                            <field name="provider"/>
+                            <field name="valid_from_date"/>
+                            <field name="valid_to_date"/>
+                            <field name="analytic_account_id"/>
+                            <field name="reference_number"/>
+                        </tree>
+                    </field> 
+	            </group>               
+            </page>	
+            <page string="Extra Info" attrs="{'invisible': [('display_extra_info','=',False)]}">  
+                <group colspan="1" col="2">
+		            <field name="building_asbestos"/>
+		            <field name="building_asbestos_remarks"/>
+		            <field name="building_remarks"/>
+	            </group>               
+			</page>		
+        </notebook>	
 		</form>
 	    </field>			   
 	</record>
