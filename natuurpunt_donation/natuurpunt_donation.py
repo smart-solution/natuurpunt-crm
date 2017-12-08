@@ -408,7 +408,10 @@ class sdd_add_payment(osv.osv_memory):
                 comm = 'Lidmaatschap'
             else:
                 if order.membership_renewal:
-                    move_ids = move_obj.search(cr, uid, [('invoice_line_id.invoice_id.membership_invoice', '=', True),('invoice_line_id.invoice_id.membership_renewal','=',True),('invoice_line_id.invoice_id.sdd_mandate_id','!=',False),('invoice_line_id.invoice_id.sdd_mandate_id.state','=','valid'),('reconcile_id','=',False),('statement_id','=',False),('invoice.type','=','out_invoice'),('invoice.state','=','open')])
+                    inv_domain = [('membership_invoice','=',True),('membership_renewal','=',True),('sdd_mandate_id','!=',False),('sdd_mandate_id.state','=','valid'),('type','=','out_invoice'),('state','=','open'),]
+                    inv_ids = self.pool.get('account.invoice').search(cr,uid,inv_domain)
+                    move_domain = [('invoice_line_id.invoice_id.id','in',inv_ids),('reconcile_id','=',False),('statement_id','=',False)]
+                    move_ids = move_obj.search(cr,uid,move_domain)
                     comm = 'Lidmaatschap'
                 else:
                     if order.donation:
