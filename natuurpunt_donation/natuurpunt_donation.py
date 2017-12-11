@@ -418,7 +418,7 @@ class sdd_add_payment(osv.osv_memory):
             move_ids = move_obj.search(cr,uid,move_domain)
             logger.info('AANTAL move_ids:{}'.format(len(move_ids)))
 
-            # exclude move_line_ids that are already in payment_line
+            # cleanup exclude move_line_ids that are already in payment_line
             move_ids_str = ''.join(str(e)+',' for e in move_ids)
             # remove trailing ','
             move_ids_str = move_ids_str[0:len(move_ids_str)-1]
@@ -428,6 +428,7 @@ class sdd_add_payment(osv.osv_memory):
             else:
                 exclude_move_line_ids = []
             move_ids = [i for i in move_ids if i not in exclude_move_line_ids]
+            logger.info('Na cleanup AANTAL move_ids:{}'.format(len(move_ids)))
 
             line2bank = move_obj.line2bank(cr, uid, move_ids, None, context)
 
