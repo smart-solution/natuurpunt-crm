@@ -453,7 +453,7 @@ where id = %s''' % (selected_product_id, )
             quantity = 1
 
             product_id = selected_product_id or datas.get('membership_product_id', False)
-            if membership_renewal and partner.membership_renewal_product_id:
+            if membership_renewal and partner.membership_renewal_product_id and not product_id:
                 product_id = partner.membership_renewal_product_id.id
                 amount_to_inv = partner.membership_renewal_product_id.list_price
             else:
@@ -633,11 +633,34 @@ res_partner()
 class membership_invoice(osv.osv_memory):
     _inherit = "membership.invoice"
 
+    def _get_membership_renewal(self, cr, uid, context=None):
+        try:
+           ids = context.get('active_ids', [])
+           for partner in self.pool.get('res.partner').browse(cr,uid,ids):
+               return partner.membership_end != False
+           else:
+               return False
+        except Exception, ex:
+           return False
+
     _columns = {
         'invoice_organisation': fields.boolean('Betaald aan Afdeling'),
 		'recruiting_organisation_id': fields.many2one('res.partner', 'Wervende Organisatie', select=True),
         'membership_renewal': fields.boolean('Hernieuwingsfactuur'),
+        'date_from': fields.date('From', readonly=True),
+        'date_to': fields.date('To', readonly=True),
     }
+
+    _defaults = {
+        'membership_renewal' :  _get_membership_renewal,
+    }
+
+    def onchange_membership_renewal(self, cr, uid, ids, product_id, membership_renewal, context=None):
+        result = self.onchange_product(cr,uid,ids,product_id=product_id)
+        date_from,date_to = self.pool.get('product.product').get_from_to(cr,uid,product_id,renew=membership_renewal)
+        result['value']['date_from'] = date_from
+        result['value']['date_to'] = date_to
+        return result
 
     def membership_invoice(self, cr, uid, ids, context=None):
         mod_obj = self.pool.get('ir.model.data')

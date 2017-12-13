@@ -297,7 +297,7 @@ class bank_statement_create_partner(osv.osv_memory):
             res['donation_product_id'] = False
         return {'value':res}                
     
-    def onchange_product_id(self, cr, uid, ids, product_id, transaction_amount, donation_partner, membership_partner, donation_product_id, context=None):
+    def onchange_product_id(self, cr, uid, ids, product_id, transaction_amount, donation_partner, membership_partner, donation_product_id, membership_renewal, context=None):
         res = {}
         membership_amount = 0.00
         donation = donation_partner
@@ -305,6 +305,9 @@ class bank_statement_create_partner(osv.osv_memory):
             product_obj = self.pool.get('product.product')
             product = product_obj.browse(cr, uid, product_id, context=context)
             membership_amount = product.list_price
+            date_from,date_to = self.pool.get('product.product').get_from_to(cr,uid,product_id,renew=membership_renewal)
+            res['date_from'] = date_from
+            res['date_to'] = date_to
         if membership_partner:
             res['membership_amount'] = membership_amount
             res['membership_amount_inv'] = membership_amount
@@ -452,6 +455,9 @@ class bank_statement_create_partner(osv.osv_memory):
                 'partner_address': fields.char('Adres'),
                 'accept_address': fields.boolean('Adres Aanvaarden'),
                 'double_address_id': fields.integer('ID adrescontrole'),
+                'membership_renewal': fields.boolean('Hernieuwingsfactuur'),
+                'date_from': fields.date('From', readonly=True),
+                'date_to': fields.date('To', readonly=True),
                 'double_address': fields.text('Adrescontrole'),
         'membership_product_amount': fields.related('membership_product_id', 'list_price', type='amount', string="List price"),
                 'stmt_id': fields.many2one('account.bank.statement.line', 'Lijn Rekeninguitreksel', select=True),
@@ -777,6 +783,7 @@ class bank_statement_create_partner(osv.osv_memory):
                 analytic_dimension_1_id = partner.membership_product_id.analytic_dimension_1_id.id
                 analytic_dimension_2_id = partner.membership_product_id.analytic_dimension_2_id.id
                 analytic_dimension_3_id = partner.membership_product_id.analytic_dimension_3_id.id
+                membership_renewal = partner.membership_renewal
 
 #                amount_inv = partner.membership_product_id.product_tmpl_id.list_price
                 amount_inv = partner.membership_amount_inv
@@ -825,6 +832,7 @@ class bank_statement_create_partner(osv.osv_memory):
                     'internal_number': None,
                     'number': None,
                     'move_name': None,
+                    'membership_renewal':membership_renewal,
                 }, context=context)
 
                 line_value['invoice_id'] = invoice_id
