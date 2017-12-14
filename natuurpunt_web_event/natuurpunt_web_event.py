@@ -108,12 +108,11 @@ class account_invoice(osv.osv):
         if context is None:
             context = {}
         res = super(account_invoice, self).confirm_paid(cr, uid, ids, context=context)
-        invoice = self.read(cr, uid, ids, ['event_invoice','type'], context=context)
-        if res and invoice[0].get('event_invoice',False):
-            if invoice[0].get('type',False) == 'out_invoice':
-                self._sync_registration(cr, uid, ids, mode='confirm', context=context)
-            else:
-                return res 
+        for invoice in self.browse(cr,uid,ids,context=context):
+            if (invoice.event_invoice and
+                invoice.type == 'out_invoice' and 
+                invoice.payment_ids[0].journal_id.code != 'VFC'):
+                    self._sync_registration(cr, uid, ids, mode='confirm', context=context)
         return res
 
     def get_refund_mode(self, cr, uid, ids, context=None):
