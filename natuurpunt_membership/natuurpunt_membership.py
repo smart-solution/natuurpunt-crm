@@ -29,6 +29,7 @@ from mx import DateTime
 import time
 import logging
 from functools import partial
+from itertools import groupby
 from natuurpunt_tools import get_included_product_ids
 
 logger = logging.getLogger(__name__)
@@ -863,30 +864,43 @@ class membership_membership_line(osv.osv):
         magazine_obj = self.pool.get('membership.membership_magazine')
         partner_id = mline.partner.id
         today = datetime.today().strftime('%Y-%m-%d')
-        ids = self.search(cr,uid,[('partner','=',partner_id),('date_to','>=',today)])
+        ids = self.search(cr,uid,[('partner','=',partner_id),('date_to','>=',today),('id','!=',mline.id)])
 
-        # mlines = [('invoiced', [2, 3, 4, 204]), ('canceled', [2, 3]), ('paid', [2, 3])]
-        # filter on state for subscribed (invoiced, paid) = [set([204, 2, 3, 4]), set([2, 3])]
-        # = [2,3,4,204,2,3]
-        # keep only product_ids that are not in subscribed_product_ids
-        mlines = map(partial(self._np_membership_line_state,cr,uid),self.browse(cr,uid,ids))
+        def get_membership_line_date_and_state(mline):
+            state, product_ids = self._np_membership_line_state(cr,uid,mline)
+            return (mline.date, state, product_ids)
+
+        # mlines = [('2017-12-31','invoiced',[2,3,4,204]),('2017-12-31','canceled',[2,3]),('2018-12-31','paid',[2,3])]
+        mlines = map(get_membership_line_date_and_state,self.browse(cr,uid,ids))
         states = ['paid','invoiced'] if mline.account_invoice_id.sdd_mandate_id else ['paid']
-        subscribed_product_ids = reduce(lambda a,b:a+b, [products for state,products in mlines if state in states])
-        unsubscribe_product_ids = [p for p in product_ids if p not in subscribed_product_ids]
+        subscribed_to = compose(
+           partial(filter,lambda i:i[1] in states),
+           partial(map,lambda i:[(p,i[0]) for p in i[2]]),
+           lambda lst:reduce(lambda a,b:a+b,lst,[]),
+           lambda lst:groupby(sorted(lst), lambda i: i[0]),
+           lambda gen:[max([g for g in group]) for key,group in gen],
+           dict
+        )(mlines)
+        # {204: '2017-12-31', 2: '2018-12-31', 3: '2018-12-31', 4: '2017-12-31'}
 
         def unsubscribe_membership_magazine(product):
             magazine_subscription_domain = [('partner_id','=',partner_id),('product_id','=',product.id)]
             magazine_subscription_id = magazine_obj.search(cr,uid,magazine_subscription_domain)
-            vals = {
-                'date_cancel':today
-            }
+            if product.id in subscribed_to:
+                vals = {
+                    'date_to':subscribed_to[product.id]
+                }
+            else:
+                vals = {
+                    'date_cancel':today
+                }
             for magazine_subscription in magazine_obj.browse(cr,uid,magazine_subscription_id):
                 if not magazine_subscription.date_cancel:
                     magazine_obj.write(cr,uid,magazine_subscription_id,vals,context=context)
             return {
                 'product_id':product.id,
             }
-        return map(unsubscribe_membership_magazine,prod_obj.browse(cr,uid,unsubscribe_product_ids))
+        return map(unsubscribe_membership_magazine,prod_obj.browse(cr,uid,product_ids))
 
     def subscribe_membership_magazines(self, cr, uid, mline, product_ids, context=None):
         partner_id = mline.partner.id
