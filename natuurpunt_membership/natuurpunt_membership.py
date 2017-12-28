@@ -868,7 +868,7 @@ class membership_membership_line(osv.osv):
 
         def get_membership_line_date_and_state(mline):
             state, product_ids = self._np_membership_line_state(cr,uid,mline)
-            return (mline.date, state, product_ids)
+            return (mline.date_to, state, product_ids)
 
         # mlines = [('2017-12-31','invoiced',[2,3,4,204]),('2017-12-31','canceled',[2,3]),('2018-12-31','paid',[2,3])]
         mlines = map(get_membership_line_date_and_state,self.browse(cr,uid,ids))
@@ -949,7 +949,9 @@ class membership_membership_line(osv.osv):
             state, product_ids = self._np_membership_line_state(cr,SUPERUSER_ID,mline,context=context)
             res[mline.id] = state
 
-            if state == 'invoiced' and mline.account_invoice_id.sdd_mandate_id:
+            if (state == 'invoiced' and
+                mline.account_invoice_id.sdd_mandate_id and
+                not mline.account_invoice_id.definitive_reject):
                 self.subscribe_membership_magazines(cr,uid,mline,product_ids,context=context)
 
             if state == 'paid' and not mline.account_invoice_id.sdd_mandate_id:
@@ -968,7 +970,7 @@ class membership_membership_line(osv.osv):
                     partial(self.write,cr,uid,ids)
                 )(self.subscribe_membership_magazines(cr,uid,mline,product_ids,context=context))
 
-            if state == 'canceled':
+            if state == 'canceled' or mline.account_invoice_id.definitive_reject:
                 self.unsubscribe_membership_magazines(cr,uid,mline,product_ids,context=context)
 
         return res
