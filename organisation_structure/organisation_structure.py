@@ -55,11 +55,13 @@ class res_organisation_type(osv.osv):
 		'display_regional_partnership': fields.boolean('Toon regionaal samenwerkingsverband'),
 		'display_contacts': fields.boolean('Toon contacten'),
 		'display_ownership': fields.boolean('Toon eigendomssituatie en toegankelijkheid'),
+		'display_invoicing': fields.boolean('Toon Boekhouding'),
 		'display_insurance': fields.boolean('Toon verzekeringen'),
 		'display_suppliers': fields.boolean('Toon nutsleveranciers'),
 		'display_extra_info': fields.boolean('Toon bijkomende info'),
 		'display_extra_info': fields.boolean('Toon bijkomende info'),
 		'display_building_function': fields.boolean('Toon functie gebouw'),
+		'display_building_capakey': fields.boolean('Toon capakey gebouw'),
 	}
 
 res_organisation_type()
@@ -232,6 +234,8 @@ class building_public_utility(osv.osv):
 		'valid_to_date': fields.date('Geldig tot'),
 		'analytic_account_id': fields.many2one('account.analytic.account', 'Kostenplaats', select=True, ondelete='cascade'),
 		'reference_number': fields.char('Contract nummer', size=128),
+		'date_latest_check': fields.date('Laatste keuring'),
+		'remark_latest_check': fields.char('Opmerking laatste keuring', size=128),
 	}
 
 building_public_utility()
@@ -252,6 +256,7 @@ class res_partner(osv.osv):
 	_columns = {
         'organisation_type_id': fields.many2one('res.organisation.type', 'Organisatietype', select=True),
         'building_function_id': fields.many2one('res.building.function', 'Functie gebouw', select=True),
+        'building_capakey': fields.char('Capakey', size=128),
         'organisation_relation_ids': fields.many2many('res.partner', 'res_partner_organisation_rel', 'partner_id', 'relation_id', 'Relaties'),
         'organisation_relation_ids_inv': fields.many2many('res.partner', 'res_partner_organisation_rel', 'relation_id', 'partner_id', 'Relaties (vanuit partner)'),
         'relation_ids': fields.many2many('res.organisation.relation', 'res_organisation_relation_rel', 'partner_id', 'relation_id', 'Partners'),
@@ -291,16 +296,18 @@ class res_partner(osv.osv):
 		'display_regional_partnership': fields.related('organisation_type_id','display_regional_partnership',type='boolean',string='Toon regionaal samenwerkingsverband'),
 		'display_contacts': fields.related('organisation_type_id','display_contacts',type='boolean',string='Toon contacten'),
 		'display_ownership': fields.related('organisation_type_id','display_ownership',type='boolean',string='Toon eigendomssituatie en toegankelijkheid'),
+		'display_invoicing': fields.related('organisation_type_id','display_invoicing',type='boolean',string='Toon boekhouding'),
 		'display_insurance': fields.related('organisation_type_id','display_insurance',type='boolean',string='Toon verzekeringen'),
 		'display_suppliers': fields.related('organisation_type_id','display_suppliers',type='boolean',string='Toon nutsleveranciers'),
 		'display_extra_info': fields.related('organisation_type_id','display_extra_info',type='boolean',string='Toon bijkomende info'),
 		'display_building_function': fields.related('organisation_type_id','display_building_function',type='boolean',string='Toon functie gebouw'),
+		'display_building_capakey': fields.related('organisation_type_id','display_building_capakey',type='boolean',string='Toon capakey gebouw'),
 		#gebouwen Contactpersonen
 		'building_resp_id': fields.many2one('res.partner', 'Verantwoordelijke gebouw'),
 		'building_user_ids': fields.many2many('res.partner', 'res_partner_user_rel', 'partner_id', 'building_user_id', 'Gebruiker gebouw'),
 		#gebouwen Eigendomssituatie en toegankelijkheid
 		'building_resp_vzw': fields.many2one('res.company', 'Verantwoordelijke vzw'),
-		'building_ownership_id': fields.many2one('building.ownership', 'Eigendomssityatie'),
+		'building_ownership_id': fields.many2one('building.ownership', 'Eigendomssituatie'),
 		'building_spatial_planning_id': fields.many2one('building.spatial.planning', 'Ruimtelijke ordening'),
 		'building_to_break_down': fields.boolean('Af te breken'),
 		'building_heritage_id': fields.many2one('building.heritage', 'Beschermd onroerend erfgoed'),
@@ -319,6 +326,11 @@ class res_partner(osv.osv):
 		'building_extra_info':fields.text('Extra informatie'),
 		#gebouwen Nutsvoorzieningen
 		'building_public_utility_ids': fields.many2many('building.public.utility','building_public_utility_rel', 'type', 'public_utility_id', 'Nutsvoorzieningen'),
+		#gebouwen Boekhouding
+		'building_activa_nr': fields.many2one('account.asset.asset', 'Activanummer', select=True),
+		'building_analytic_dimension_1_id': fields.many2one('account.analytic.account', 'Dimensie 1', select=True),
+		'building_analytic_dimension_2_id': fields.many2one('account.analytic.account', 'Dimensie 2', select=True),
+		'building_analytic_dimension_3_id': fields.many2one('account.analytic.account', 'Dimensie 3', select=True),
 	}
 
  	def write(self, cr, uid, ids, vals, context=None): 		
