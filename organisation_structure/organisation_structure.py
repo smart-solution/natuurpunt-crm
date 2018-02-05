@@ -62,6 +62,7 @@ class res_organisation_type(osv.osv):
 		'display_extra_info': fields.boolean('Toon bijkomende info'),
 		'display_building_function': fields.boolean('Toon functie gebouw'),
 		'display_building_capakey': fields.boolean('Toon capakey gebouw'),
+		'display_building_date_end': fields.boolean('Toon einddatum gebouw'),
 	}
 
 res_organisation_type()
@@ -205,11 +206,11 @@ class building_insurance(osv.osv):
 	_name = 'building.insurance'
 	
 	_columns = {
-		'type': fields.many2one('building.insurance.type', 'Type verzekering', select=True, required=True),
-		'provider': fields.many2one('res.partner', 'Leverancier', select=True),
+		'type': fields.many2one('building.insurance.type', 'Type verzekering', required=True),
+		'provider': fields.many2one('res.partner', 'Leverancier'),
 		'valid_from_date': fields.date('Geldig van'),
 		'valid_to_date': fields.date('Geldig tot'),
-		'analytic_account_id': fields.many2one('account.analytic.account', 'Kostenplaats', select=True, ondelete='cascade'),
+		'analytic_account_id': fields.many2one('account.analytic.account', 'Kostenplaats'),
 		'reference_number': fields.char('Polisnummer', size=128),
 	}
 
@@ -228,11 +229,11 @@ class building_public_utility(osv.osv):
 	_name = 'building.public.utility'
 	
 	_columns = {
-		'type': fields.many2one('building.insurance.type', 'Type contract', select=True, required=True),
-		'provider': fields.many2one('res.partner', 'Leverancier', select=True),
+		'type': fields.many2one('building.insurance.type', 'Type contract', required=True),
+		'provider': fields.many2one('res.partner', 'Leverancier', required=True),
 		'valid_from_date': fields.date('Geldig van'),
 		'valid_to_date': fields.date('Geldig tot'),
-		'analytic_account_id': fields.many2one('account.analytic.account', 'Kostenplaats', select=True, ondelete='cascade'),
+		'analytic_account_id': fields.many2one('account.analytic.account', 'Kostenplaats'),
 		'reference_number': fields.char('Contract nummer', size=128),
 		'date_latest_check': fields.date('Laatste keuring'),
 		'remark_latest_check': fields.char('Opmerking laatste keuring', size=128),
@@ -257,6 +258,7 @@ class res_partner(osv.osv):
         'organisation_type_id': fields.many2one('res.organisation.type', 'Organisatietype', select=True),
         'building_function_id': fields.many2one('res.building.function', 'Functie gebouw', select=True),
         'building_capakey': fields.char('Capakey', size=128),
+        'building_date_end': fields.date('Einddatum', size=128),
         'organisation_relation_ids': fields.many2many('res.partner', 'res_partner_organisation_rel', 'partner_id', 'relation_id', 'Relaties'),
         'organisation_relation_ids_inv': fields.many2many('res.partner', 'res_partner_organisation_rel', 'relation_id', 'partner_id', 'Relaties (vanuit partner)'),
         'relation_ids': fields.many2many('res.organisation.relation', 'res_organisation_relation_rel', 'partner_id', 'relation_id', 'Partners'),
@@ -302,6 +304,7 @@ class res_partner(osv.osv):
 		'display_extra_info': fields.related('organisation_type_id','display_extra_info',type='boolean',string='Toon bijkomende info'),
 		'display_building_function': fields.related('organisation_type_id','display_building_function',type='boolean',string='Toon functie gebouw'),
 		'display_building_capakey': fields.related('organisation_type_id','display_building_capakey',type='boolean',string='Toon capakey gebouw'),
+		'display_building_date_end': fields.related('organisation_type_id','display_building_date_end',type='boolean',string='Toon einddatum gebouw'),
 		#gebouwen Contactpersonen
 		'building_resp_id': fields.many2one('res.partner', 'Verantwoordelijke gebouw'),
 		'building_user_ids': fields.many2many('res.partner', 'res_partner_user_rel', 'partner_id', 'building_user_id', 'Gebruiker gebouw'),

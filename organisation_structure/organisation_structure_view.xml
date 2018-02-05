@@ -58,7 +58,7 @@
 				<field name="display_suppliers"/>
 				<field name="display_extra_info"/>
 				<field name="display_building_function"/>
-				<field name="display_building_capakey"/>
+				<field name="display_building_date_end"/>
 			</group>
 			<group colspan="4">
 				<separator string="Functietypes" colspan="4"/>
@@ -203,7 +203,6 @@
 		</tree>
 	    </field>
         </record>
-
         <record model="ir.actions.act_window" id="action_building_function_form">
             <field name="name">Functie van gebouw</field>
             <field name="res_model">res.building.function</field>
@@ -211,6 +210,173 @@
             <field name="view_type">form</field>
         </record>
         <menuitem name="Functie van gebouw" parent="base.menu_organisation_configuration" id="base.action_building_function" sequence="15" action="action_building_function_form"/>
+        
+        <record id="view_building_ownership_tree" model="ir.ui.view">
+            <field name='name'>view.building.ownership.tree</field>
+            <field name='model'>building.ownership</field>
+            <field name='arch' type='xml'>
+		<tree string="Building ownership">
+			<field name="name"/>
+		</tree>
+	    </field>
+        </record>
+        <record model="ir.actions.act_window" id="action_building_ownership_form">
+            <field name="name">Eigendomssituatie gebouw</field>
+            <field name="res_model">building.ownership</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_type">form</field>
+        </record>
+        <menuitem name="Eigendomssituatie gebouw" parent="base.menu_organisation_configuration" id="base.action_building_ownership" sequence="15" action="action_building_ownership_form"/>
+
+        <record id="view_building_spatial_planning_tree" model="ir.ui.view">
+            <field name='name'>view.building.spatial.planning.tree</field>
+            <field name='model'>building.spatial.planning</field>
+            <field name='arch' type='xml'>
+		<tree string="Building spatial planning">
+			<field name="name"/>
+		</tree>
+	    </field>
+        </record>
+        <record model="ir.actions.act_window" id="action_building_spatial_planning_form">
+            <field name="name">Ruimtelijke ordening gebouw</field>
+            <field name="res_model">building.spatial.planning</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_type">form</field>
+        </record>
+        <menuitem name="Ruimtelijke ordening gebouw" parent="base.menu_organisation_configuration" id="base.action_building_spatial_planning" sequence="15" action="action_building_spatial_planning_form"/>
+
+        <record id="view_building_heritage_tree" model="ir.ui.view">
+            <field name='name'>view.building.heritage.tree</field>
+            <field name='model'>building.heritage</field>
+            <field name='arch' type='xml'>
+		<tree string="Building heritage">
+			<field name="name"/>
+		</tree>
+	    </field>
+        </record>   
+        <record model="ir.actions.act_window" id="action_building_heritage_form">
+            <field name="name">Beschermd onroerend erfgoed</field>
+            <field name="res_model">building.heritage</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_type">form</field>
+        </record>
+        <menuitem name="Beschermd onroerend erfgoed" parent="base.menu_organisation_configuration" id="base.action_building_heritage" sequence="15" action="action_building_heritage_form"/>
+
+        <record id="view_building_insurance_type_tree" model="ir.ui.view">
+            <field name='name'>view.building.insurance.type.tree</field>
+            <field name='model'>building.insurance.type</field>
+            <field name='arch' type='xml'>
+		<tree string="Building insurance type">
+			<field name="name"/>
+		</tree>
+	    </field>
+        </record>   
+
+        <record id="view_building_insurance_tree" model="ir.ui.view">
+            <field name='name'>view.building.insurance.tree</field>
+            <field name='model'>building.insurance</field>
+            <field name='arch' type='xml'>
+			<tree string="Building insurance">
+	            <field name="type"/>
+	            <field name="provider"/>
+				<field name="reference_number"/>
+	            <field name="analytic_account_id"/>
+				<field name="valid_from_date"/>
+	            <field name="valid_to_date"/>        
+			</tree>
+		    </field>
+        </record>
+
+    <record id="view_building_insurance_form" model="ir.ui.view">
+        <field name='name'>view.building.insurance.form</field>
+        <field name='model'>building.insurance</field>
+        <field name='arch' type='xml'>
+	    <form string="Building insurance">
+		<group colspan="4" col="2">
+		    <group>
+	            <field name="type"/>
+	            <field name="provider"/>
+				<field name="reference_number"/>
+
+		    </group>
+		    <group>
+	            <field name="analytic_account_id"/>
+				<field name="valid_from_date"/>
+	            <field name="valid_to_date"/>            
+		    </group>
+		</group>
+	    </form>
+	</field>
+    </record>
+
+        <record id="view_building_public_utility_tree" model="ir.ui.view">
+            <field name='name'>view.building.public.utility.tree</field>
+            <field name='model'>building.public.utility</field>	
+            <field name='arch' type='xml'>
+		<tree string="Building public utility">
+	            <field name="type"/>
+	            <field name="provider"/>
+				<field name="reference_number"/>
+	            <field name="analytic_account_id"/>
+	            <field name="valid_from_date"/>
+	            <field name="valid_to_date"/>
+	            <field name="date_latest_check"/>
+	            <field name="remark_latest_check"/>  
+		</tree>
+	    </field>
+        </record>
+       
+    <record id="view_building_public_utility_form" model="ir.ui.view">
+        <field name='name'>view.building.public.utility.form</field>
+        <field name='model'>building.public.utility</field>
+        <field name='arch' type='xml'>
+	    <form string="Building insurance">
+		<group colspan="4" col="2">
+		    <group>
+	            <field name="type"/>
+	            <field name="provider"/>
+				<field name="reference_number"/>
+	            <field name="analytic_account_id"/>
+		    </group>
+		    <group>
+	            <field name="valid_from_date"/>
+	            <field name="valid_to_date"/>
+	            <field name="date_latest_check"/>
+	            <field name="remark_latest_check"/>           
+		    </group>
+		</group>
+	    </form>
+	</field>
+    </record>
+
+
+
+
+        <record model="ir.actions.act_window" id="action_building_insurance_type_form">
+            <field name="name">Type verzekering</field>
+            <field name="res_model">building.insurance.type</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_type">form</field>
+        </record>
+        <menuitem name="Type verzekering" parent="base.menu_organisation_configuration" id="base.action_building_insurance_type" sequence="15" action="action_building_insurance_type_form"/>
+
+        <record id="view_building_public_utility_type_tree" model="ir.ui.view">
+            <field name='name'>view.building.public.utility_type.tree</field>
+            <field name='model'>building.public.utility.type</field>
+            <field name='arch' type='xml'>
+		<tree string="Building public utility">
+			<field name="name"/>
+		</tree>
+	    </field>
+        </record>   
+        <record model="ir.actions.act_window" id="action_building_public_utility_type_form">
+            <field name="name">Type contract</field>
+            <field name="res_model">building.public.utility.type</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_type">form</field>
+        </record>
+        <menuitem name="Type contract" parent="base.menu_organisation_configuration" id="base.action_building_public_utility_type" sequence="15" action="action_building_public_utility_type_form"/>
+
 
         <record id="view_niche_categ_tree" model="ir.ui.view">
             <field name='name'>view.niche.categ.tree</field>
@@ -432,6 +598,7 @@
 			<field name="regional_partnership" attrs="{'invisible': [('display_regional_partnership','=',False)]}"/>
 			<field name="building_function_id" attrs="{'invisible': [('display_building_function','=',False)]}"/>
 			<field name="building_capakey" attrs="{'invisible': [('display_building_capakey','=',False)]}"/>
+			<field name="building_date_end" attrs="{'invisible': [('display_building_date_end','=',False)]}"/>
 			</group>
 			<group>
 			<field name="remittance_new_member" attrs="{'invisible': [('display_remittance','=',False)]}"/>
@@ -465,6 +632,7 @@
 			<field name="display_suppliers" invisible="True"/>
 			<field name="display_building_function" invisible="True"/>
 			<field name="display_building_capakey" invisible="True"/>
+			<field name="display_building_date_end" invisible="True"/>
 			</group>
                     </group>
 		    <notebook>
@@ -565,14 +733,14 @@
             
             <page string="Verzekeringen" attrs="{'invisible': [('display_insurance','=',False)]}">
 				<group colspan="1" col="2">
-                    <field name="building_insurance_ids" colspan="4" nolabel="1" options="{'always_reload': true}">
-                        <tree string="verzekeringen" editable="bottom" create="false" delete="false" >
-                            <field name="type"/>
-                            <field name="provider"/>
-                            <field name="valid_from_date"/>
-                            <field name="valid_to_date"/>
-                            <field name="analytic_account_id"/>
-                            <field name="reference_number"/>
+                    <field name="building_insurance_ids" colspan="4" nolabel="1">
+                        <tree string="verzekeringen">
+				            <field name="type"/>
+				            <field name="provider"/>
+							<field name="reference_number"/>
+				            <field name="analytic_account_id"/>
+							<field name="valid_from_date"/>
+				            <field name="valid_to_date"/>    
                         </tree>
                     </field>
 		            <field name="building_theft"/>
@@ -585,16 +753,16 @@
             </page>	
             <page string="Overige contracten" attrs="{'invisible': [('display_suppliers','=',False)]}">
 				<group colspan="1" col="2">
-                    <field name="building_public_utility_ids" colspan="4" nolabel="1" options="{'always_reload': true}">
-                        <tree string="nutsvoorzieningen" editable="bottom" create="false" delete="false" >
-                            <field name="type"/>
-                            <field name="provider"/>
-                            <field name="valid_from_date"/>
-                            <field name="valid_to_date"/>
-                            <field name="analytic_account_id"/>
-                            <field name="reference_number"/>
-                            <field name="date_latest_check"/>
-                            <field name="remark_latest_check"/>
+                    <field name="building_public_utility_ids" colspan="4" nolabel="1">
+                        <tree string="nutsvoorzieningen">
+				            <field name="type"/>
+				            <field name="provider"/>
+							<field name="reference_number"/>
+				            <field name="analytic_account_id"/>
+				            <field name="valid_from_date"/>
+				            <field name="valid_to_date"/>
+				            <field name="date_latest_check"/>
+				            <field name="remark_latest_check"/>  
                         </tree>
                     </field> 
 	            </group>               
