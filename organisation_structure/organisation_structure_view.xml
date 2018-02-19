@@ -317,6 +317,7 @@
 	            <field name="type"/>
 	            <field name="provider"/>
 				<field name="reference_number"/>
+				<field name="nr_supply_point"/>
 	            <field name="analytic_account_id"/>
 	            <field name="valid_from_date"/>
 	            <field name="valid_to_date"/>
@@ -336,6 +337,7 @@
 	            <field name="type"/>
 	            <field name="provider"/>
 				<field name="reference_number"/>
+				<field name="nr_supply_point"/>
 	            <field name="analytic_account_id"/>
 		    </group>
 		    <group>
@@ -758,6 +760,7 @@
 				            <field name="type"/>
 				            <field name="provider"/>
 							<field name="reference_number"/>
+							<field name="nr_supply_point"/>
 				            <field name="analytic_account_id"/>
 				            <field name="valid_from_date"/>
 				            <field name="valid_to_date"/>

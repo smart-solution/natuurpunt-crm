@@ -206,6 +206,7 @@ class building_insurance(osv.osv):
 	_name = 'building.insurance'
 	
 	_columns = {
+		'partner_id': fields.many2one('res.partner', 'Partner', select=True),
 		'type': fields.many2one('building.insurance.type', 'Type verzekering', required=True),
 		'provider': fields.many2one('res.partner', 'Leverancier'),
 		'valid_from_date': fields.date('Geldig van'),
@@ -229,8 +230,10 @@ class building_public_utility(osv.osv):
 	_name = 'building.public.utility'
 	
 	_columns = {
-		'type': fields.many2one('building.insurance.type', 'Type contract', required=True),
+		'partner_id': fields.many2one('res.partner', 'Partner', select=True),
+		'type': fields.many2one('building.public.utility.type', 'Type contract', required=True),
 		'provider': fields.many2one('res.partner', 'Leverancier', required=True),
+		'nr_supply_point': fields.char('Uniek nummer afnamepunt', size=128),
 		'valid_from_date': fields.date('Geldig van'),
 		'valid_to_date': fields.date('Geldig tot'),
 		'analytic_account_id': fields.many2one('account.analytic.account', 'Kostenplaats'),
@@ -320,7 +323,7 @@ class res_partner(osv.osv):
 		'building_asbestos_remarks': fields.text('Opmerkingen asbest'),
 		'building_remarks':fields.text('Andere opmerkingen'),
 		#gebouwen Verzekeringen
-		'building_insurance_ids': fields.many2many('building.insurance','building_insurance_rel', 'type', 'insurance_id', 'Verzekeringen'),
+		'building_insurance_ids': fields.one2many('building.insurance', 'partner_id', 'Verzekeringen'),
 		'building_theft': fields.boolean('Diefstal'),
 		'building_capital': fields.float('Kapitaal gebouw'),
 		'building_capital_content': fields.float('Kapitaal inhoud'),
@@ -328,7 +331,7 @@ class res_partner(osv.osv):
 		'building_annual_prem': fields.float('Jaarpremie'),
 		'building_extra_info':fields.text('Extra informatie'),
 		#gebouwen Nutsvoorzieningen
-		'building_public_utility_ids': fields.many2many('building.public.utility','building_public_utility_rel', 'type', 'public_utility_id', 'Nutsvoorzieningen'),
+		'building_public_utility_ids': fields.one2many('building.public.utility', 'partner_id', 'Nutsvoorzieningen'),
 		#gebouwen Boekhouding
 		'building_activa_nr': fields.many2one('account.asset.asset', 'Activanummer', select=True),
 		'building_analytic_dimension_1_id': fields.many2one('account.analytic.account', 'Dimensie 1', select=True),
