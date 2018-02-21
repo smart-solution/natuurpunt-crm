@@ -58,6 +58,7 @@
 				<field name="display_suppliers"/>
 				<field name="display_extra_info"/>
 				<field name="display_building_function"/>
+				<field name="display_building_capakey"/>
 				<field name="display_building_date_end"/>
 			</group>
 			<group colspan="4">
