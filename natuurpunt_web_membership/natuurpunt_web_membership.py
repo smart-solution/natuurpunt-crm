@@ -274,7 +274,12 @@ class res_partner(osv.osv):
         for id in ids:
             partner_data = self.browse(cr, uid, id, context=context)
             mline, membership_state = self._np_membership_state(cr, uid, partner_data, context=context)
-            return {'payment_method': mline.payment_method}
+            if not mline.payment_method:
+                return 'Niet-betalend'
+            elif mline.account_invoice_id.sdd_mandate_id
+                return 'Domiciliëng' 
+            else:
+                return 'jaarlijks'
 
     def create_web_membership_mandate_invoice(self,cr,uid,ids,selected_product_id=None,datas=None,context=None):
 
