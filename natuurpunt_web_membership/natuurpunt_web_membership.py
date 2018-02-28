@@ -274,7 +274,7 @@ class res_partner(osv.osv):
         for id in ids:
             partner_data = self.browse(cr, uid, id, context=context)
             mline, membership_state = self._np_membership_state(cr, uid, partner_data, context=context)
-            if not mline.payment_method:
+            if not mline:
                 return 'Niet-betalend'
             elif mline.account_invoice_id.sdd_mandate_id:
                 return 'Domiciliëng' 
