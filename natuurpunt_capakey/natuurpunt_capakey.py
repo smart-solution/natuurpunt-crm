@@ -22,6 +22,8 @@
 from openerp.osv import fields, osv
 from natuurpunt_tools import sql_wrapper
 
+depth_tree = 7
+
 class res_partner(osv.osv):
         _name = 'res.partner'
         _inherit = 'res.partner'
@@ -36,8 +38,7 @@ class res_partner(osv.osv):
                 return res
             else:
                 if len(sql_res) == 1 and sql_res[0]['level'] > 0 :
-                    one_child_level_lookup = list(reversed(range(8)))
-                    if one_child_level_lookup[sql_res[0]['level']] == sql_res[0]['children']:
+                    if abs(sql_res[0]['level'] - depth_tree) == sql_res[0]['children']:
                         try:
                             name = sql_res[0]['name']
                             query = "select name from fdw_capakey where lft > {} AND rgh < {} AND level = {}"
