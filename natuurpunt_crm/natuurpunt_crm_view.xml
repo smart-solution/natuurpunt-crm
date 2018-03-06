@@ -126,7 +126,7 @@
 			    </tree>
 			</field>
 		    </page>
-		    <page string="CRM Betalingen" groups="natuurpunt_crm.group_natuurpunt_crm_user">
+		    <page string="CRM Betalingen" groups="natuurpunt_crm.group_natuurpunt_crm_manager">
 			<field name="crm_payment_ids" readonly="True" nolabel="1" domain="[('crm_account','!=',False)]" context="{'default_partner_id':active_id}">
 			    <tree string="CRM Betalingen" readonly="True" domain="[('crm_account','!=',False)]">
 				<field name="date"/>
