@@ -69,12 +69,12 @@
                 <page string="Membership" position="after">
                     <page string="Magazines" groups="natuurpunt_membership.group_natuurpunt_membership_power_user">
                         <group name="abbo" string="Abonnementen">
-                            <button name="migrate_membership_magazine" string="migratie" type="object" attrs="{'invisible': [('magazine_ids', '=', False)]}"/>
                             <field name="magazine_ids" colspan="4" nolabel="1">
                                 <tree string="Abonnementen" editable="bottom" create="false" delete="false" colors="red:date_cancel != False" >
                                     <field name="product_id" readonly="1"/>
                                     <field name="date_to"/>
                                     <field name="date_cancel"/>
+									<field name="magazine_cancel_reason_id"/>
                                 </tree>
                             </field>
                          </group>
@@ -167,6 +167,57 @@
 	    </form>
 	</field>
     </record>
+
+    <record id="view_magazine_cancel_search" model="ir.ui.view">
+    <field name="name">view.magazine.cancel.search</field>
+    <field name="model">magazine.cancel.reason</field>
+    <field name="arch" type="xml">
+        <search string="Reden Annulatie">
+        <group expand="0" string="Selection...">
+            <field name="ref"/>
+            <field name="name"/>
+        </group>
+        </search>
+    </field>
+    </record>
+
+    <record id="view_magazine_cancel_tree" model="ir.ui.view">
+        <field name='name'>view.magazine.cancel.tree</field>
+        <field name='model'>magazine.cancel.reason</field>
+        <field name='arch' type='xml'>
+        <tree string="Reden Annulatie">
+        <field name="ref"/>
+        <field name="name"/>
+        </tree>
+    </field>
+    </record>
+
+    <record id="view_magazine_cancel_form" model="ir.ui.view">
+        <field name='name'>view.magazine.cancel.form</field>
+        <field name='model'>magazine.cancel.reason</field>
+        <field name='arch' type='xml'>
+        <form string="Reden Annulatie">
+        <group colspan="4" col="2">
+            <group>
+                <field name="ref"/>
+            </group>
+            <group>
+                <field name="name"/>
+            </group>
+        </group>
+        </form>
+    </field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_magazine_cancel_form">
+        <field name="name">Reden Annulatie</field>
+        <field name="res_model">magazine.cancel.reason</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_type">form</field>
+    <field name="search_view_id" ref="view_magazine_cancel_search"/>
+    </record>
+
+    <menuitem name="Reden Annulatie Magazine" parent="base.menu_marketing_config_association" id="menu_magazine_cancel" sequence="210" action="action_magazine_cancel_form"/>
 
     <record model="ir.actions.act_window" id="action_membership_cancel_form">
         <field name="name">Reden Annulatie</field>
