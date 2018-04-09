@@ -986,10 +986,10 @@ class membership_membership_line(osv.osv):
             if state == 'canceled' or mline.account_invoice_id.definitive_reject:
                 magazine_cancel_reason_id = False
                 if state == 'canceled':
-                    cancel_magazine_reason_ids = self.pool.get('magazine_cancel_reason').search(cr,uid,[('ref','=','canceled')],context=context)
+                    cancel_magazine_reason_ids = self.pool.get('magazine.cancel.reason').search(cr,uid,[('ref','=','canceled')],context=context)
                     magazine_cancel_reason_id = reject_magazine_reason_id[0] if reject_magazine_reason_id else False
                 if mline.account_invoice_id.definitive_reject:
-                    reject_magazine_reason_ids = self.pool.get('magazine_cancel_reason').search(cr,uid,[('ref','=','reject')],context=context)
+                    reject_magazine_reason_ids = self.pool.get('magazine.cancel.reason').search(cr,uid,[('ref','=','reject')],context=context)
                     magazine_cancel_reason_id = reject_magazine_reason_id[0] if reject_magazine_reason_id else False
                 self.unsubscribe_membership_magazines(cr,uid,mline,product_ids,magazine_cancel_reason_id,context=context)
 
