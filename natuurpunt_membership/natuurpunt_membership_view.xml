@@ -73,7 +73,7 @@
                                 <tree string="Abonnementen" editable="bottom" create="false" delete="false" colors="red:date_cancel != False" >
                                     <field name="product_id" readonly="1"/>
                                     <field name="date_to"/>
-                                    <field name="date_cancel"/>
+									<field name="date_cancel" on_change="onchange_date_cancel(date_cancel)"/>
 									<field name="magazine_cancel_reason_id"/>
                                 </tree>
                             </field>

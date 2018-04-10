@@ -149,6 +149,15 @@ class membership_membership_magazine(osv.osv):
         'magazine_cancel_reason_id': fields.many2one('magazine.cancel.reason','Reden Annulatie'),
     }
 
+    def onchange_date_cancel(self, cr, uid, ids, date_cancel, context=None):
+        res = {}
+        if not date_cancel:
+            res['magazine_cancel_reason_id'] = False
+        else:
+            cancel_magazine_reason_ids = self.pool.get('magazine.cancel.reason').search(cr,uid,[('ref','=','canceled')],context=context)
+            res['magazine_cancel_reason_id'] = cancel_magazine_reason_ids[0] if cancel_magazine_reason_ids else False
+        return {'value':res}
+
 membership_membership_magazine()
 
 class product_product(osv.osv):
