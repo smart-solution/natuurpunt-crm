@@ -59,10 +59,10 @@ class res_organisation_type(osv.osv):
 		'display_insurance': fields.boolean('Toon verzekeringen'),
 		'display_suppliers': fields.boolean('Toon nutsleveranciers'),
 		'display_extra_info': fields.boolean('Toon bijkomende info'),
-		'display_extra_info': fields.boolean('Toon bijkomende info'),
 		'display_building_function': fields.boolean('Toon functie gebouw'),
 		'display_building_capakey': fields.boolean('Toon capakey gebouw'),
 		'display_building_date_end': fields.boolean('Toon einddatum gebouw'),
+        'display_phone': fields.boolean('Toon telefoonnummer'),
 	}
 
 res_organisation_type()
@@ -299,6 +299,7 @@ class res_partner(osv.osv):
 		'display_address': fields.related('organisation_type_id','display_address',type='boolean',string='Toon adres'),
 		'regional_partnership': fields.boolean('Regionaal samenwerkingsverband'),
 		'display_regional_partnership': fields.related('organisation_type_id','display_regional_partnership',type='boolean',string='Toon regionaal samenwerkingsverband'),
+		'display_phone': fields.related('organisation_type_id','display_phone',type='boolean',string='Toon telefoonnummer'),
 		'display_contacts': fields.related('organisation_type_id','display_contacts',type='boolean',string='Toon contacten'),
 		'display_ownership': fields.related('organisation_type_id','display_ownership',type='boolean',string='Toon eigendomssituatie en toegankelijkheid'),
 		'display_invoicing': fields.related('organisation_type_id','display_invoicing',type='boolean',string='Toon boekhouding'),

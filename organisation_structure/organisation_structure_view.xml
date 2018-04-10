@@ -49,6 +49,7 @@
 				<field name="display_analytic"/>
 				<field name="display_address"/>
 				<field name="display_regional_partnership"/>
+        <field name="display_phone"/>
 			</group>
 			<group colspan="1" col="2">
 				<field name="display_contacts"/>
@@ -605,6 +606,7 @@
 			<field name="street" readonly="True" attrs="{'invisible': [('display_address','=',False)]}"/>
 			<field name="zip" readonly="True" attrs="{'invisible': [('display_address','=',False)]}"/>
 			<field name="city" readonly="True" attrs="{'invisible': [('display_address','=',False)]}"/>
+      <field name="phone" readonly="True" attrs="{'invisible': [('display_phone','=',False)]}"/>  
 			</group>
 			<group>
 			<field name="organisation_type_id"/>
@@ -648,6 +650,7 @@
 			<field name="display_building_function" invisible="True"/>
 			<field name="display_building_capakey" invisible="True"/>
 			<field name="display_building_date_end" invisible="True"/>
+      <field name="display_phone" invisible="True"/>
 			</group>
                     </group>
 		    <notebook>
