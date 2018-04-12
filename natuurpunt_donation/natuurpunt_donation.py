@@ -30,6 +30,7 @@ from dateutil.relativedelta import relativedelta
 from mx import DateTime
 import time
 import logging
+from natuurpunt_tools import sql_wrapper
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +103,7 @@ class donation_partner_account(osv.osv):
             ('donation_cancel', '=', False),
             ], context=context)
         if donation_ids:
+            donation_ids = donation_ids[:500]
             logger.info('Found %s donation invoices to create'%(len(donation_ids)))
             self.create_donation_invoice(cr, uid, donation_ids, product_id=None, datas=None, context=context)
         else:
@@ -398,27 +400,41 @@ class sdd_add_payment(osv.osv_memory):
         order_line_obj = self.pool.get('payment.line')
         move_obj = self.pool.get('account.move.line')
 
-        counter = 0
-        counter1000 = 0
-
 # ,('invoice_line_id.invoice_id.payment_ids','=',False)
         for order in self.browse(cr, uid, ids, context):
             if order.membership_new:
-                move_ids = move_obj.search(cr, uid, [('invoice_line_id.invoice_id.membership_invoice', '=', True),('invoice_line_id.invoice_id.membership_renewal','=',False),('invoice_line_id.invoice_id.sdd_mandate_id','!=',False),('invoice_line_id.invoice_id.sdd_mandate_id.state','=','valid'),('reconcile_id','=',False),('statement_id','=',False),('invoice.type','=','out_invoice'),('invoice.state','=','open')])
                 comm = 'Lidmaatschap'
+                domain = [('membership_invoice','=',True),('membership_renewal','=',False),]
+            if order.membership_renewal:
+                comm = 'Lidmaatschap'
+                domain = [('membership_invoice','=',True),('membership_renewal','=',True),]
+            if order.donation:
+                comm = 'Gift'
+                domain = [('donation_invoice','=',True),]
+            inv_domain = domain + [('sdd_mandate_id','!=',False),('sdd_mandate_id.state','=','valid'),('type','=','out_invoice'),('state','=','open'),]
+            inv_ids = self.pool.get('account.invoice').search(cr,uid,inv_domain)
+            logger.info('INVOICE DOMAIN:{}'.format(inv_domain))
+            move_domain = [('invoice_line_id.invoice_id.id','in',inv_ids),('reconcile_id','=',False),('statement_id','=',False)]
+            move_ids = move_obj.search(cr,uid,move_domain)
+            logger.info('AANTAL move_ids:{}'.format(len(move_ids)))
+
+            # cleanup exclude move_line_ids that are already in payment_line
+            move_ids_str = ''.join(str(e)+',' for e in move_ids)
+            # remove trailing ','
+            move_ids_str = move_ids_str[0:len(move_ids_str)-1]
+            if move_ids_str:
+                sql_stat='select move_line_id from payment_line where move_line_id in ('+move_ids_str+')'
+                exclude_move_line_ids = [d['move_line_id'] for d in sql_wrapper(sql_stat)(cr)]
             else:
-                if order.membership_renewal:
-                    move_ids = move_obj.search(cr, uid, [('invoice_line_id.invoice_id.membership_invoice', '=', True),('invoice_line_id.invoice_id.membership_renewal','=',True),('invoice_line_id.invoice_id.sdd_mandate_id','!=',False),('invoice_line_id.invoice_id.sdd_mandate_id.state','=','valid'),('reconcile_id','=',False),('statement_id','=',False),('invoice.type','=','out_invoice'),('invoice.state','=','open')])
-                    comm = 'Lidmaatschap'
-                else:
-                    if order.donation:
-                        move_ids = move_obj.search(cr, uid, [('invoice_line_id.invoice_id.donation_invoice', '=', True),('invoice_line_id.invoice_id.sdd_mandate_id','!=',False),('invoice_line_id.invoice_id.sdd_mandate_id.state','=','valid'),('reconcile_id','=',False),('statement_id','=',False),('invoice.type','=','out_invoice'),('invoice.state','=','open')])
-                        comm = 'Gift'
+                exclude_move_line_ids = []
+            move_ids = [i for i in move_ids if i not in exclude_move_line_ids]
+            logger.info('Na cleanup AANTAL move_ids:{}'.format(len(move_ids)))
 
             line2bank = move_obj.line2bank(cr, uid, move_ids, None, context)
 
-            for line in move_obj.browse(cr, uid, move_ids, context):
-                if line.amount_to_pay > 0.00 and counter < 10000:
+            def create_incasso(move_line_id):
+                line = move_obj.browse(cr, uid, move_line_id, context)
+                if line.amount_to_pay > 0.00:
                     if order.payment_order_id.date_prefered == "now":
                         #no payment date => immediate payment
                         date_to_pay = False
@@ -437,10 +453,7 @@ class sdd_add_payment(osv.osv_memory):
                             'date': date_to_pay,
                             'currency': (line.invoice and line.invoice.currency_id.id) or line.journal_id.currency.id or line.journal_id.company_id.currency_id.id,
                         }, context=context)
-                    counter += 1
-                    counter1000 += 1
-#                    if counter1000 == 1000:
-#                        logger.info('Nbr of lines added to payment order: ',counter)
+            map(create_incasso,move_ids[:10000])
 
         return {'type':'ir.actions.act_window_close','context': context,}
 

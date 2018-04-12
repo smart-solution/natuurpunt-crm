@@ -75,7 +75,7 @@
         <field name="model">bank.statement.create.partner</field>
         <field name="type">form</field>
         <field name="arch" type="xml">
-        <form string="Partner Aanmaken">
+        <form string="Partner Aanmaken" version="7.0">
 		<group>
 		    <group colspan="4">
 		        <group>
@@ -97,50 +97,56 @@
 		        	<field name="gender" attrs="{'invisible':[('partner_id','!=',False)]}"/>
 		        </group>
             </group>
-		    <newline/>
 		    <group colspan="4">
 				<group>
 		            <field name="zip_id" string="Gemeente (CRAB)" on_change="onchange_zip_id(zip_id)" attrs="{'invisible':[('partner_id','!=',False)], 'required': [('partner_id','==',False)]}"/>
 		            <field name="zip" attrs="{'invisible':[('partner_id','!=',False)]}"/>
 		            <field name="city" attrs="{'invisible':[('partner_id','!=',False)]}"/>
+                    <field name="openinvoice_id" invisible="True"/>
+	                <field name="openinvoice_nbr" readonly="True" attrs="{'invisible':[('partner_id','=',False)]}"/>
+	                <field name="openinvoice_amount" readonly="True" attrs="{'invisible':[('partner_id','=',False)]}"/>
+					<field name="openinvoice_del" attrs="{'invisible':[('partner_id','=',False)]}"/>
+					<separator string="Lidmaatschap/Gift" colspan="4"/>
+                    <field name="membership_partner" on_change="onchange_product_id(membership_product_id, transaction_amount, donation_partner, membership_partner, donation_product_id, membership_renewal)"/>
+                    <field name="membership_product_id"
+                           attrs="{'invisible':[('membership_partner','=',False)], 'required':[('membership_partner','=',True)]}"
+                           domain="['|',('membership_product','=',True),('magazine_product','=',True)]"
+                           on_change="onchange_product_id(membership_product_id, transaction_amount, donation_partner, membership_partner, donation_product_id, membership_renewal)"/>
+                    <field name="membership_renewal"
+                           attrs="{'invisible': ['|',('membership_product_id','=',False),('membership_partner','=',False)]}"
+                           on_change="onchange_product_id(membership_product_id, transaction_amount, donation_partner, membership_partner, donation_product_id, membership_renewal)"/>
+                    <label for="date_from" 
+					       string="Periode" 
+					       attrs="{'invisible': ['|',('membership_product_id','=',False),('membership_partner','=',False)]}"/>
+                    <div attrs="{'invisible': ['|',('membership_product_id','=',False),('membership_partner','=',False)]}">
+                       <field name="date_from" class="oe_inline" /> -
+                       <field name="date_to" class="oe_inline" />
+                    </div>
+                    <field name="membership_origin_id" attrs="{'invisible':[('membership_partner','=',False)]}"/>
+                    <field name="membership_amount" attrs="{'invisible':[('membership_partner','=',False)]}" on_change="onchange_membership_amount(transaction_amount, membership_amount, donation_product_id)"/>
+					<newline/>
+                    <field name="donation_partner" on_change="onchange_donation_partner(donation_partner, donation_product_id)"/>
+                    <field name="donation_product_id" attrs="{'invisible':[('donation_partner','=',False)], 'required':[('donation_partner','=',True)]}"/>
+                    <field name="analytic_account_id" attrs="{'invisible':[('donation_partner','=',False)], 'required':[('donation_partner','=',True)]}"/>
+                    <field name="donation_amount" readonly="True" attrs="{'invisible':[('donation_partner','=',False)]}"/>
+                    <field name="membership_amount_inv" invisible="True"/>
+                    <field name="donation_amount_inv" invisible="True"/>
 		        </group>
 		        <group>
 		            <field name="street_id" string="Straat (CRAB)" on_change="onchange_street_id(street_id, street_nbr, street_bus)" domain="[('city_id','=',zip_id)]" attrs="{'invisible':[('partner_id','!=',False)], 'required': [('partner_id','==',False)]}"/>
 		            <field name="street" attrs="{'invisible':[('partner_id','!=',False)]}"/>
 		            <field name="street_nbr" on_change="onchange_street_id(street_id, street_nbr, street_bus)" attrs="{'invisible':[('partner_id','!=',False)], 'required': [('partner_id','==',False)]}"/>
 					<field name="street_bus" on_change="onchange_street_id(street_id, street_nbr, street_bus)" attrs="{'invisible':[('partner_id','!=',False)]}"/>
-					<group colspan="4">
-                      <field name="double_address_id" attrs="{'invisible':1}"/>
-                      <field name="double_address" attrs="{'invisible':[('partner_id','!=',False)]}" readonly="True"/>
-                      <field name="accept_address" attrs="{'invisible':[('partner_id','!=',False)]}" />
-					</group>
+                    <field name="double_address_id" attrs="{'invisible':1}"/>
+                    <field name="double_address" attrs="{'invisible':[('partner_id','!=',False)]}" readonly="True"/>
+                    <field name="accept_address" attrs="{'invisible':[('partner_id','!=',False)]}" />
+                    <newline/>
+                    <separator string="Bank" colspan="4"/>					
+                    <field name="add_bank_account"/>
+                    <field name="bic"/>
+                    <field name="bank_account" on_change="onchange_bankacct(bank_account)"/>
 		        </group>
 	        </group>
-	        <group colspan="4">
-	        	<field name="openinvoice_id" invisible="True"/>
-	        	<field name="openinvoice_nbr" readonly="True" attrs="{'invisible':[('partner_id','=',False)]}"/>
-	        	<field name="openinvoice_amount" readonly="True" attrs="{'invisible':[('partner_id','=',False)]}"/>
-	        	<field name="openinvoice_del" attrs="{'invisible':[('partner_id','=',False)]}"/>
-	        </group>
-	        <group colspan="4">
-		        <group>
-				    <field name="membership_partner" on_change="onchange_product_id(membership_product_id, transaction_amount, donation_partner, membership_partner, donation_product_id)"/>  
-				    <field name="membership_product_id" attrs="{'invisible':[('membership_partner','=',False)], 'required':[('membership_partner','=',True)]}" domain="['|',('membership_product','=',True),('magazine_product','=',True)]" on_change="onchange_product_id(membership_product_id, transaction_amount, donation_partner, membership_partner, donation_product_id)"/>
-				    <field name="membership_origin_id" attrs="{'invisible':[('membership_partner','=',False)]}"/>
-			        <field name="membership_amount" attrs="{'invisible':[('membership_partner','=',False)]}" on_change="onchange_membership_amount(transaction_amount, membership_amount, donation_product_id)"/>
-			        <field name="donation_partner" on_change="onchange_donation_partner(donation_partner, donation_product_id)"/>
-				    <field name="donation_product_id" attrs="{'invisible':[('donation_partner','=',False)], 'required':[('donation_partner','=',True)]}"/>
-				    <field name="analytic_account_id" attrs="{'invisible':[('donation_partner','=',False)], 'required':[('donation_partner','=',True)]}"/>
-				    <field name="donation_amount" readonly="True" attrs="{'invisible':[('donation_partner','=',False)]}"/>
-				    <field name="membership_amount_inv" invisible="True"/>
-				    <field name="donation_amount_inv" invisible="True"/>
-		        </group>
-				<group>
-				    <field name="add_bank_account"/>
-				    <field name="bic"/>
-				    <field name="bank_account" on_change="onchange_bankacct(bank_account)"/>
-				</group>
-            </group>
 		</group>
         <group colspan="4" col="4">
             <button string="Bevestig Partner" name="create_partner" icon="gtk-ok" type="object" attrs="{'invisible':['|',('membership_partner','=',True),('donation_partner','=',True)]}"/>

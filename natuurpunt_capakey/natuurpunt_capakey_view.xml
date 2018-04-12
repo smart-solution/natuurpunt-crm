@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<openerp>
+    <data>
+
+	<record model="ir.ui.view" id="organisation_partner_capakey_form">
+		<field name="name">organisation.partner.capakey.form</field>
+		<field name="model">res.partner</field>
+		<field name="inherit_id" ref="organisation_structure.organisation_partner_form"/>
+		<field name="type">form</field>
+		<field name="arch" type="xml">
+	   	    <field name="building_capakey" position="after">
+				<button name="view_capakey_builder" string="Capakey Builder"
+					type="object" icon="gtk-execute" class="oe_inline"
+					attrs="{'invisible': [('display_building_capakey','=',False)]}"/>
+            </field>
+   	    </field>
+	</record>
+	
+        <record id="natuurpunt_capakey_form" model="ir.ui.view">
+            <field name="name">natuurpunt.capakey.form</field>
+            <field name="model">memory.capakey.builder</field>
+            <field name="arch" type="xml">
+                <form string="Capakey builder" version="7.0">
+					<field name="capakey" nolabel="1"  placeholder="capakey builder..." widget="natuurpunt_capakey" />
+                    <footer>
+                        <button string="Capakey" name="capakey_build" type="object" default_focus="1" class="oe_highlight"/>
+                        or
+                        <button string="Cancel" class="oe_link" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+    </data>
+</openerp>

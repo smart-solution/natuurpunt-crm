@@ -269,10 +269,22 @@ class res_partner(osv.osv):
         ids = map(lambda x: x[0], cr.fetchall())
         return ids[0] if ids else None
 
+    def get_membership_payment_method(self,cr,uid,ids,context=None):
+        context = context or {}
+        for id in ids:
+            partner_data = self.browse(cr, uid, id, context=context)
+            mline, membership_state = self._np_membership_state(cr, uid, partner_data, context=context)
+            if not mline:
+                return 'Niet-betalend'
+            elif mline.account_invoice_id.sdd_mandate_id:
+                return 'Domiciliëng' 
+            else:
+                return 'jaarlijks'
+
     def create_web_membership_mandate_invoice(self,cr,uid,ids,selected_product_id=None,datas=None,context=None):
 
-        bank_acc = datas['bank_account_number'] 
-        
+        bank_acc = datas['bank_account_number']
+
         bic_id = self._get_bic_id(cr,uid,self._bban2bic(bank_acc))
         bic_id = bic_id if bic_id else self._get_bic_id(cr,uid,'DUMMY')
 

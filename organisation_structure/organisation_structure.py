@@ -53,6 +53,16 @@ class res_organisation_type(osv.osv):
 		'display_analytic': fields.boolean('Toon analytische code'),
 		'display_address': fields.boolean('Toon adres'),
 		'display_regional_partnership': fields.boolean('Toon regionaal samenwerkingsverband'),
+		'display_contacts': fields.boolean('Toon contacten'),
+		'display_ownership': fields.boolean('Toon eigendomssituatie en toegankelijkheid'),
+		'display_invoicing': fields.boolean('Toon Boekhouding'),
+		'display_insurance': fields.boolean('Toon verzekeringen'),
+		'display_suppliers': fields.boolean('Toon nutsleveranciers'),
+		'display_extra_info': fields.boolean('Toon bijkomende info'),
+		'display_building_function': fields.boolean('Toon functie gebouw'),
+		'display_building_capakey': fields.boolean('Toon capakey gebouw'),
+		'display_building_date_end': fields.boolean('Toon einddatum gebouw'),
+        'display_phone': fields.boolean('Toon telefoonnummer'),
 	}
 
 res_organisation_type()
@@ -156,15 +166,105 @@ class res_organisation_function(osv.osv):
 
 res_organisation_function()
 
+class res_building_function(osv.osv):
+	_name = 'res.building.function'
+	
+	_columns = {
+		'name': fields.char('Functie gebouw', size=128, required=True),
+	}
+
+res_building_function()
+
+class building_ownership(osv.osv):
+	_name = 'building.ownership'
+	
+	_columns = {
+		'name': fields.char('Eigendomssituatie', size=128, required=True),
+	}
+
+building_ownership()
+
+class building_spatial_planning(osv.osv):
+	_name = 'building.spatial.planning'
+	
+	_columns = {
+		'name': fields.char('Ruimtelijke ordening', size=128, required=True),
+	}
+
+building_spatial_planning()
+
+class building_heritage(osv.osv):
+	_name = 'building.heritage'
+	
+	_columns = {
+		'name': fields.char('Beschermd onroerend erfgoed', size=128, required=True),
+	}
+
+building_heritage()
+
+class building_insurance(osv.osv):
+	_name = 'building.insurance'
+	
+	_columns = {
+		'partner_id': fields.many2one('res.partner', 'Partner', select=True),
+		'type': fields.many2one('building.insurance.type', 'Type verzekering', required=True),
+		'provider': fields.many2one('res.partner', 'Leverancier'),
+		'valid_from_date': fields.date('Geldig van'),
+		'valid_to_date': fields.date('Geldig tot'),
+		'analytic_account_id': fields.many2one('account.analytic.account', 'Kostenplaats'),
+		'reference_number': fields.char('Polisnummer', size=128),
+	}
+
+building_insurance()
+
+class building_insurance_type(osv.osv):
+	_name = 'building.insurance.type'
+	
+	_columns = {
+		'name': fields.char('Type verzekering', size=128, required=True),
+		}
+
+building_insurance_type()
+
+class building_public_utility(osv.osv):
+	_name = 'building.public.utility'
+	
+	_columns = {
+		'partner_id': fields.many2one('res.partner', 'Partner', select=True),
+		'type': fields.many2one('building.public.utility.type', 'Type contract', required=True),
+		'provider': fields.many2one('res.partner', 'Leverancier', required=True),
+		'nr_supply_point': fields.char('Uniek nummer afnamepunt', size=128),
+		'valid_from_date': fields.date('Geldig van'),
+		'valid_to_date': fields.date('Geldig tot'),
+		'analytic_account_id': fields.many2one('account.analytic.account', 'Kostenplaats'),
+		'reference_number': fields.char('Contract nummer', size=128),
+		'date_latest_check': fields.date('Laatste keuring'),
+		'remark_latest_check': fields.char('Opmerking laatste keuring', size=128),
+	}
+
+building_public_utility()
+
+class building_public_utility_type(osv.osv):
+	_name = 'building.public.utility.type'
+	
+	_columns = {
+		'name': fields.char('Type contract', size=128, required=True),
+		}
+
+building_public_utility_type()
+
 class res_partner(osv.osv):
 	_name = 'res.partner'
 	_inherit = 'res.partner'
 
 	_columns = {
         'organisation_type_id': fields.many2one('res.organisation.type', 'Organisatietype', select=True),
+        'building_function_id': fields.many2one('res.building.function', 'Functie gebouw', select=True),
+        'building_capakey': fields.char('Capakey', size=128),
+        'building_date_end': fields.date('Einddatum', size=128),
         'organisation_relation_ids': fields.many2many('res.partner', 'res_partner_organisation_rel', 'partner_id', 'relation_id', 'Relaties'),
         'organisation_relation_ids_inv': fields.many2many('res.partner', 'res_partner_organisation_rel', 'relation_id', 'partner_id', 'Relaties (vanuit partner)'),
-		'relation_ids': fields.many2many('res.organisation.relation', 'res_organisation_relation_rel', 'partner_id', 'relation_id', 'Partners'),
+        'relation_ids': fields.many2many('res.organisation.relation', 'res_organisation_relation_rel', 'partner_id', 'relation_id', 'Partners'),
         'partner_up_id': fields.many2one('res.partner', 'Bovenliggende relatie', select=True, ondelete='cascade'),
         'partner_down_ids': fields.one2many('res.partner', 'partner_up_id', 'Onderliggende relaties'),
 		'organisation_function_parent_ids': fields.one2many('res.organisation.function', 'partner_id', 'Functies voor vzw'),
@@ -199,6 +299,45 @@ class res_partner(osv.osv):
 		'display_address': fields.related('organisation_type_id','display_address',type='boolean',string='Toon adres'),
 		'regional_partnership': fields.boolean('Regionaal samenwerkingsverband'),
 		'display_regional_partnership': fields.related('organisation_type_id','display_regional_partnership',type='boolean',string='Toon regionaal samenwerkingsverband'),
+		'display_phone': fields.related('organisation_type_id','display_phone',type='boolean',string='Toon telefoonnummer'),
+		'display_contacts': fields.related('organisation_type_id','display_contacts',type='boolean',string='Toon contacten'),
+		'display_ownership': fields.related('organisation_type_id','display_ownership',type='boolean',string='Toon eigendomssituatie en toegankelijkheid'),
+		'display_invoicing': fields.related('organisation_type_id','display_invoicing',type='boolean',string='Toon boekhouding'),
+		'display_insurance': fields.related('organisation_type_id','display_insurance',type='boolean',string='Toon verzekeringen'),
+		'display_suppliers': fields.related('organisation_type_id','display_suppliers',type='boolean',string='Toon nutsleveranciers'),
+		'display_extra_info': fields.related('organisation_type_id','display_extra_info',type='boolean',string='Toon bijkomende info'),
+		'display_building_function': fields.related('organisation_type_id','display_building_function',type='boolean',string='Toon functie gebouw'),
+		'display_building_capakey': fields.related('organisation_type_id','display_building_capakey',type='boolean',string='Toon capakey gebouw'),
+		'display_building_date_end': fields.related('organisation_type_id','display_building_date_end',type='boolean',string='Toon einddatum gebouw'),
+		#gebouwen Contactpersonen
+		'building_resp_id': fields.many2one('res.partner', 'Verantwoordelijke gebouw'),
+		'building_user_ids': fields.many2many('res.partner', 'res_partner_user_rel', 'partner_id', 'building_user_id', 'Gebruiker gebouw'),
+		#gebouwen Eigendomssituatie en toegankelijkheid
+		'building_resp_vzw': fields.many2one('res.company', 'Verantwoordelijke vzw'),
+		'building_ownership_id': fields.many2one('building.ownership', 'Eigendomssituatie'),
+		'building_spatial_planning_id': fields.many2one('building.spatial.planning', 'Ruimtelijke ordening'),
+		'building_to_break_down': fields.boolean('Af te breken'),
+		'building_heritage_id': fields.many2one('building.heritage', 'Beschermd onroerend erfgoed'),
+		'building_accessibility':fields.text('Toegankelijkheid'),
+		#gebouwen Extra info 
+		'building_asbestos': fields.selection([('J','Aanwezig'),('N','Niet aanwezig'),('O','Ongekend')], string='Asbest', default='O', size=1),
+		'building_asbestos_remarks': fields.text('Opmerkingen asbest'),
+		'building_remarks':fields.text('Andere opmerkingen'),
+		#gebouwen Verzekeringen
+		'building_insurance_ids': fields.one2many('building.insurance', 'partner_id', 'Verzekeringen'),
+		'building_theft': fields.boolean('Diefstal'),
+		'building_capital': fields.float('Kapitaal gebouw'),
+		'building_capital_content': fields.float('Kapitaal inhoud'),
+		'building_abex': fields.float('ABEX index'),
+		'building_annual_prem': fields.float('Jaarpremie'),
+		'building_extra_info':fields.text('Extra informatie'),
+		#gebouwen Nutsvoorzieningen
+		'building_public_utility_ids': fields.one2many('building.public.utility', 'partner_id', 'Nutsvoorzieningen'),
+		#gebouwen Boekhouding
+		'building_activa_nr': fields.many2one('account.asset.asset', 'Activanummer', select=True),
+		'building_analytic_dimension_1_id': fields.many2one('account.analytic.account', 'Dimensie 1', select=True),
+		'building_analytic_dimension_2_id': fields.many2one('account.analytic.account', 'Dimensie 2', select=True),
+		'building_analytic_dimension_3_id': fields.many2one('account.analytic.account', 'Dimensie 3', select=True),
 	}
 
  	def write(self, cr, uid, ids, vals, context=None): 		

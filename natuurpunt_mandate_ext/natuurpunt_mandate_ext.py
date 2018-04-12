@@ -48,13 +48,6 @@ class payment_line(osv.osv):
                 invoice_id = invoice_obj.search(cr, uid, [('move_id', '=', move_line_id.move_id.id)])
                 if invoice_id and len(invoice_id) > 0:
                     invoice = invoice_obj.browse(cr, uid, invoice_id[0])
-                    if invoice.journal_id.code == 'LID':
-                        vals['communication'] = 'Lidmaatschap'
-                    if invoice.journal_id.code == 'GIFT':
-                        if invoice.donation_id and invoice.donation_id.analytic_account_id:
-                            vals['communication'] = 'Gift %s' % (invoice.donation_id.analytic_account_id.name, )
-                        else:
-                            vals['communication'] = 'Gift TO CHECK'
                     if invoice.sdd_mandate_id:
                         vals['bank_id'] = invoice.sdd_mandate_id.partner_bank_id.id
                         vals['sdd_mandate_id'] = invoice.sdd_mandate_id.id

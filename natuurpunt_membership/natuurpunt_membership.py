@@ -29,6 +29,7 @@ from mx import DateTime
 import time
 import logging
 from functools import partial
+from itertools import groupby
 from natuurpunt_tools import get_included_product_ids
 
 logger = logging.getLogger(__name__)
@@ -88,6 +89,54 @@ def join_memberships_with_magazines(mem_mag_set):
     else:
         return False
 
+def convert_to_membership_or_magazine_products(mem_mag_set):
+    """This Function returns list of product_ids.
+    @param mem_mag_set: set with format ([[x,y]],[x,y])
+    mem_mag_set[0] = list of list with ids of membership product
+    mem_mag_set[1] = list with ids of magazine product
+    @param return: product.product id renewal product
+    """
+    if isinstance(mem_mag_set, tuple):
+        return mem_mag_set[1] if mem_mag_set[1] else mem_mag_set[0][0]
+    else:
+        return False
+
+def oldest_membership_date(index, membership_dates):
+    """This Function returns oldest membership date
+    from list of membership date tuples
+    the index 0,1 to select from or to dates
+    @param index: 0 or 1
+    @param membership_dates: tuple
+    @param return: old date 'yyyy-mm-dd'
+    """
+    if isinstance(membership_dates, list) and membership_dates:
+        return sorted([membership_date[index] for membership_date in membership_dates])[0]
+    else:
+        return False
+
+def get_membership_dates(obj, cr, uid, product_ids):
+    """This Function return list of membership date tuples
+    for the product_ids
+    @param product_ids: list of product ids
+    @param return: list of tuples from/to dates
+    """
+    if product_ids:
+        def res(product):
+            return (membership_date_ytd(product.membership_date_from),
+                    membership_date_ytd(product.membership_date_to))
+        return map(res,obj.browse(cr,uid,product_ids))
+    else:
+        return False
+
+def membership_date_ytd(date):
+    """year to date convert from 'yyyy-mm-dd'
+    year = current year
+    """
+    y = datetime.now().year
+    m = int(date.split('-')[1])
+    d = int(date.split('-')[2])
+    return datetime(y,m,d).strftime('%Y-%m-%d')
+
 class membership_membership_magazine(osv.osv):
     _name = 'membership.membership_magazine'
 
@@ -97,13 +146,23 @@ class membership_membership_magazine(osv.osv):
         'date_to': fields.date('Datum tot'),
         'date_cancel': fields.date('Datum opgezegd'),
         'magazine_product': fields.boolean('Magazine'),
+        'magazine_cancel_reason_id': fields.many2one('magazine.cancel.reason','Reden Annulatie'),
     }
+
+    def onchange_date_cancel(self, cr, uid, ids, date_cancel, context=None):
+        res = {}
+        if not date_cancel:
+            res['magazine_cancel_reason_id'] = False
+        else:
+            cancel_magazine_reason_ids = self.pool.get('magazine.cancel.reason').search(cr,uid,[('ref','=','canceled')],context=context)
+            res['magazine_cancel_reason_id'] = cancel_magazine_reason_ids[0] if cancel_magazine_reason_ids else False
+        return {'value':res}
 
 membership_membership_magazine()
 
 class product_product(osv.osv):
     _inherit = 'product.product'
-    
+
     _columns = {
 		'included_product_ids': fields.many2many('product.product', 'product_included_product_rel', 'parent_product_id', 'child_product_id', 'Inbegrepen producten'),
         'analytic_dimension_1_id': fields.many2one('account.analytic.account', 'Dimensie 1', select=True),
@@ -112,7 +171,40 @@ class product_product(osv.osv):
         'membership_product': fields.boolean('Lidmaatschap'),
         'magazine_product': fields.boolean('Tijdschrift'),
     }
-    
+
+    def get_from_to(self,cr,uid,product_id,renew=0,context=None):
+        """Get date_from/date_to for membership product
+        override the odoo logic where product had a membership date from/to set
+        natuurpunt logic calculates the date from a cutoff date during the year
+        there is a cutoff for new members and for a renewal of existing member
+        the both cutoff points are stored in the original from/to fields
+        year is calculated to year to date
+        @param product_id
+        @param renew: new or renewal, 0/1 as index
+        @param return: tuple date_from,date_to format 'yyyy-mm-dd'
+        """
+
+        def date_to():
+            year = datetime.today().year + (0 if datetime.today().strftime(date_format) < cutoff_date else 1)
+            return datetime(year,12,31).strftime(date_format)
+
+        def date_from():
+            if datetime.today().strftime(date_format) < cutoff_date:
+                year = datetime.today().year
+                return datetime(year,1,1).strftime(date_format)
+            else:
+                return cutoff_date
+
+        date_format = '%Y-%m-%d'
+        cutoff_date = compose(partial(split_memberships_and_magazines,self,cr,uid),
+                              partial(convert_memberships_and_magazines_to_included_products,self,cr,uid),
+                              convert_to_membership_or_magazine_products,
+                              partial(get_membership_dates,self,cr,uid),
+                              partial(oldest_membership_date,int(renew)))(product_id)
+        if product_id:
+            assert cutoff_date, "membership product cuffoff configuration problem"
+        return date_from(),date_to()
+
 product_product()
 
 class membership_third_payer_actions(osv.osv):
@@ -660,6 +752,16 @@ class membership_cancel_reason(osv.osv):
 
 membership_cancel_reason()
 
+class magazine_cancel_reason(osv.osv):
+    _name = 'magazine.cancel.reason'
+
+    _columns = {
+        'name': fields.char('Name', len=64, select=True),
+        'ref': fields.char('Code', len=32),
+    }
+
+magazine_cancel_reason()
+
 class membership_membership_line(osv.osv):
     _inherit = 'membership.membership_line'
 
@@ -777,47 +879,141 @@ class membership_membership_line(osv.osv):
         state, product_ids = products_to_renew_from_membership_line()
         return state, product_ids[0] if product_ids else False
 
-    def set_magazine_subscriptions(self, cr, uid, mline, product_ids, state, context=None):
-        partner_id = mline.partner.id
+    def unsubscribe_membership_magazines(self, cr, uid, mline, product_ids, magazine_cancel_reason_id, context=None):
+        prod_obj = self.pool.get('product.product')
         magazine_obj = self.pool.get('membership.membership_magazine')
-        for product in self.pool.get('product.product').browse(cr, uid, product_ids, context=context):
-             magazine_subscription_domain = [('partner_id','=',partner_id),('product_id','=',product.id)]
-             magazine_subscription_id = magazine_obj.search(cr,uid,magazine_subscription_domain)
-             if product.magazine_product and state == 'paid' or not product.magazine_product:
-                 if magazine_subscription_id:
-                    vals = {
-                       'date_to':mline.date_to,
-                       'date_cancel':False,
-                       'magazine_product':product.magazine_product,
-                    }
-                    magazine_obj.write(cr, uid, magazine_subscription_id, vals, context=context)
-                 else:
-                    vals = {
-                       'partner_id':partner_id,
-                       'product_id':product.id,
-                       'date_to':mline.date_to,
-                       'magazine_product':product.magazine_product,
-                    }
-                 magazine_obj.create(cr, uid, vals, context=context)
-        return True
+        partner_id = mline.partner.id
+        today = datetime.today().strftime('%Y-%m-%d')
+        ids = self.search(cr,uid,[('partner','=',partner_id),('date_to','>=',today),('id','!=',mline.id)])
+
+        def get_membership_line_date_and_state(mline):
+            state, product_ids = self._np_membership_line_state(cr,uid,mline)
+            return (mline.date_to, state, product_ids)
+
+        # mlines = [('2017-12-31','invoiced',[2,3,4,204]),('2017-12-31','canceled',[2,3]),('2018-12-31','paid',[2,3])]
+        mlines = map(get_membership_line_date_and_state,self.browse(cr,uid,ids))
+        states = ['paid','invoiced'] if mline.account_invoice_id.sdd_mandate_id else ['paid']
+        subscribed_to = compose(
+           partial(filter,lambda i:i[1] in states),
+           partial(map,lambda i:[(p,i[0]) for p in i[2]]),
+           lambda lst:reduce(lambda a,b:a+b,lst,[]),
+           lambda lst:groupby(sorted(lst), lambda i: i[0]),
+           lambda gen:[max([g for g in group]) for key,group in gen],
+           dict
+        )(mlines)
+        # {204: '2017-12-31', 2: '2018-12-31', 3: '2018-12-31', 4: '2017-12-31'}
+
+        def unsubscribe_membership_magazine(product):
+            magazine_subscription_domain = [('partner_id','=',partner_id),('product_id','=',product.id)]
+            magazine_subscription_id = magazine_obj.search(cr,uid,magazine_subscription_domain)
+            if product.id in subscribed_to:
+                vals = {
+                    'date_to':subscribed_to[product.id]
+                }
+            else:
+                vals = {
+                    'date_cancel':today,
+                    'magazine_cancel_reason_id':magazine_cancel_reason_id
+                }
+            for magazine_subscription in magazine_obj.browse(cr,uid,magazine_subscription_id):
+                if not magazine_subscription.date_cancel:
+                    magazine_obj.write(cr,uid,magazine_subscription_id,vals,context=context)
+            return {
+                'product_id':product.id,
+            }
+        return map(unsubscribe_membership_magazine,prod_obj.browse(cr,uid,product_ids))
+
+    def subscribe_membership_magazines(self, cr, uid, mline, product_ids, context=None):
+        partner_id = mline.partner.id
+        membership_renewal = mline.account_invoice_id.membership_renewal
+        magazine_obj = self.pool.get('membership.membership_magazine')
+        prod_obj = self.pool.get('product.product')
+
+        def subscribe_membership_magazine(product):
+            magazine_subscription_domain = [('partner_id','=',partner_id),('product_id','=',product.id)]
+            magazine_subscription_id = magazine_obj.search(cr,uid,magazine_subscription_domain)
+            date_from, date_to = prod_obj.get_from_to(cr,uid,product.id,renew=membership_renewal)
+            vals = {
+              'partner_id':partner_id,
+              'product_id':product.id,
+              'magazine_cancel_reason_id':False,
+              'date_cancel':False,
+              'date_to':date_to,
+              'magazine_product':product.magazine_product,
+            }
+            if magazine_subscription_id:
+                for magazine_subscription in magazine_obj.browse(cr,uid,magazine_subscription_id):
+                    if (magazine_subscription.date_to < vals['date_to']
+                    or magazine_subscription.date_cancel):
+                        magazine_obj.write(cr,uid,magazine_subscription_id,vals,context=context)
+            else:
+                magazine_obj.create(cr,uid,vals,context=context)
+            return {
+              'date_from':date_from,
+              'date_to':date_to,
+              'magazine_product':product.magazine_product,
+            }
+        return map(subscribe_membership_magazine,prod_obj.browse(cr,uid,product_ids))
 
     def _state(self, cr, uid, ids, name, args, context=None):
         """Compute the state lines
+        when paid, visualize the magazine subscriptions and adjust the membership period
         @param self: The object pointer
         @param cr: the current row, from the database cursor,
-        @param uid: the current user’s ID for security checks,
+        @param uid: the current user’s ID or security check
         @param ids: List of Membership Line IDs
         @param name: Field Name
         @param context: A standard dictionary for contextual values
         @param return: Dictionary of state Value
         """
         res = {}
-        for mline in self.browse(cr, SUPERUSER_ID, ids, context=context):
-            state, product_ids  = self._np_membership_line_state(cr, SUPERUSER_ID, mline, context=context)
+        for mline in self.browse(cr,SUPERUSER_ID,ids,context=context):
+            state, product_ids = self._np_membership_line_state(cr,SUPERUSER_ID,mline,context=context)
             res[mline.id] = state
-            if product_ids:
-                self.set_magazine_subscriptions(cr, uid, mline, product_ids, state, context=context)
+
+            if (state == 'invoiced' and
+                mline.account_invoice_id.sdd_mandate_id and
+                not mline.account_invoice_id.definitive_reject):
+                self.subscribe_membership_magazines(cr,uid,mline,product_ids,context=context)
+
+            if state == 'paid' and not mline.account_invoice_id.sdd_mandate_id:
+                # if paid and not via mandate, subscribe magazines
+                # we can reset from/to membership dates if paid after cutoff
+                # if membership contains not only magazines (= not magazine_product)
+                #  then use membership product from/to date 
+                #    this can be different for magazines. ex. zoogdier
+                # if membership contains only magazines (= magazine_product)
+                #  we will sort and get the last sort subscription date from/to
+                # and update membership line
+                compose(
+                    partial(filter,lambda d : d['magazine_product']==mline.membership_id.magazine_product),
+                    sorted,
+                    lambda vals:vals[-1] if vals else {},
+                    partial(self.write,cr,uid,ids)
+                )(self.subscribe_membership_magazines(cr,uid,mline,product_ids,context=context))
+
+            if state == 'canceled' or mline.account_invoice_id.definitive_reject:
+                magazine_cancel_reason_id = False
+                if state == 'canceled':
+                    cancel_magazine_reason_ids = self.pool.get('magazine.cancel.reason').search(cr,uid,[('ref','=','canceled')],context=context)
+                    magazine_cancel_reason_id = cancel_magazine_reason_ids[0] if cancel_magazine_reason_ids else False
+                if mline.account_invoice_id.definitive_reject:
+                    reject_magazine_reason_ids = self.pool.get('magazine.cancel.reason').search(cr,uid,[('ref','=','reject')],context=context)
+                    magazine_cancel_reason_id = reject_magazine_reason_ids[0] if reject_magazine_reason_ids else False
+                self.unsubscribe_membership_magazines(cr,uid,mline,product_ids,magazine_cancel_reason_id,context=context)
+
         return res
+
+    def create(self, cr, uid, vals, context=None):
+        """override to support membership cutoff
+        initialize date_from/to from cutoff timeline instead of from product dates
+        """
+        inv_line = self.pool.get('account.invoice.line').browse(cr,uid,vals['account_invoice_line'])
+        membership_renewal = inv_line.invoice_id.membership_renewal
+        prod_obj = self.pool.get('product.product')
+        vals['date_from'], vals['date_to'] = prod_obj.get_from_to(cr,uid,vals['membership_id'],
+                                                                  renew=membership_renewal)
+        return super(membership_membership_line, self).create(cr, uid, vals, context=context)
 
     _columns = {
 		'membership_cancel_id': fields.many2one('membership.cancel.reason', 'Reden Stopzetting', select=True),

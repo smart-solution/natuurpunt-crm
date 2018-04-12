@@ -551,12 +551,12 @@ class res_partner(osv.osv):
                 sql_stat = "update res_partner set relation_partner_id = %d where id = %d" % (prc.id, vals['relation_partner_id'], )
                 cr.execute(sql_stat)
 
-            if 'street' in vals or 'street2' in vals or 'zip' in vals or 'city' in vals or 'state_id' in vals or 'country_id' in vals or 'department_id' in vals or 'department_choice_id' in vals or 'no_department' in vals:
+            if 'street' in vals or 'street2' in vals or 'name' in vals or 'zip' in vals or 'city' in vals or 'state_id' in vals or 'country_id' in vals or 'department_id' in vals or 'department_choice_id' in vals or 'no_department' in vals:
                 if prc.zip_id:
                     prov = prc.zip_id.state_id.name
                 else:
                     prov = None
-                if 'street' in vals or 'street2' in vals or 'zip' in vals or 'city' in vals or 'state_id' in vals or 'country_id' in vals:
+                if 'street' in vals or 'street2' in vals or 'name' in vals or 'zip' in vals or 'city' in vals or 'state_id' in vals or 'country_id' in vals:
                     rec = self.pool.get('res.partner.address.history')
                     rec_id = rec.create(cr, uid, {
 #                        'date_move': datetime.today().strftime('%Y-%m-%d'),

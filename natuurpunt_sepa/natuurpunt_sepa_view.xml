@@ -7,14 +7,20 @@
             <field name='model'>membership.invoice</field>
             <field name="inherit_id" ref="membership.view_membership_invoice_view"/>
             <field name='arch' type='xml'>
-		<field name="product_id" position="attributes">
-		    <attribute name="domain">['|',('membership_product','=',True),('magazine_product','=',True)]</attribute>
-		</field>
-		<field name="member_price" position="after">
-		    <field name="membership_renewal"/>
-		    <field name="invoice_organisation"/>
-					<field name="recruiting_organisation_id" domain="[('organisation_type_id','in',['Afdeling','Werkgroep','Bezoekerscentrum','Regionaal samenwerkingsverband'])]"/>
-		</field>
+               <field name="product_id" position="attributes">
+                 <attribute name="domain">['|',('membership_product','=',True),('magazine_product','=',True)]</attribute>
+                 <attribute name="on_change">onchange_membership_renewal(product_id,membership_renewal)</attribute>
+               </field>
+               <field name="member_price" position="after">
+                 <field name="membership_renewal" on_change="onchange_membership_renewal(product_id,membership_renewal)"/>
+                 <label for="date_from" string="Periode"/>
+                 <div attrs="{'invisible': [('product_id','=',False)]}">
+                     <field name="date_from" class="oe_inline" /> -
+                     <field name="date_to" class="oe_inline" />
+                 </div>             
+                 <field name="invoice_organisation"/>
+                 <field name="recruiting_organisation_id" domain="[('organisation_type_id','in',['Afdeling','Werkgroep','Bezoekerscentrum','Regionaal samenwerkingsverband'])]"/>
+               </field>
             </field>
         </record>
 
@@ -23,9 +29,9 @@
             <field name='model'>account.journal</field>
             <field name="inherit_id" ref="account.view_account_journal_form"/>
             <field name='arch' type='xml'>
-		<field name="default_credit_account_id" position="after">
-		    <field name="membership_account_id"/>
-		</field>
+                <field name="default_credit_account_id" position="after">
+                  <field name="membership_account_id"/>
+                </field>
             </field>
         </record>
 
