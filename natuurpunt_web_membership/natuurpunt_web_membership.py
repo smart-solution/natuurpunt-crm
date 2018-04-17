@@ -153,19 +153,26 @@ class mail_group(osv.osv):
 class res_partner(osv.osv):
     _inherit = 'res.partner'
 
-    def _web_membership_product(self,cr,uid,subscriptions,context=None):        
+    def _web_membership_product(self,cr,uid,subscriptions,only_magazine=False,context=None):        
         # search membership products
         current_date = DateTime.now().strftime('%Y-%m-%d')
-        sql_stat = "select id from product_product where membership_product and membership_date_from <= '{0}' and membership_date_to >= '{0}'".format(current_date)
-        cr.execute(sql_stat)
-        mem_prod_ids = map(lambda x: x[0], cr.fetchall())
         # membership defaulf product
         mem_prod = 'Gewoon lid'
-                
-        # website membership product = membership default + subscriptions
-        web_prod_list = [mem_prod]
-        web_prod_list.extend([s['name'] for s in subscriptions])
-        res = self.subscriptions_to_membership_product(cr,uid,mem_prod_ids,web_prod_list,context=context)
+        if not only_magazine:
+            sql_stat = "select id from product_product where membership_product and membership_date_from <= '{0}' and membership_date_to >= '{0}'".format(current_date)
+            cr.execute(sql_stat)
+            mem_prod_ids = map(lambda x: x[0], cr.fetchall())
+            # website membership product = membership default + subscriptions
+            web_prod_list = [mem_prod]
+            web_prod_list.extend([s['name'] for s in subscriptions])
+            res = self.subscriptions_to_membership_product(cr,uid,mem_prod_ids,web_prod_list,context=context)
+        else:
+            sql_stat = "select id from product_product where magazine_product and membership_date_from <= '{0}' and membership_date_to >= '{0}'".format(current_date)
+            cr.execute(sql_stat)
+            mag_prod_ids = map(lambda x: x[0], cr.fetchall())
+            web_prod_list = []
+            web_prod_list.extend([s['name'] for s in subscriptions])
+            res = self.subscriptions_to_magazine_product(cr,uid,mag_prod_ids,web_prod_list,context=context)
         
         # default fall back is 'gewoon lid'
         # better a product to sell than nothing        
@@ -173,6 +180,16 @@ class res_partner(osv.osv):
             res = self.subscriptions_to_membership_product(cr,uid,mem_prod_ids,[mem_prod],context=context)
 
         return res
+
+    def subscriptions_to_magazine_product(self,cr,uid,ids,web_prod_list,context=None):
+        product_obj = self.pool.get('product.product')
+        mag_prod_list = []
+        for product in product_obj.browse(cr, uid, ids, context=context):
+            mag_prod_list.append((product.id, product.name_template, map(lambda p:p.id,product.included_product_ids)))
+        #web_prod_list to ids
+        w_ids = filter(lambda p_id: p_id,map(lambda p: p[0] if p[1] in web_prod_list else False ,mag_prod_list))
+        res = filter(lambda p_id: p_id,map(lambda p: p[0] if p[2] == w_ids else False, mag_prod_list))
+        return res[0] if res else False
     
     def subscriptions_to_membership_product(self,cr,uid,ids,web_prod_list,context=None):
         product_obj = self.pool.get('product.product')
@@ -326,7 +343,8 @@ class res_partner(osv.osv):
             datas.pop('recruiting_organisation_id', None)
 
         # convert website membership + subscriptions to product
-        product_id = self._web_membership_product(cr,uid,datas['subscriptions'],context=context)
+        only_magazine = datas.get('only_magazine', False)
+        product_id = self._web_membership_product(cr,uid,datas['subscriptions'],only_magazine=only_magazine,context=context)
 
         # renewal product...? , update contact  
         if datas.get('membership_renewal', False):
