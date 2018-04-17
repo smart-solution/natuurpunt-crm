@@ -500,6 +500,8 @@ class res_partner(osv.osv):
             for sql_res in cr.dictfetchall():
                 department_id = sql_res['partner_id']
             vals['department_id'] = department_id
+        elif 'state_id' in vals:
+            vals['department_id'] = None
         relation_partner_id = 0
         if 'relation_partner_id' in vals:
             for partners in ids:
