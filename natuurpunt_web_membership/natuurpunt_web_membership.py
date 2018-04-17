@@ -167,6 +167,7 @@ class res_partner(osv.osv):
             web_prod_list.extend([s['name'] for s in subscriptions])
             res = self.subscriptions_to_membership_product(cr,uid,mem_prod_ids,web_prod_list,context=context)
         else:
+            import pdb; pdb.set_trace()
             sql_stat = "select id from product_product where magazine_product and membership_date_from <= '{0}' and membership_date_to >= '{0}'".format(current_date)
             cr.execute(sql_stat)
             mag_prod_ids = map(lambda x: x[0], cr.fetchall())
@@ -185,7 +186,10 @@ class res_partner(osv.osv):
         product_obj = self.pool.get('product.product')
         mag_prod_list = []
         for product in product_obj.browse(cr, uid, ids, context=context):
-            mag_prod_list.append((product.id, product.name_template, map(lambda p:p.id,product.included_product_ids)))
+            if product.included_product_ids:
+                mag_prod_list.append((product.id, product.name_template, map(lambda p:p.id,product.included_product_ids)))
+            else:
+                mag_prod_list.append((product.id, product.name_template, [product.id]))
         #web_prod_list to ids
         w_ids = filter(lambda p_id: p_id,map(lambda p: p[0] if p[1] in web_prod_list else False ,mag_prod_list))
         res = filter(lambda p_id: p_id,map(lambda p: p[0] if p[2] == w_ids else False, mag_prod_list))
