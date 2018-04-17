@@ -167,7 +167,6 @@ class res_partner(osv.osv):
             web_prod_list.extend([s['name'] for s in subscriptions])
             res = self.subscriptions_to_membership_product(cr,uid,mem_prod_ids,web_prod_list,context=context)
         else:
-            import pdb; pdb.set_trace()
             sql_stat = "select id from product_product where magazine_product and membership_date_from <= '{0}' and membership_date_to >= '{0}'".format(current_date)
             cr.execute(sql_stat)
             mag_prod_ids = map(lambda x: x[0], cr.fetchall())
