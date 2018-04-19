@@ -512,11 +512,7 @@ class res_partner(osv.osv):
                     relation_partner_id = sql_res['relation_partner_id']
 
         if 'street' in vals or 'street2' in vals or 'zip' in vals or 'city' in vals or 'state_id' in vals or 'country_id' in vals:
-            sql_stat = 'select id from res_partner_address_state where valid_address = True'
-            print sql_stat
-            cr.execute(sql_stat)
-            for sql_res in cr.dictfetchall():
-                vals['address_state_id'] = sql_res['id']
+            vals['address_state_id'] = False
 
         if 'member_lines' in vals:
             context['skip_write'] = True
