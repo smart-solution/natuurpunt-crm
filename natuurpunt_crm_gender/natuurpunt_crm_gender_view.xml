@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<openerp>
+  <data>
+    <record model="ir.ui.view" id="view_natuurpunt_crm_partner_form">
+      <field name="name">view.natuurpunt.crm.partner.form</field>
+      <field name="model">res.partner</field>
+      <field name="inherit_id" ref="natuurpunt_crm.view_natuurpunt_crm_partner_form" />
+      <field name="arch" type="xml">
+        <field name="title" position="attributes">
+          <attribute name="on_change">onchange_title_gender(title, gender)</attribute>
+        </field>
+        <field name="gender" position="attributes">
+          <attribute name="on_change">onchange_title_gender(title, gender)</attribute>
+        </field>
+      </field>
+    </record>
+
+  </data>
+</openerp>
