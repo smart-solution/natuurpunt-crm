@@ -64,6 +64,20 @@ class res_partner(osv.osv):
 
         return res
 
+    def write(self, cr, uid, ids, vals, context=None):
+        if 'title' in vals and vals['title'] and not ('gender' in vals and vals['gender']):
+            gender = None
+            sql_stat = 'select gender from res_partner_title where id = %d' % (vals['title'], )
+            cr.execute(sql_stat)
+            for sql_res in cr.dictfetchall():
+                gender = sql_res['gender']
+            if gender:
+                vals['gender'] = gender
+
+        res = super(res_partner, self).write(cr, uid, ids, vals, context=context)
+
+        return res;
+
 res_partner()
 
 
