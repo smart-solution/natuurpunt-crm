@@ -154,12 +154,10 @@ class res_partner(osv.osv):
     _inherit = 'res.partner'
 
     def _web_membership_product(self,cr,uid,subscriptions,only_magazine=False,context=None):        
-        # search membership products
-        current_date = DateTime.now().strftime('%Y-%m-%d')
         # membership defaulf product
         mem_prod = 'Gewoon lid'
         if not only_magazine:
-            sql_stat = "select id from product_product where membership_product and membership_date_from <= '{0}' and membership_date_to >= '{0}'".format(current_date)
+            sql_stat = "select id from product_product where membership_product"
             cr.execute(sql_stat)
             mem_prod_ids = map(lambda x: x[0], cr.fetchall())
             # website membership product = membership default + subscriptions
@@ -167,7 +165,7 @@ class res_partner(osv.osv):
             web_prod_list.extend([s['name'] for s in subscriptions])
             res = self.subscriptions_to_membership_product(cr,uid,mem_prod_ids,web_prod_list,context=context)
         else:
-            sql_stat = "select id from product_product where magazine_product and membership_date_from <= '{0}' and membership_date_to >= '{0}'".format(current_date)
+            sql_stat = "select id from product_product where magazine_product"
             cr.execute(sql_stat)
             mag_prod_ids = map(lambda x: x[0], cr.fetchall())
             web_prod_list = []
