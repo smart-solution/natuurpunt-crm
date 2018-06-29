@@ -278,7 +278,8 @@ class res_partner(osv.osv):
             root = ET.fromstring(response)
             bic = root.text.replace(' ', '')
         except Exception:
-            bic = 'DUMMY'    
+            bic = 'DUMMY'
+        _logger.info("BIC for bank account {}:{}".format(bank_account_number,bic))
         return bic
 
     def _get_bic_id(self,cr,uid,bic):
