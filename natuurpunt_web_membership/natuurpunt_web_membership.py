@@ -189,7 +189,7 @@ class res_partner(osv.osv):
                 mag_prod_list.append((product.id, product.name_template, [product.id]))
         #web_prod_list to ids
         w_ids = filter(lambda p_id: p_id,map(lambda p: p[0] if p[1] in web_prod_list else False ,mag_prod_list))
-        res = filter(lambda p_id: p_id,map(lambda p: p[0] if p[2] == w_ids else False, mag_prod_list))
+        res = filter(lambda p_id: p_id,map(lambda p: p[0] if sorted(p[2]) == sorted(w_ids) else False, mag_prod_list))
         return res[0] if res else False
     
     def subscriptions_to_membership_product(self,cr,uid,ids,web_prod_list,context=None):
