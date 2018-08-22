@@ -229,7 +229,7 @@
             <field name="view_type">form</field>
         </record>
         <menuitem name="Eigendomssituatie gebouw" parent="base.menu_organisation_configuration" id="base.action_building_ownership" sequence="15" action="action_building_ownership_form"/>
-
+<!--
         <record id="view_building_spatial_planning_tree" model="ir.ui.view">
             <field name='name'>view.building.spatial.planning.tree</field>
             <field name='model'>building.spatial.planning</field>
@@ -246,7 +246,7 @@
             <field name="view_type">form</field>
         </record>
         <menuitem name="Ruimtelijke ordening gebouw" parent="base.menu_organisation_configuration" id="base.action_building_spatial_planning" sequence="15" action="action_building_spatial_planning_form"/>
-
+-->
         <record id="view_building_heritage_tree" model="ir.ui.view">
             <field name='name'>view.building.heritage.tree</field>
             <field name='model'>building.heritage</field>
@@ -734,8 +734,9 @@
                  <group colspan="1" col="2">
 		            <field name="building_resp_vzw"/>
 		            <field name="building_ownership_id"/>
-		            <field name="building_spatial_planning_id"/>
-		            <field name="building_to_break_down"/>
+		            <!--<field name="building_spatial_planning_id"/>-->
+		            <field name="building_spatial_planning"/>
+					<field name="building_to_break_down"/>
 		            <field name="building_heritage_id"/>
 		            <field name="building_accessibility"/>    
 	            </group>  		
@@ -751,6 +752,7 @@
             
             <page string="Verzekeringen" attrs="{'invisible': [('display_insurance','=',False)]}">
 				<group colspan="1" col="2">
+					<field name="building_insurance_required"/>
                     <field name="building_insurance_ids" colspan="4" nolabel="1">
                         <tree string="verzekeringen">
 				            <field name="type"/>

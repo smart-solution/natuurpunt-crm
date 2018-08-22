@@ -323,7 +323,9 @@ def action_move_create_aiv(self, cr, uid, ids, context=None):
 
         date = inv.date_invoice or time.strftime('%Y-%m-%d')
 
-        part = self.pool.get("res.partner")._find_accounting_partner(inv.partner_id)
+        # niet terugvallen op company partner
+        #part = self.pool.get("res.partner")._find_accounting_partner(inv.partner_id)
+        part = inv.partner_id
 
         line = map(lambda x:(0,0,self.line_get_convert(cr, uid, x, part.id, date, context=ctx)),iml)
 

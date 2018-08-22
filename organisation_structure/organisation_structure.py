@@ -184,14 +184,14 @@ class building_ownership(osv.osv):
 
 building_ownership()
 
-class building_spatial_planning(osv.osv):
-	_name = 'building.spatial.planning'
-	
-	_columns = {
-		'name': fields.char('Ruimtelijke ordening', size=128, required=True),
-	}
-
-building_spatial_planning()
+# class building_spatial_planning(osv.osv):
+# 	_name = 'building.spatial.planning'
+# 	
+# 	_columns = {
+# 		'name': fields.char('Ruimtelijke ordening', size=128, required=True),
+# 	}
+# 
+# building_spatial_planning()
 
 class building_heritage(osv.osv):
 	_name = 'building.heritage'
@@ -315,7 +315,8 @@ class res_partner(osv.osv):
 		#gebouwen Eigendomssituatie en toegankelijkheid
 		'building_resp_vzw': fields.many2one('res.company', 'Verantwoordelijke vzw'),
 		'building_ownership_id': fields.many2one('building.ownership', 'Eigendomssituatie'),
-		'building_spatial_planning_id': fields.many2one('building.spatial.planning', 'Ruimtelijke ordening'),
+# 		'building_spatial_planning_id': fields.many2one('building.spatial.planning', 'Ruimtelijke ordening'),
+		'building_spatial_planning': fields.text('Ruimtelijke ordening'),
 		'building_to_break_down': fields.boolean('Af te breken'),
 		'building_heritage_id': fields.many2one('building.heritage', 'Beschermd onroerend erfgoed'),
 		'building_accessibility':fields.text('Toegankelijkheid'),
@@ -324,6 +325,7 @@ class res_partner(osv.osv):
 		'building_asbestos_remarks': fields.text('Opmerkingen asbest'),
 		'building_remarks':fields.text('Andere opmerkingen'),
 		#gebouwen Verzekeringen
+		'building_insurance_required': fields.selection([('J','Ja'),('N','Nee'),('O','Ongekend')], string='Verzekering nodig', default='O', size=1),
 		'building_insurance_ids': fields.one2many('building.insurance', 'partner_id', 'Verzekeringen'),
 		'building_theft': fields.boolean('Diefstal'),
 		'building_capital': fields.float('Kapitaal gebouw'),
