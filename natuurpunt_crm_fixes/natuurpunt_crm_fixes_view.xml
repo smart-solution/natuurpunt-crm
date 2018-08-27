@@ -48,5 +48,7 @@
         </field>
     </record>
 
+    <menuitem name="audit logs" id="menu_np_crm_audit_logs" parent="base.menu_report_association" action="audittrail.action_audittrail_log_tree" sequence="50"/>
+
     </data>
 </openerp>
