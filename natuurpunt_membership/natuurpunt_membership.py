@@ -923,7 +923,7 @@ class membership_membership_line(osv.osv):
             }
         return map(unsubscribe_membership_magazine,prod_obj.browse(cr,uid,product_ids))
 
-    def subscribe_membership_magazines(self, cr, uid, mline, product_ids, context=None):
+    def subscribe_membership_magazines(self, cr, uid, mline, product_ids, extend_date_to=False, context=None):
         partner_id = mline.partner.id
         membership_renewal = mline.account_invoice_id.membership_renewal
         magazine_obj = self.pool.get('membership.membership_magazine')
@@ -938,7 +938,7 @@ class membership_membership_line(osv.osv):
               'product_id':product.id,
               'magazine_cancel_reason_id':False,
               'date_cancel':False,
-              'date_to':date_to,
+              'date_to':mline.date_to if extend_date_to and mline.date_to > date_to else date_to,
               'magazine_product':product.magazine_product,
             }
             if magazine_subscription_id:
@@ -950,7 +950,7 @@ class membership_membership_line(osv.osv):
                 magazine_obj.create(cr,uid,vals,context=context)
             return {
               'date_from':date_from,
-              'date_to':date_to,
+              'date_to':vals['date_to'],
               'magazine_product':product.magazine_product,
             }
         return map(subscribe_membership_magazine,prod_obj.browse(cr,uid,product_ids))
@@ -985,12 +985,15 @@ class membership_membership_line(osv.osv):
                 # if membership contains only magazines (= magazine_product)
                 #  we will sort and get the last sort subscription date from/to
                 # and update membership line
+                # extend_date_to set to True overrides date_to from product with
+                # date_to of mline if this is later. allows manual 2 or more years being 
+                # paid at onces. ex. 54Eur instead of 27Eur for 2 year
                 compose(
                     partial(filter,lambda d : d['magazine_product']==mline.membership_id.magazine_product),
                     sorted,
                     lambda vals:vals[-1] if vals else {},
                     partial(self.write,cr,uid,ids)
-                )(self.subscribe_membership_magazines(cr,uid,mline,product_ids,context=context))
+                )(self.subscribe_membership_magazines(cr,uid,mline,product_ids,extend_date_to=True,context=context))
 
             if state == 'canceled' or mline.account_invoice_id.definitive_reject:
                 magazine_cancel_reason_id = False
