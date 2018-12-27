@@ -103,7 +103,7 @@ class donation_partner_account(osv.osv):
             ('donation_cancel', '=', False),
             ], context=context)
         if donation_ids:
-            donation_ids = donation_ids[:500]
+            #donation_ids = donation_ids[:500]
             logger.info('Found %s donation invoices to create'%(len(donation_ids)))
             self.create_donation_invoice(cr, uid, donation_ids, product_id=None, datas=None, context=context)
         else:
