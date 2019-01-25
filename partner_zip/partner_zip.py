@@ -35,6 +35,7 @@ class res_country_city(osv.osv):
 		'state_id': fields.many2one('res.country.state', 'State'),
 		'street_ids': fields.one2many('res.country.city.street', 'city_id', 'Streets'),
 		'lang_id': fields.many2one('res.lang','Lang'),
+		'active': fields.boolean('Active', help="If the active field is set to False, it will allow you to hide the city without removing it."),
 	}
 
 	def name_get(self, cr, uid, ids, context=None):
@@ -51,6 +52,10 @@ class res_country_city(osv.osv):
             ids = self.search(cr, user, [('zip', operator, name)]+ args, limit=limit, context=context)
             ids += self.search(cr, user, [('name', operator, name)]+ args, limit=limit, context=context)
             return self.name_get(cr, user, ids, context)
+
+	_defaults = {
+            'active': True,
+        }
 
 	_order = 'name'
 		
