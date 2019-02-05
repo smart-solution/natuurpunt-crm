@@ -244,10 +244,11 @@
         <field name="type">form</field>
         <field name="arch" type="xml">
 	    <field name="opt_out" position="after">
-		<field name="opt_out_letter"/>
-	    </field> 
+		<field name="opt_out_letter" groups="natuurpunt_crm.group_natuurpunt_crm_user"/>
+	    </field>
 	    <field name="opt_out" position="attributes">
 		<attribute name="string">Uitschrijven email</attribute>
+                <attribute name="groups">natuurpunt_crm.group_natuurpunt_crm_user</attribute>
 	    </field>
         </field>
     </record>
