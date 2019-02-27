@@ -82,7 +82,7 @@ def verify_if_customer_or_supplier(obj,cr,uid,data):
     if partner and (partner.customer or partner.supplier):
         if log['renewal'] == False:
             log['alert'].append('Lidmaatschap aanvraag van contact met klant/lev. status')
-            log['alert_website'] = log['full_match'] if 'full_match' in log else True
+            log['alert_website'] = not log['full_match'] if 'full_match' in log else True
         else:
             log['alert'].append('Website hernieuwing van contact met klant/lev. status')
     return partner, vals, log
