@@ -508,7 +508,7 @@ class res_partner(osv.osv):
                 line_id = member_line_obj.search(cr, uid, [('partner', '=', partner_id),('membership_id.membership_product', '=', True)],
                             limit=1, order='date_from', context=context)
                 if line_id:
-                    res[partner.id]['membership_start'] = member_line_obj.read(cr, uid, line_id[0], ['date_from'], context=context)['date_from']
+                    res[partner.id]['membership_start'] = member_line_obj.read(cr, uid, line_id[0], ['date'], context=context)['date']
 
             if name == 'membership_stop':
                 line_id1 = member_line_obj.search(cr, uid, [('partner', '=', partner_id),('membership_id.membership_product', '=', True)],
