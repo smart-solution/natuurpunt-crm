@@ -614,8 +614,8 @@
 			<field name="regional_level" attrs="{'invisible': [('display_regional_level','=',False)]}"/>
 			<field name="regional_partnership" attrs="{'invisible': [('display_regional_partnership','=',False)]}"/>
 			<field name="building_function_id" attrs="{'invisible': [('display_building_function','=',False)]}"/>
+                        <field name="building_date_end" attrs="{'invisible': [('display_building_date_end','=',False)]}"/>
 			<field name="building_capakey" attrs="{'invisible': [('display_building_capakey','=',False)]}"/>
-			<field name="building_date_end" attrs="{'invisible': [('display_building_date_end','=',False)]}"/>
 			</group>
 			<group>
 			<field name="remittance_new_member" attrs="{'invisible': [('display_remittance','=',False)]}"/>
