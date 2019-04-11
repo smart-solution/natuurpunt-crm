@@ -238,6 +238,13 @@ class res_partner(osv.osv):
         else:
             return False
 
+    def _verify_periodical_1(self,cr,uid,ids,context=None):
+        mailing_mailing_obj = self.pool.get('mailing.mailing')
+        if mailing_mailing_obj.search(cr, uid, [('id','in',ids)],context=context):
+            return True
+        else:
+            return False
+
     def _verify_recruiting_organisation(self,cr,uid,ids,context=None):
         recruiting_organisation_obj = self.pool.get('res.partner')
         org_ids = [
@@ -352,6 +359,14 @@ class res_partner(osv.osv):
         # renewal product...? , update contact  
         if datas.get('membership_renewal', False):
             vals['membership_renewal_product_id'] = product_id
+
+        # welkomstpakket+eerste magazine
+        if datas.get('welkomstpakket', False):
+            vals['welkomstpakket'] = True
+            vals['date_welkomstpakket'] = datas.get('date_welkomstpakket',time.strftime('%Y-%m-%d'))
+        periodical_1_id = datas.get('periodical_1_id', 0)
+        if self._verify_periodical_1(cr,uid,[periodical_1_id],context=context):
+            vals['periodical_1_id'] = periodical_1_id
 
         # override default from website            
         vals['customer'] = False
