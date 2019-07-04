@@ -8,6 +8,24 @@
               groups="natuurpunt_crm.group_natuurpunt_crm_user"
               sequence="45"/>
 
+    <record model="ir.ui.view" id="view_natuurpunt_crm_organisation_partner2_form">
+        <field name="name">view.natuurpunt.crm.organisation.partner2.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="organisation_structure.organisation_partner2_form"/>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <page string="Functies" position="after">
+                    <page string="Interessegebieden">
+                        <field name="interest_ids" nolabel="1" context="{'default_partner_id':active_id}">
+                            <tree string="Interessegebieden">
+                                <field name="name"/>
+                            </tree>
+                        </field>
+                    </page>
+            </page>
+        </field>
+    </record>
+
     <record model="ir.ui.view" id="view_natuurpunt_crm_partner_form">
         <field name="name">view.natuurpunt.crm.partner.form</field>
         <field name="model">res.partner</field>
