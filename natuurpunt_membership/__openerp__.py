@@ -31,7 +31,7 @@
     'depends': ['membership','natuurpunt_crm','natuurpunt_account'],
     'data': [
 	    'natuurpunt_membership_view.xml',
-#        'natuurpunt_membership_cron.xml',
+        'natuurpunt_membership_workflow.xml',
         'security/natuurpunt_membership_security.xml',
         'security/ir.model.access.csv',
     ],

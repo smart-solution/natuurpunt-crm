@@ -42,6 +42,42 @@ logger = logging.getLogger(__name__)
 from openerp.addons.l10n_be_invoice_bba.invoice import account_invoice as aiv
 from openerp.addons.account.account_invoice import account_invoice as aiv2
 
+def get_third_payer(cr,partner_id):
+    sql_stat = '''select p1.third_payer_id,
+                  p2.third_payer_amount,
+                  p1.third_payer_invoice,
+                  p2.third_payer_one_time,
+                  p1.third_payer_processed,
+                  p2.abo_company,
+                  p2.company_deal
+                  from res_partner p1, res_partner p2
+                  where p1.id = %d
+                  and p1.third_payer_id = p2.id
+                  and (p1.third_payer_processed = False or p1.third_payer_processed IS NULL 
+                  or p2.third_payer_one_time = False or p2.third_payer_one_time IS NULL)
+              ''' % (partner_id, )
+    cr.execute(sql_stat)
+    sql_res = cr.dictfetchone()
+    third_payer = {}
+    if sql_res:
+        third_payer['id'] = sql_res['third_payer_id']
+        third_payer['one_time'] = sql_res['third_payer_one_time']
+        third_payer['processed'] = sql_res['third_payer_processed']
+        third_payer['abo_company'] = sql_res['abo_company']
+        third_payer['company_deal'] = sql_res['company_deal']
+        third_payer['amount'] = sql_res['third_payer_amount']
+        sql_stat = '''select amount 
+                      from membership_third_payer_actions 
+                      where partner_id = %d and 
+                      date_from <= cast(now() as date) and 
+                      date_to >= cast(now() as date)
+                   ''' % (third_payer['id'], )
+        cr.execute(sql_stat)
+        sql_res = cr.dictfetchone()
+        if sql_res and sql_res['amount']:
+            third_payer['amount'] = sql_res['amount']
+    return third_payer
+
 class account_invoice(osv.osv):
     _inherit = 'account.invoice'
 
@@ -465,37 +501,19 @@ where id = %s''' % (selected_product_id, )
             }
 
             membership_product = partner.membership_renewal_product_id and partner.membership_renewal_product_id.id or False
-
-            third_payer_id = None
-            third_payer_amount = 0.00
-            third_payer_invoice = False
-            third_payer_one_time = False
-            third_payer_processed = False
-            sql_stat = '''select p1.third_payer_id, p2.third_payer_amount, p1.third_payer_invoice, p2.third_payer_one_time, p1.third_payer_processed from res_partner p1, res_partner p2
-where p1.id = %d
-  and p1.third_payer_id = p2.id
-  and (p1.third_payer_processed = False or p1.third_payer_processed IS NULL or p2.third_payer_one_time = False or p2.third_payer_one_time IS NULL)''' % (partner.id, )
-            cr.execute(sql_stat)
-            sql_res = cr.dictfetchone()
-            print 'SQL RES:',sql_res
-            if sql_res and sql_res['third_payer_id'] and sql_res['third_payer_amount']:
-                third_payer_id = sql_res['third_payer_id']
-                third_payer_amount = sql_res['third_payer_amount']
-                third_payer_invoice = sql_res['third_payer_invoice']
-                third_payer_one_time = sql_res['third_payer_one_time']
-                third_payer_processed = sql_res['third_payer_processed']
-            if third_payer_id and third_payer_amount == 0.00 and not(third_payer_invoice):
-                sql_stat = '''select amount from membership_third_payer_actions where partner_id = %d and date_from <= cast(now() as date) and date_to >= cast(now() as date)''' % (third_payer_id, )
-                cr.execute(sql_stat)
-                sql_res = cr.dictfetchone()
-                print 'SQL RES2:',sql_res
-                if sql_res and sql_res['amount']:
-                    third_payer_amount = sql_res['amount']
-            if third_payer_invoice:
-                partner_id = third_payer_id
-                third_payer_amount = 0.00
+            
+            # 3de betaler 
+            third_payer = get_third_payer(cr,partner.id)
+            if third_payer:
+                if third_payer['company_deal'] or third_payer['abo_company']:
+                    partner_id = partner.id
+                    amount_inv = amount_to_inv - third_payer['amount']
+                else:
+                    partner_id = third_payer['id']
+                    amount_inv = third_payer['amount']
             else:
                 partner_id = partner.id
+                amount_inv = amount_to_inv
 
             payment_term_id = None
             mandate_id = None
@@ -513,13 +531,11 @@ where p1.id = %d
                            and account_payment_term.name = 'Direct debit'
                            and res_partner.id = {} order by signature_date desc
                            '''
-                sql_res = sql_wrapper(sql_stat.format(partner.id), method='dictfetchone')(cr)
+                sql_res = sql_wrapper(sql_stat.format(partner_id), method='dictfetchone')(cr)
                 if sql_res and sql_res['payment_term_id']:
                     payment_term_id = sql_res['payment_term_id']
                     mandate_id = sql_res['mandate_id']
                     partner_bank_id = sql_res['partner_bank_id']
-
-            amount_inv = amount_to_inv - third_payer_amount
 
             inv_org = False
             if invoice_organisation:
@@ -561,8 +577,6 @@ where p1.id = %d
                 'account_id': account_id,
                 'membership_invoice': True,
                 'website_payment': True if ('web' in context) else False,
-                'third_payer_id': third_payer_id,
-                'third_payer_amount': third_payer_amount,
                 'fiscal_position': fpos_id or False,
                 'payment_term': payment_term_id,
                 'sdd_mandate_id': mandate_id,
@@ -579,6 +593,18 @@ where p1.id = %d
             invoice_line_id = invoice_line_obj.create(cr, uid, line_value, context=context)
             invoice_obj.write(cr, uid, invoice_id, {'invoice_line': [(6, 0, [invoice_line_id])]}, context=context)
             invoice_list.append(invoice_id)
+
+            # registreer dat 3de betaler (id) voor een bepaald bedrag (amount) dit lidmaatschap gaat sponsoren
+            if third_payer and (third_payer['company_deal'] or third_payer['abo_company']):
+                third_payer_invoice_line_obj = self.pool.get('membership.third.payer.invoice.line')
+                member_line_obj = self.pool.get('membership.membership_line')
+                mline_ids = member_line_obj.search(cr, uid, [('account_invoice_line', '=', invoice_line_id)], context=context)
+                third_payer_invoice_line_val = {
+                    'third_payer_id':third_payer['id'],
+                    'amount':third_payer['amount'],
+                    'membership_line_id':mline_ids[0],
+                }
+                third_payer_invoice_line_obj.create(cr, uid, third_payer_invoice_line_val, context=context)            
 
             invoice_obj.check_bba(cr, uid, invoice_list, context=context)
             wf_service = netsvc.LocalService('workflow')
@@ -620,8 +646,8 @@ where p1.id = %d
         # End of runction field storage. Restart loop, but this time over the invoices instead of partners.
         for invoice in invoice_obj.browse(cr, uid, invoice_list, context=context):
 
-            if third_payer_one_time:
-                sql_stat = '''update res_partner set third_payer_processed = True where id = %d''' % (invoice.partner_id.id, )
+            if third_payer.get('one_time', False):
+                sql_stat = '''update res_partner set third_payer_processed = True where id = %d''' % (partner.id, )
                 cr.execute(sql_stat)
             values = {}
             amount = invoice_obj.action_date_get(cr, uid, [invoice_id], None)

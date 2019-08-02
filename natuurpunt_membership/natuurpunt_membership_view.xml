@@ -55,6 +55,11 @@
 				<field name="membership_start" position="replace">
                     <field name="membership_start"/>
                 </field>
+                <xpath expr="//div[@name='buttons']" position="inside">
+                        <button name="create_form_third_payer_invoice" type="object" string="3de betaler factuur aanmaken"
+                                groups="natuurpunt_crm.group_natuurpunt_crm_user"
+                                attrs="{'invisible': [('third_payer_flag', '!=', True)]}"/>
+                </xpath>
         <!-- remove membership , visible for power users contacten -->
         <label for="membership_state" position="replace"/>
         <field name="membership_state" position="replace"/>
@@ -251,6 +256,7 @@
 								<field name="remarks"/>
                            </tree>
                             <form string="Memberships">
+                                <group colspan="4" col="4">
                                 <field name="date" readonly="True"/>
                                 <field name="membership_id" domain="['|',('membership_product','=',True),('magazine_product','=',True)]"/>
 								<field name="date_from" readonly="False"/>
@@ -262,6 +268,19 @@
 								<field name="membership_cancel_id" readonly="False" on_change="onchange_cancel(membership_cancel_id, date_cancel)"/>
 				 				<field name="date_cancel" readonly="False" attrs="{'required': [('membership_cancel_id', '!=', False)]}" string="Datum Stopzetting"/>
 								<field name="remarks"/>
+                                </group>
+				<group expand="0" string="3de Betaler Factuur">
+                                <field name="third_payer_invoice_line_ids" readonly="True" nolabel="1">
+		                        <tree string="Membership third payer" editable="bottom">
+                                            <button name="redirect_to_third_payer_invoice" 
+                                                    string="redirect_to_third_payer_invoice" type="object" icon="gtk-zoom-100"/>
+					    <field name="account_invoice_id"/>
+                                            <field name="third_payer_id"/>
+                                            <field name="amount"/>
+                                            <field name="third_payer_pay_date"/>
+		                        </tree>
+				</field>
+                                </group>
                             </form>
                         </field>
 			    </xpath>
@@ -402,6 +421,80 @@
           <field name="ref" position="replace"/>
         </field>
     </record>
+
+    <record model="ir.ui.view" id="view_partner_create_third_payer_invoice_form">
+         <field name="name">view.partner.create.third.payer.invoice.form</field>
+         <field name="model">partner.create.third.payer.invoice</field>
+         <field name="type">form</field>
+         <field name="arch" type="xml">
+             <form string="3de betaler factuur aanmaken" version="7.0">
+                 <group>
+                     <field name="partner_id" readonly="True"/>
+                     <field name="amount" readonly="True"/>
+                 </group>
+                 <footer>
+                     <button string="3de betaler factuur aanmaken" name="create_third_payer_invoice" type="object" class="oe_highlight"/>
+                     or
+                     <button special="cancel" class="oe_link" string="Cancel"/>
+                 </footer>
+             </form>
+         </field>
+     </record>
+
+     <record id="view_membership_third_payer_invoice_tree" model="ir.ui.view">
+        <field name='name'>view.membership.third.payer.invoice.tree</field>
+        <field name='model'>membership.third.payer.invoice</field>
+        <field name='arch' type='xml'>
+            <tree string="3de Betalers" create="false" version="7.0">
+                <field name="partner_id"/>
+                <field name="invoice_id"/>
+                <field name="amount_total_signed"/>
+                <field name="third_payer_invoice_line_ids"/>
+            </tree>
+        </field>
+     </record>
+
+     <record id="view_membership_third_payer_invoice_form" model="ir.ui.view">
+        <field name='name'>view.membership.third.payer.invoice.form</field>
+        <field name='model'>membership.third.payer.invoice</field>
+        <field name='arch' type='xml'>
+            <form string="3de Betalers" create="false" version="7.0" readonly="1">
+                <group colspan="4" col="4">
+                    <field name="partner_id" readonly="1"/>
+                    <field name="invoice_id" context="{'form_view_ref':'account.invoice_form'}" readonly="1"/>
+                </group>
+                <group expand="0" string="Betaald lidmaatschappen voor...">
+                    <field name="third_payer_invoice_line_ids" nolabel="1" readonly="1">
+                        <tree string="Lidmaatschap betaald door 3de betaler">
+                            <field name="partner"/>
+                        </tree>
+                    </field>
+                </group>
+            </form>
+        </field>
+     </record>
+
+     <record model="ir.actions.act_window" id="action_membership_third_payer">
+         <field name="name">3de betalers</field>
+         <field name="res_model">membership.third.payer.invoice</field>
+     </record>
+
+        <record model="ir.actions.act_window.view" id="action_membership_third_payer_tree">
+            <field name="sequence" eval="2"/>
+            <field name="view_mode">tree</field>
+            <field name="view_id" ref="view_membership_third_payer_invoice_tree"/>
+            <field name="act_window_id" ref="action_membership_third_payer"/>
+        </record>
+
+        <record model="ir.actions.act_window.view" id="action_membership_third_payer_form">
+            <field name="sequence" eval="3"/>
+            <field name="view_mode">form</field>
+            <field name="view_id" ref="view_membership_third_payer_invoice_form"/>
+            <field name="act_window_id" ref="action_membership_third_payer"/>
+        </record>
+
+     <menuitem name="3de betalers" parent="membership.menu_membership" id="menu_membership_third_payer" sequence="10" action="action_membership_third_payer"/>
+
 
     </data>
 </openerp>

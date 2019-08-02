@@ -31,6 +31,7 @@ import logging
 from functools import partial
 from itertools import groupby
 from natuurpunt_tools import get_included_product_ids
+from openerp import netsvc
 
 logger = logging.getLogger(__name__)
 
@@ -220,9 +221,202 @@ class membership_third_payer_actions(osv.osv):
 
 membership_third_payer_actions()
 
+class membership_third_payer_invoice(osv.osv):
+    _name = 'membership.third.payer.invoice'
+
+    _columns = {
+        'invoice_id': fields.many2one('account.invoice', '3de betaler factuur', select=True, ondelete='cascade'),
+        'partner_id': fields.related('invoice_id', 'partner_id', type='many2one', relation='res.partner', string='3de betaler'),
+        'amount_total_signed': fields.related('invoice_id', 'amount_total_signed', type='float', string='Totaal'),
+        'date_processed': fields.date('Datum verwerkt'),
+        'active': fields.boolean('Active'),
+        'third_payer_invoice_line_ids': fields.one2many('membership.third.payer.invoice.line', 'third_payer_invoice_id', 'Betaald voor...'),
+    }
+
+    _defaults = {
+        'active' : True,
+    }
+
+    def action_third_payer_invoiced(self, cr, uid, ids, context=None):
+        third_payer_invoice = self.browse(cr,uid,ids,context=context)
+        return third_payer_invoice[0].invoice_id.id
+
+    def action_invoice_end(self, cr, uid, ids, context=None):
+        return True 
+
+    def action_invoice_except(self, cr, uid, ids, context=None):
+        return True 
+
+    def action_invoice_cancel(self, cr, uid, ids, context=None):
+        return True
+
+    def action_done(self, cr, uid, ids, context=None):
+        third_payer_invoice = self.browse(cr,uid,ids,context=context)
+        inv = third_payer_invoice[0].invoice_id
+        # paid but refunded?
+        if any([payment.invoice.type == 'out_refund' for payment in inv.payment_ids]):
+            third_payer_invoice_line_obj = self.pool.get('membership.third.payer.invoice.line')
+            domain = [('third_payer_invoice_id','=',ids[0])]
+            third_payer_invoice_line_ids = third_payer_invoice_line_obj.search(cr,uid,domain)
+            third_payer_invoice_line_obj.write(cr,uid,third_payer_invoice_line_ids,{'third_payer_invoice_id':False})
+        val = {
+          'active':False,
+          'date_processed':datetime.today().strftime('%Y-%m-%d'),
+        }
+        return self.write(cr,uid,ids,val,context=context)
+
+membership_third_payer_invoice()
+
+class membership_third_payer_invoice_line(osv.osv):
+    _name = 'membership.third.payer.invoice.line'
+
+    _columns = {
+        'membership_line_id': fields.many2one('membership.membership_line', 'membership line', select=True),
+        'partner': fields.related('membership_line_id', 'partner', type='many2one', relation='res.partner', string='Leden',),
+        'amount': fields.float('Bedrag'),
+        'third_payer_id': fields.many2one('res.partner', '3de Betaler Id', select=True),
+        'third_payer_invoice_id': fields.many2one('membership.third.payer.invoice', 'Third payer invoice', select=True, ondelete='set null'),
+        'account_invoice_id': fields.related('third_payer_invoice_id', 'invoice_id', type='many2one', relation='account.invoice', string='Invoice', readonly=True),
+        'third_payer_pay_date': fields.related('third_payer_invoice_id', 'date_processed', type='date', string='Datum 3de betaler'),
+    }
+
+    def redirect_to_third_payer_invoice(self, cr, uid, ids, context=None):
+        for tpi in self.browse(cr,uid,ids,context=context):
+            invoice_id = tpi.account_invoice_id.id
+
+	if invoice_id:
+            view_id = self.pool.get('ir.ui.view').search(cr, uid, [('model','=','account.invoice'),
+                                                                 ('name','=','account.invoice.form')])
+
+            return {
+                    'name': _('third payer invoice'),
+		    'view_type': 'form,tree',
+                    'view_mode': 'form',
+                    'res_model': 'account.invoice',
+                    'target': 'current',
+                    'context': {'default_type':'out_invoice', 'type':'out_invoice', 'journal_type': 'sale'},
+                    'res_id': invoice_id,
+                    'type': 'ir.actions.act_window',
+                    'view_id': view_id[0],
+            }
+        else:
+            return {'type': 'ir.actions.act_window_close'} 
+
+membership_third_payer_invoice_line()
+
+class partner_create_third_payer_invoice(osv.osv_memory):
+    _name = "partner.create.third.payer.invoice"
+
+    _columns = {
+        'partner_id': fields.many2one('res.partner', 'Partner', select=True),
+        'amount': fields.float('Bedrag'),
+    }
+
+    def create_third_payer_invoice(self, cr, uid, ids, context=None):
+        invoice_obj = self.pool.get('account.invoice')
+        invoice_line_obj = self.pool.get('account.invoice.line')
+        invoice_tax_obj = self.pool.get('account.invoice.tax')
+        journal_obj = self.pool.get('account.journal')
+        account_obj = self.pool.get('account.account')
+        third_payer_invoice_obj = self.pool.get('membership.third.payer.invoice')
+        third_payer_invoice_line_obj = self.pool.get('membership.third.payer.invoice.line')
+        invoice_list = []
+        for data in self.browse(cr, uid, ids, context):
+            partner = data.partner_id
+            domain = [('third_payer_id','=',partner.id),('third_payer_invoice_id','=',False)]
+            third_payer_invoice_line_ids = third_payer_invoice_line_obj.search(cr,SUPERUSER_ID,domain)
+            amount = sum(map(lambda line: line.amount,
+                             third_payer_invoice_line_obj.browse(cr,SUPERUSER_ID,third_payer_invoice_line_ids)))
+            if amount == 0:               
+                raise osv.except_osv(_('Data Error!'), _('Bedrag 0 kan niet gefactureerd worden')) 
+            
+            vf_journal_ids = journal_obj.search(cr, uid, [('code','=','VF')])
+            lid_account_ids = account_obj.search(cr, uid, [('code','=','730000')])
+            account_id = partner.property_account_receivable and partner.property_account_receivable.id or False
+            fpos_id = partner.property_account_position and partner.property_account_position.id or False
+	    quantity = len(third_payer_invoice_line_ids)
+            line_value = {
+                'name':'test',
+                'account_id':lid_account_ids[0],
+            }
+	    line_dict = invoice_line_obj.product_id_change(cr, uid, {},
+			False, False, quantity, '', 'out_invoice', partner.id, fpos_id, context=context)
+	    line_value.update(line_dict['value'])
+	    line_value['price_unit'] = amount/quantity
+	    if line_value.get('invoice_line_tax_id', False):
+	        tax_tab = [(6, 0, line_value['invoice_line_tax_id'])]
+		line_value['invoice_line_tax_id'] = tax_tab
+
+	    invoice_id = invoice_obj.create(cr, uid, {
+		'partner_id': partner.id,
+		'account_id': account_id,
+                'journal_id': vf_journal_ids[0],
+		'fiscal_position': fpos_id or False
+            }, context=context)
+	    line_value['invoice_id'] = invoice_id
+            line_value['quantity'] = quantity
+	    invoice_line_id = invoice_line_obj.create(cr, uid, line_value, context=context)
+	    invoice_obj.write(cr, uid, invoice_id, {'invoice_line': [(6, 0, [invoice_line_id])]}, context=context)
+	    invoice_list.append(invoice_id)
+
+        for invoice_id in invoice_list:
+            third_payer_invoice_id = third_payer_invoice_obj.create(cr,uid,{'invoice_id':invoice_id})
+            third_payer_invoice_line_obj.write(cr,uid,third_payer_invoice_line_ids,{'third_payer_invoice_id':third_payer_invoice_id})
+            wf_service = netsvc.LocalService('workflow')
+            wf_service.trg_validate(uid, 'membership.third.payer.invoice', third_payer_invoice_id, 'third_payer_invoiced', cr)
+
+        mod_obj = self.pool.get('ir.model.data')
+        try:
+            search_view_id = mod_obj.get_object_reference(cr, uid, 'account', 'view_account_invoice_filter')[1]
+        except ValueError:
+            search_view_id = False
+        try:
+            form_view_id = mod_obj.get_object_reference(cr, uid, 'account', 'invoice_form')[1]
+        except ValueError:
+            form_view_id = False
+
+        return  {
+            'domain': [('id', 'in', invoice_list)],
+            'name': 'Third payer Invoices',
+            'view_type': 'form',
+            'view_mode': 'tree,form',
+            'res_model': 'account.invoice',
+            'type': 'ir.actions.act_window',
+            'views': [(False, 'tree'), (form_view_id, 'form')],
+            'search_view_id': search_view_id,
+        }
+
+partner_create_third_payer_invoice()
+
 class res_partner(osv.osv):
     _inherit = 'res.partner'
 
+    def create_form_third_payer_invoice(self, cr, uid, ids, context=None):
+        view_id = self.pool.get('ir.ui.view').search(cr, uid, [('model','=','partner.create.third.payer.invoice'),
+                                                            ('name','=','view.partner.create.third.payer.invoice.form')])
+
+        def _get_amount(partner_id):
+            third_payer_invoice_line_obj = self.pool.get('membership.third.payer.invoice.line')
+            domain = [('third_payer_id','=',partner_id),('third_payer_invoice_id','=',False)]
+            third_payer_invoice_line_ids = third_payer_invoice_line_obj.search(cr,SUPERUSER_ID,domain)
+            return sum(map(lambda line: line.amount,
+                   third_payer_invoice_line_obj.browse(cr,SUPERUSER_ID,third_payer_invoice_line_ids))) 
+
+        partner = self.browse(cr, uid, ids)[0]
+        if partner.id:
+            context['default_partner_id'] = partner.id
+            context['default_amount'] = _get_amount(partner.id)
+
+            return {
+                'type': 'ir.actions.act_window',
+                'name': '3de betaler factuur aanmaken',
+                'view_mode': 'form',
+                'view_type': 'form',
+                'view_id': view_id[0],
+                'res_model': 'partner.create.third.payer.invoice',
+                'target': 'new',
+                'context': context,
+                }
 
     def migrate_membership_magazine(self, cr, uid, ids, context=None):
         """
@@ -383,10 +577,7 @@ class res_partner(osv.osv):
             return False
 
         def membership_is_paid_or_does_not_need_to_be_paid(mline,fstate):
-            if fstate == 'paid' or mline.account_invoice_line.invoice_id and mline.account_invoice_line.invoice_id.amount_total == 0.00:
-                return (mline,'paid')
-            else:
-                return False
+            return (mline,'paid') if fstate == 'paid' else False
 
         def membership_via_website(mline,fstate):
             if fstate == 'open' and mline.account_invoice_line.invoice_id.website_payment:
@@ -406,7 +597,7 @@ class res_partner(osv.osv):
                ):
                return 'cancel'
             else:
-                return inv.state
+               return inv.state
 
         def apply_state_rules_to_membership_lines(ids, rules):
             mstates = []
@@ -632,8 +823,8 @@ class res_partner(osv.osv):
         'third_payer_flag': fields.boolean('3de Betaler'),
         'third_payer_one_time': fields.boolean('Eenmalige 3de Betaler'),
         'third_payer_amount': fields.float('Bedrag'),
-		'third_payer_id': fields.many2one('res.partner', '3de Betaler Id', select=True),
-		'third_payer_action_ids': fields.one2many('membership.third.payer.actions', 'partner_id', '3de Betaler Acties'),
+        'third_payer_id': fields.many2one('res.partner', '3de Betaler Id', select=True),
+        'third_payer_action_ids': fields.one2many('membership.third.payer.actions', 'partner_id', '3de Betaler Acties'),
         'third_payer_invoice': fields.boolean('Factuur 3de Betaler'),
         'third_payer_processed': fields.boolean('3de Betaler Verwerkt'),
         'abo_company': fields.boolean('Abonnementfirma'),
@@ -647,7 +838,7 @@ class res_partner(osv.osv):
                            'membership.membership_magazine': (_get_magazine_partner, ['date_cancel'], 12),
                         },
                         select=True),
-		'free_membership_class_id': fields.many2one('res.partner.free.class', 'Gratis Lid Categorie', select=True),
+	'free_membership_class_id': fields.many2one('res.partner.free.class', 'Gratis Lid Categorie', select=True),
         'magazine_ids': fields.one2many('membership.membership_magazine', 'partner_id', 'magazines', domain=[('magazine_product','=', True)]),
         'membership_state': fields.function(
                     _membership_state,
@@ -1021,6 +1212,7 @@ class membership_membership_line(osv.osv):
     _columns = {
 		'membership_cancel_id': fields.many2one('membership.cancel.reason', 'Reden Stopzetting', select=True),
 		'npca_migrated': fields.boolean('Gemigreerd uit NPCA'),
+        'third_payer_invoice_line_ids': fields.one2many('membership.third.payer.invoice.line', 'membership_line_id', '3de betaler'),
         'remarks': fields.char('Opmerkingen'),
         'payment_method': fields.function(_function_payment_method, string='Betaalwijze', type='char'),
         'state': fields.function(_state,
