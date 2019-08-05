@@ -65,7 +65,7 @@
         <field name="membership_state" position="replace"/>
 				<field name="membership_stop" position="replace">
                     <field name="membership_stop"/>
-				    <field name="membership_renewal_date" readonly="True"/>
+				    <field name="membership_renewal_date" readonly="True" invisible="1"/>
                     <field name="membership_end" string="Lidmaatschap recentste einddatum"/>
                 </field>
 				<field name="membership_cancel" position="replace">
