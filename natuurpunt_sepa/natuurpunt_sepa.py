@@ -503,7 +503,7 @@ where id = %s''' % (selected_product_id, )
             membership_product = partner.membership_renewal_product_id and partner.membership_renewal_product_id.id or False
             
             # 3de betaler 
-            third_payer = get_third_payer(cr,partner.id)
+            third_payer = get_third_payer(cr,partner.id) if not('web' in context) else {}
             if third_payer:
                 if third_payer['company_deal'] or third_payer['abo_company']:
                     partner_id = partner.id
