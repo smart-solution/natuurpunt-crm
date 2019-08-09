@@ -313,7 +313,7 @@ class res_partner(osv.osv):
         data = (vals, _logger, 'Lidmaatschap aanvraag naam match')
         return compose(
             partial(match_with_existing_partner,self,cr,uid),
-            lambda (p,v,l): {'id': p.id, 'email':p.email if p else False}
+            lambda (p,v,l): {'id': p.id, 'email':p.email} if p else {'id': 0, 'email':False}
         )(data)
 
     def create_web_membership_mandate_invoice(self,cr,uid,ids,selected_product_id=None,datas=None,context=None):
