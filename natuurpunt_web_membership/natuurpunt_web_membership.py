@@ -308,6 +308,14 @@ class res_partner(osv.osv):
             else:
                 return 'jaarlijks'
 
+
+    def get_email_from_address(self,cr,uid,vals,context=None):
+        data = (vals, _logger, 'Lidmaatschap aanvraag naam match')
+        return compose(
+            partial(match_with_existing_partner,self,cr,uid),
+            lambda (p,v,l): {'id': p.id, 'email':p.email if p else False}
+        )(data)
+
     def create_web_membership_mandate_invoice(self,cr,uid,ids,selected_product_id=None,datas=None,context=None):
 
         bank_acc = datas['bank_account_number']
