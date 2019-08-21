@@ -31,6 +31,7 @@
     'depends': ['base','sale','partner_zip','analytic'],
     'data': [
 	'organisation_structure_view.xml',
+        'organisation_structure_data.xml',
     'security/organisation_structure_security.xml',
     'security/ir.model.access.csv',
     ],

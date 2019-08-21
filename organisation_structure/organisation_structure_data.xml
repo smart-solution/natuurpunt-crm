@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    
+    <data noupdate="1">
+      <record forcecreate="True" id="ir_cron_building_reminder" model="ir.cron">
+        <field name="name">Generation of reminders for the buildings with end date</field>
+        <field eval="False" name="active" />
+        <field name="user_id" ref="base.user_root" />
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field eval="False" name="doall" />
+        <field eval="'organisation.structure.reminder'" name="model" />
+        <field eval="'generate_building_reminders'" name="function" />
+        <field eval="'()'" name="args" />
+      </record>
+    </data>
+
+    <!-- Mail template are declared in a NOUPDATE block so users can freely customize/delete them -->
+    <data noupdate="1">
+        <!--Email template -->
+        <record id="email_template_organisation_structure_reminder" model="email.template">
+            <field name="name">organisation structure reminder e-mail</field>
+            <field name="email_from">${(user.email or '')|safe}</field>
+            <field name="subject">${ctx.get('subject')}</field>
+            <field name="email_to">${ctx.get('email_to')}</field>
+            <field name="auto_delete" eval="True" />
+            <field name="model_id" ref="base.model_res_partner" />
+            <field name="body_html"><![CDATA[<p>${ctx.get('body_html')|safe}</p>]]></field>
+        </record>
+    </data>
+</openerp>
