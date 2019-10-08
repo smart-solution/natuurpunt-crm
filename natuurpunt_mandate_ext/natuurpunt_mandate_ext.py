@@ -35,6 +35,24 @@ from natuurpunt_tools import get_included_product_ids
 
 logger = logging.getLogger(__name__)
 
+price_dict = {
+    2 : 30.0,
+    5 : 51.0,
+    6 : 43.0,
+    7 : 42.0,
+    8 : 21.0,
+    3 : 13.0,
+    4 : 12.0,
+    204 : 15.0,
+    205 : 45.0,
+    206 : 66.0,
+    207 : 58.0,
+    208 : 57.0,
+    209 : 36.0,
+    210 : 28.0,
+    211 : 27.0
+}
+
 class payment_line(osv.osv):
     _inherit = 'payment.line'
 
@@ -66,16 +84,18 @@ def invoice_partner_renewal(obj,cr,uid,partner_id,context=None):
     datas = {}
     partner = partner_obj.browse(cr, uid, partner_id)
     if partner.membership_renewal_product_id and partner.membership_renewal_product_id.membership_product:
+        pid = partner.membership_renewal_product_id.id
         datas = {
             'membership_product_id': partner.membership_renewal_product_id.id,
-            'amount': partner.membership_renewal_product_id.list_price,
+            'amount': price_dict[pid] if pid in price_dict else partner.membership_renewal_product_id.list_price,
         }
     else:
         default_renewal_product = get_included_product_ids(product_obj,cr,uid,False)
         for product in product_obj.browse(cr, uid, default_renewal_product, context=context):
+            pid = product.id
             datas = {
                 'membership_product_id': product.id,
-                'amount': product.list_price,
+                'amount': price_dict[pid] if pid in price_dict else product.list_price,
             }
     datas['membership_renewal'] = True
     invoice_id = partner_obj.create_membership_invoice(cr, uid, [partner.id], datas=datas, context=context)
