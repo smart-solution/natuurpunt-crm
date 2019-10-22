@@ -21,6 +21,7 @@
         <field name="arch" type="xml">
         <button name="invoice_pay_customer" position="replace">
             <button name="invoice_pay_customer" type="object" string="Cash Betaling" attrs="{'invisible': [('type', 'not in', ('out_invoice','out_refund'))]}"/>
+            <button name="action_invoice_sent" type="object" string="Send by Email" groups="base.group_user" attrs="{'invisible':['|',('state', '!=', 'paid'),('type','!=','out_refund')]}"/>
         </button>
         </field>
     </record> 
@@ -47,8 +48,6 @@
             </field>
         </field>
     </record>
-
-    <menuitem name="audit logs" id="menu_np_crm_audit_logs" parent="base.menu_report_association" action="audittrail.action_audittrail_log_tree" sequence="50"/>
 
     </data>
 </openerp>

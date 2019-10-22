@@ -28,35 +28,10 @@ class res_partner(osv.osv):
         _name = 'res.partner'
         _inherit = 'res.partner'
 
-        def search_capakey(self, cr, uid, query, context=None):
-            if context is None:
-                context = {}
-            res = []
-            try:
-                sql_res = sql_wrapper(query)(cr)
-            except:
-                return res
-            else:
-                if len(sql_res) == 1 and sql_res[0]['level'] > 0 :
-                    if abs(sql_res[0]['level'] - depth_tree) == sql_res[0]['children']:
-                        try:
-                            name = sql_res[0]['name']
-                            query = "select name from fdw_capakey where lft > {} AND rgh < {} AND level = {}"
-                            sql_res = sql_wrapper(query.format(sql_res[0]['lft'],sql_res[0]['rgh'],7))(cr)
-                        except:
-                            return res
-                        else:
-                            sql_func = lambda v: {name:v['name']}
-                    else:
-                        sql_func = lambda v: {v['name']:[v['lft'], v['rgh']]}
-                else:
-                    sql_func = lambda v: {v['name']:[v['lft'], v['rgh']]}
-                return map(sql_func ,sql_res)
-
         def view_capakey_builder(self, cr, uid, ids, context=None):
             ir_model_data = self.pool.get('ir.model.data')
             try:
-               form_id = ir_model_data.get_object_reference(cr, uid, 'natuurpunt_capakey', 'natuurpunt_capakey_form')[1]
+               form_id = ir_model_data.get_object_reference(cr, uid, 'natuurpunt_geopunt', 'natuurpunt_capakey_form')[1]
             except ValueError:
                form_id = False
             return {

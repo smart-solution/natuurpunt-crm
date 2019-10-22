@@ -82,9 +82,10 @@ def verify_if_customer_or_supplier(obj,cr,uid,data):
     if partner and (partner.customer or partner.supplier):
         if log['renewal'] == False:
             log['alert'].append('Lidmaatschap aanvraag van contact met klant/lev. status')
-            log['alert_website'] = True
         else:
             log['alert'].append('Website hernieuwing van contact met klant/lev. status')
+        if partner.donation_line_ids:
+           log['alert'] = log['alert'] + ' en giften'
     return partner, vals, log
 
 class mail_group(osv.osv):
@@ -237,6 +238,13 @@ class res_partner(osv.osv):
         else:
             return False
 
+    def _verify_periodical_1(self,cr,uid,ids,context=None):
+        mailing_mailing_obj = self.pool.get('mailing.mailing')
+        if mailing_mailing_obj.search(cr, uid, [('id','in',ids)],context=context):
+            return True
+        else:
+            return False
+
     def _verify_recruiting_organisation(self,cr,uid,ids,context=None):
         recruiting_organisation_obj = self.pool.get('res.partner')
         org_ids = [
@@ -300,6 +308,14 @@ class res_partner(osv.osv):
             else:
                 return 'jaarlijks'
 
+
+    def get_email_from_address(self,cr,uid,vals,context=None):
+        data = (vals, _logger, 'Lidmaatschap aanvraag naam match')
+        return compose(
+            partial(match_with_existing_partner,self,cr,uid),
+            lambda (p,v,l): {'id': p.id, 'email':p.email} if p else {'id': 0, 'email':False}
+        )(data)
+
     def create_web_membership_mandate_invoice(self,cr,uid,ids,selected_product_id=None,datas=None,context=None):
 
         bank_acc = datas['bank_account_number']
@@ -352,6 +368,14 @@ class res_partner(osv.osv):
         if datas.get('membership_renewal', False):
             vals['membership_renewal_product_id'] = product_id
 
+        # welkomstpakket+eerste magazine
+        if datas.get('welkomstpakket', False):
+            vals['welkomstpakket'] = True
+            vals['date_welkomstpakket'] = datas.get('date_welkomstpakket',time.strftime('%Y-%m-%d'))
+        periodical_1_id = datas.get('periodical_1_id', 0)
+        if self._verify_periodical_1(cr,uid,[periodical_1_id],context=context):
+            vals['periodical_1_id'] = periodical_1_id
+
         # override default from website            
         vals['customer'] = False
 
@@ -381,7 +405,7 @@ class res_partner(osv.osv):
                     lambda (p,l):([p.id],l)
             )(ids)
 
-        if 'alert_website' in log:
+        if 'alert_website' in log and log['alert_website']:
             _logger.info("website alert:{}".format(website_alert))
             return {'id':0,'alert_message':website_alert}
         else:

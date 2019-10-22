@@ -132,7 +132,6 @@ class account_bank_statement(osv.osv):
                     for payment_line in payment_line_obj.browse(cr, uid, payment_line_ids):
                         payment_line_id = payment_line.id
                         move_id = payment_line.move_line_id.move_id.id
-
                         invoice_id = payment_line.move_line_id.invoice_line_id.invoice_id.id
 
                     if move_id:
@@ -141,12 +140,21 @@ class account_bank_statement(osv.osv):
                         sql_res = cr.dictfetchone()
                         if sql_res:
                             reconcile_id = sql_res['reconcile_id']
+                            move_line_ids = move_line_obj.search(cr, uid,[('reconcile_id','=',reconcile_id)])
+                            move_line_obj._remove_move_reconcile(cr, uid, move_line_ids, False, context=context)
+                            for line in move_line_obj.browse(cr, uid, move_line_ids):
+                                if line.move_id.id != move_id:
+                                    move_cancel_id = line.move_id.id
+                                    period_id = line.move_id.period_id.id
+			else:
+			    raise osv.except_osv(_('Error!'), _('No reconcile could be found.'))
 
                     if payment_line_id:
                         sql_stat = "delete from payment_line where id = %d" % (payment_line_id, )
                         cr.execute(sql_stat)
 
                     for invoice in invoice_obj.browse(cr,uid, [invoice_id]):
+                        refund = {}
                         sdd_reject_count = invoice.sdd_reject_count
                         if sdd_reject_count == 0:
                             invoice_obj.write(cr, uid, invoice.id, {'sdd_reject_count': 1, 'sdd_reject1_id': reject_code, 'sdd_reject1_date': stmt.date, 'sdd_reject1_bankstmt_id': stmt.id}, context=context)
@@ -161,39 +169,49 @@ class account_bank_statement(osv.osv):
                                                'sdd_reject3_bankstmt_id': stmt.id},
                                               context=context)
                             self.pool.get('sdd.mandate').write(cr, uid , [reject.sdd_mandate_id.id], {'state':'cancel'})
-
-                    if reconcile_id:
-                        move_line_ids = move_line_obj.search(cr, uid,[('reconcile_id','=',reconcile_id)])
-                        move_line_obj._remove_move_reconcile(cr, uid, move_line_ids, False, context=context)
-                        for line in move_line_obj.browse(cr, uid, move_line_ids):
-                            if line.move_id.id != move_id:
-                                move_cancel_id = line.move_id.id
-                                period_id = line.move_id.period_id.id
-
+                            refund['description'] = _('refund rejected invoice {0}').format(invoice.internal_number)
+                            refund['date'] = invoice.date_invoice
+                        journal_code = invoice.journal_id.code
+ 
                     if move_cancel_id:
                         context['reject'] = True
-                        dupl_id = move_obj.copy(cr, uid, move_cancel_id, context=context)
-                        move_obj.write(cr, uid, [dupl_id], {'period_id':period_id}, context=context)
-                        move_obj.button_cancel(cr, uid, [dupl_id], context=context)
-                        dupl_line_ids = move_line_obj.search(cr, uid,[('move_id','=',dupl_id)])
-                        move_line_obj.write(cr, uid, dupl_line_ids, {'period_id':period_id}, context=context)
-                        for dupl_line in move_line_obj.browse(cr, uid, dupl_line_ids):
-                            debit = dupl_line.credit
-                            credit = dupl_line.debit
-                            sql_stat = 'update account_move_line set debit = {:.2f}, credit = {:.2f} where id = {}'.format(debit, credit, dupl_line.id)
-                            cr.execute(sql_stat)
-                        move_obj.button_validate(cr, uid, [dupl_id], context=context)
-                        reconcile_ids = []
-                        for line in move_line_obj.browse(cr, uid, dupl_line_ids):
-                            if line.account_id.reconcile:
-                                reconcile_ids.append(line.id)
-                        move_line_ids = move_line_obj.search(cr, uid,[('move_id','=',move_cancel_id)])
-                        for line in move_line_obj.browse(cr, uid, move_line_ids):
-                            if line.account_id.reconcile:
-                                reconcile_ids.append(line.id)
-                        move_line_obj.reconcile(cr, uid, reconcile_ids, 'auto', False, False, False, context=context)
-
-                        move_line_obj.write(cr, uid, reconcile_ids, {'reject_date':datetime.datetime.today().strftime('%Y-%m-%d')})
+                        if journal_code == 'GIFT':
+                            move_obj.button_cancel(cr, uid, [move_cancel_id], context=context)
+                            move_obj.unlink(cr, uid,[move_cancel_id], context=context)
+                            if refund:
+                                refund['filter_refund'] = 'cancel'
+                                refund['period'] = self.pool.get('account.period').find(cr, uid, dt=refund['date'], context=context)[0]
+                                journal_ids = self.pool.get('account.journal').search(cr, uid, [('code','=','GIFTC')])
+                                if journal_ids and len(journal_ids) == 1:
+                                    refund['journal_id'] = journal_ids[0]
+                                    refund_wiz_id = self.pool.get('account.invoice.refund').create(cr, uid, refund, context=context)
+                                    context['skip_write'] = True
+                                    context['active_ids'] = [invoice.id]
+                                    refund_result = self.pool.get('account.invoice.refund').compute_refund(cr, uid, [refund_wiz_id], mode='cancel', context=context)
+                                else:
+                                    raise osv.except_osv(_('Error!'), _('No journal found to refund GIFT invoice.'))
+                        else:
+                            dupl_id = move_obj.copy(cr, uid, move_cancel_id, context=context)
+                            move_obj.write(cr, uid, [dupl_id], {'period_id':period_id}, context=context)
+                            move_obj.button_cancel(cr, uid, [dupl_id], context=context)
+                            dupl_line_ids = move_line_obj.search(cr, uid,[('move_id','=',dupl_id)])
+                            move_line_obj.write(cr, uid, dupl_line_ids, {'period_id':period_id}, context=context)
+                            for dupl_line in move_line_obj.browse(cr, uid, dupl_line_ids):
+                                debit = dupl_line.credit
+                                credit = dupl_line.debit
+                                sql_stat = 'update account_move_line set debit = {:.2f}, credit = {:.2f} where id = {}'.format(debit, credit, dupl_line.id)
+                                cr.execute(sql_stat)
+                            move_obj.button_validate(cr, uid, [dupl_id], context=context)
+                            reconcile_ids = []
+                            for line in move_line_obj.browse(cr, uid, dupl_line_ids):
+                                if line.account_id.reconcile:
+                                    reconcile_ids.append(line.id)
+                            move_line_ids = move_line_obj.search(cr, uid,[('move_id','=',move_cancel_id)])
+                            for line in move_line_obj.browse(cr, uid, move_line_ids):
+                                if line.account_id.reconcile:
+                                    reconcile_ids.append(line.id)
+                            move_line_obj.reconcile(cr, uid, reconcile_ids, 'auto', False, False, False, context=context)
+                            move_line_obj.write(cr, uid, reconcile_ids, {'reject_date':datetime.datetime.today().strftime('%Y-%m-%d')})
 
             self.write(cr, uid, [stmt.id], {'reject_processed':True})
 
