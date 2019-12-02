@@ -331,7 +331,8 @@ class res_partner(osv.osv):
                 'bank_account':bank_acc,
                 'signature_date':time.strftime('%Y-%m-%d %H:%M:%S'),
                 'membership_product_id':selected_product_id,
-                'scan':scan_binary,}
+                'scan':scan_binary,
+                'recruiting_organisation_id': datas.get('recruiting_organisation_id', 0)}
         # create os_memory object 
         mandate_id = mandate_obj.create(cr,uid,vals)
         mandate = mandate_obj.browse(cr,uid,mandate_id)
