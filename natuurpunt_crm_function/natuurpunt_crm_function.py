@@ -130,7 +130,7 @@ class res_organisation_function(osv.osv):
         return super(res_organisation_function, self).write(cr, uid, ids, vals=vals, context=context)
 
     def get_partners(self, cr, uid, ids, context=None):
-        ids_str = ','.join(str(x) for x in a)
+        ids_str = ','.join(str(x) for x in ids)
         sql_stat = """
         select
         p1.id, p1.name, p2.id, p2.name
