@@ -22,6 +22,7 @@ from osv import osv, fields
 from string import Template
 from tools.translate import _
 from openerp import SUPERUSER_ID
+from natuurpunt_tools import sql_wrapper
 
 class res_partner(osv.osv):
     _name = 'res.partner'
@@ -127,6 +128,19 @@ class res_organisation_function(osv.osv):
     def sync_active(self, cr, uid, ids, active, context=None):
         vals = {'active':active}
         return super(res_organisation_function, self).write(cr, uid, ids, vals=vals, context=context)
+
+    def get_partners(self, cr, uid, ids, context=None):
+        ids_str = ','.join(str(x) for x in a)
+        sql_stat = """
+        select
+        p1.id, p1.name, p2.id, p2.name
+        from res.organisation.function as f
+        join res_partner p1 on p1.id = f.person_id
+        join res_partner p2 on p2.id = f.partner_id
+        where id in (%s)
+        """
+        sql_res = sql_wrapper(sql_stat % ids_str)(cr)
+        return sql_res
     
     _columns = {
         'active': fields.boolean('Active'),
