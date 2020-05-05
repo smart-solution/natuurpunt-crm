@@ -320,7 +320,7 @@ class res_organisation_function(osv.osv):
         sql_stat = """
         select
         p1.id, p1.name, p2.id, p2.name
-        from res.organisation.function as f
+        from res_organisation_function as f
         join res_partner p1 on p1.id = f.person_id
         join res_partner p2 on p2.id = f.partner_id
         where id in (%s)
