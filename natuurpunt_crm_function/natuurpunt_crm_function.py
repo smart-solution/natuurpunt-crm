@@ -323,7 +323,7 @@ class res_organisation_function(osv.osv):
         from res_organisation_function as f
         join res_partner p1 on p1.id = f.person_id
         join res_partner p2 on p2.id = f.partner_id
-        where id in (%s)
+        where f.id in (%s)
         """
         sql_res = sql_wrapper(sql_stat % ids_str)(cr)
         return sql_res
