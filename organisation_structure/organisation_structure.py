@@ -27,6 +27,7 @@ class res_organisation_type(osv.osv):
 	_columns = {
 		'name': fields.char('Organisatietype', size=128, required=True),
 		'function_type_ids': fields.many2many('res.function.type', 'res_organisation_type_function_rel', 'organisation_type_id', 'function_type_id', 'Functietypes'),
+                'function_dependency_ids': fields.one2many('res.function.dependency', 'organisation_type_id', 'Function dependency'),
 		'analytic_account_required': fields.boolean('Analytische code verplicht'),
 		'unique_type': fields.boolean('Uniek'),
 		'organisation': fields.boolean('Organisatie'),
@@ -67,6 +68,20 @@ class res_organisation_type(osv.osv):
 
 res_organisation_type()
 
+class res_function_dependency(osv.osv):
+        _name = 'res.function.dependency'
+
+        _columns = {
+            'organisation_type_id': fields.many2one('res.organisation.type', 'Organisation type', required=True, ondelete='cascade', select=True, readonly=True),
+            'function_type_id': fields.many2one('res.function.type', 'function', select=True),
+            'depends_on_function_type_id': fields.many2one('res.function.type', 'depends on function', select=True),
+            'categ_id': fields.many2one('res.niche.categ', 'Nichecategorie', select=True),
+            'regional_level': fields.selection([('L','Lokaal'),('G','Gewestelijk'),('R','Regionaal'),('P','Provinciaal')], string='Regionaal niveau', size=1),
+            'occurance': fields.integer('occurance',),
+        }
+
+res_function_dependency()
+
 class res_function_categ(osv.osv):
 	_name = 'res.function.categ'
 	
@@ -84,6 +99,7 @@ class res_function_type(osv.osv):
 		'organisation_type_ids': fields.many2many('res.organisation.type', 'res_organisation_type_function_rel', 'function_type_id', 'organisation_type_id', 'Organisatietypes'),
 		'unique_type': fields.boolean('Uniek'),
         'categ_id': fields.many2one('res.function.categ', 'Functiecategorie', select=True, ondelete='cascade'),
+                'unique_for_person' : fields.boolean('Uniek voor persoon'),
 	}
 
         def write(self, cr, uid, ids, vals, context=None):
