@@ -430,7 +430,11 @@ class res_partner(osv.osv):
                 #    'date_created':time.strftime('%Y-%m-%d %H:%M:%S'),
                 #}
                 #ogone_log_obj.create(cr, uid, ogone_log_vals, context=context)
-                return {'id':invoice.partner_id.id,'invoice_id':invoice.id,'reference':invoice.reference}
+                if invoice.partner_id.id == invoice.membership_partner_id.id:
+                    partner_id = invoice.partner_id.id
+                else:
+                    partner_id = invoice.membership_partner_id.id
+                return {'id':partner_id,'invoice_id':invoice.id,'reference':invoice.reference}
         else:
             return {'id':ids[0]}
 
