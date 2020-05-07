@@ -152,6 +152,7 @@
 			    <group>
 				<field name="name"/>
 				<field name="categ_id"/>
+                                <field name="company_id"/>
 			    </group>
 			    <group>
 				<field name="unique_type"/>
