@@ -318,16 +318,18 @@ class res_organisation_function(osv.osv):
     def get_partners(self, cr, uid, ids, context=None):
         sql_stat = """
         select
-        p1.id, 
-        p1.name, 
-        p2.id, 
-        p2.name,
-        t.company_id,
-        t.name
+        p1.id as person_id, 
+        p1.name as person_name, 
+        p2.id as partner_id, 
+        p2.name as partner_name,
+        t.company_id as vzw_id,
+        c.name as vzw_id,
+        t.name as stem_name
         from res_organisation_function as f
         join res_partner p1 on p1.id = f.person_id
         join res_partner p2 on p2.id = f.partner_id
         join res_function_type as t on t.id = f.function_type_id
+        join res_company as c on c.id = t.company_id
         where (f.valid_from_date is null or f.valid_from_date <= now())
           and (f.valid_to_date is null or f.valid_to_date >= now())
           and t.company_id is not null
