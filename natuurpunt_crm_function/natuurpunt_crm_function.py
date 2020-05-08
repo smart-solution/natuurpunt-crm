@@ -323,7 +323,7 @@ class res_organisation_function(osv.osv):
         p2.id as partner_id, 
         p2.name as partner_name,
         t.company_id as vzw_id,
-        c.name as vzw_id,
+        c.name as vzw_name,
         t.name as stem_name
         from res_organisation_function as f
         join res_partner p1 on p1.id = f.person_id
