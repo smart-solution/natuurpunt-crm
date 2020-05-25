@@ -87,7 +87,7 @@ class res_partner(osv.osv):
             ids = rof_obj.search(cr,uid,domain)        
             if ids:
                 partner_ids = list(set(map(lambda rof: rof.partner_id.id, rof_obj.browse(cr,uid,ids))))
-                for p in self.browse(cr,uid,partner_ids):
+                for p in self.browse(cr,uid,filter(None,partner_ids)):
                     self.validate_functions(cr,uid,p,context=context)
             return True 
         else:
