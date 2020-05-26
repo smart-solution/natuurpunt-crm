@@ -27,14 +27,37 @@ from natuurpunt_tools import sql_wrapper
 import itertools
 from operator import itemgetter
 from collections import Counter
+import logging
+
+_logger = logging.getLogger(__name__)
+
+class FunctionException(Exception):
+    pass
 
 class res_partner(osv.osv):
     _name = 'res.partner'
     _inherit = 'res.partner'
 
+    def validate_functions_partner(self, cr, uid, ids, context=None):
+        if context == None:
+            context = {}
+        return self._check_org_function_parent_ids(cr,uid,ids,context=context)       
+
     def _check_org_function_parent_ids(self, cr, uid, ids, context=None):
-        for partner in self.browse(cr,uid,ids):
-            self.validate_functions(cr,uid,partner)
+        if context == None:
+            context = {}
+        if 'validate' in context:
+            for partner in self.browse(cr,uid,ids):
+                try:
+                    self.validate_functions(cr,uid,partner)
+                except FunctionException as e:
+                    _logger.info(u"{} {}".format(partner.id,partner.name))
+        else:
+            try:
+                for partner in self.browse(cr,uid,ids):
+                    self.validate_functions(cr,uid,partner)
+            except FunctionException as e:
+                raise osv.except_osv(_('Error!'), e.args[0])
         return True
 
     _constraints = [
@@ -159,10 +182,10 @@ class res_partner(osv.osv):
                             rft = self.pool.get('res.function.type').browse(cr,uid,dep[1])
                             to_function_name = rft.name
                             mess = _('%s:\n\nFunction %s depending on %s\ncan only have %s cccurances')
-                            raise osv.except_osv(_('Error!'), mess%(partner.name,from_function_name,to_function_name,dep[2]))
+                            raise FunctionException(mess%(partner.name,from_function_name,to_function_name,dep[2]))
                         else:
                             mess = _('%s:\n\nFunction %s\ncan only have %s cccurances')
-                            raise osv.except_osv(_('Error!'), mess%(partner.name,from_function_name,dep[2]))
+                            raise FunctionException(mess%(partner.name,from_function_name,dep[2]))
 
             if dependency_matrix:
                 dependency_rofs = process_dependency_matrix()
@@ -173,10 +196,10 @@ class res_partner(osv.osv):
                         rft = self.pool.get('res.function.type').browse(cr,uid,func)
                         function_name = rft.name
                         person = self.pool.get('res.partner').browse(cr,uid,person_rofs[0])
-                        pe = '[{}] {}'.format(person.id,person.name)
-                        pa = '[{}] {}'.format(partner.id,partner.name)
+                        pe = u'[{}] {}'.format(person.id,person.name)
+                        pa = u'[{}] {}'.format(partner.id,partner.name)
                         mess = _('%s:\n\nFunction %s\nhas missing dependency\nfor %s')
-                        raise osv.except_osv(_('Error!'), mess%(pa,function_name,pe))
+                        raise FunctionException(mess%(pa,function_name,pe))
         else:
             dependency_functions = []
             
@@ -188,7 +211,7 @@ class res_partner(osv.osv):
             for function_type_id in filter(lambda x:x not in allowed_functions_type_ids,function_type_ids):
                 rft = self.pool.get('res.function.type').browse(cr,uid,function_type_id)
                 function_name = rft.name
-                raise osv.except_osv(_('Error!'), _('%s:\n\nFunction %s is not available for %s'%(partner.name,function_name,partner.name)))
+                raise FunctionException(_('%s:\n\nFunction %s is not available for %s'%(partner.name,function_name,partner.name)))
 
     def _replace_init_name(self, cr, uid, organisation_function_child_ids, context=None):
         """
