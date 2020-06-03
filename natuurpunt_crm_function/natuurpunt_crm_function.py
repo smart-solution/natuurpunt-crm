@@ -73,7 +73,6 @@ class res_partner(osv.osv):
             (res_partner."membership_state" = 'paid' 
              or res_partner."membership_state" = 'invoiced' 
              or res_partner."free_member" IS TRUE )
-             AND (res_partner.address_state_id <> 2 or res_partner.address_state_id is null)
              AND res_partner.active = true
              AND res_partner.no_department IS NOT TRUE
              AND ((res_partner.department_choice_id IS null and res_partner.department_id = %s )
