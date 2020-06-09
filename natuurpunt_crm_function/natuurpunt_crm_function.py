@@ -73,6 +73,7 @@ class res_partner(osv.osv):
             (res_partner."membership_state" = 'paid' 
              or res_partner."membership_state" = 'invoiced' 
              or res_partner."free_member" IS TRUE )
+             AND (res_partner.address_state_id <> 2 or res_partner.address_state_id is null)
              AND res_partner.active = true
              AND res_partner.no_department IS NOT TRUE
              AND ((res_partner.department_choice_id IS null and res_partner.department_id = %s )
@@ -250,19 +251,25 @@ class res_organisation_function(osv.osv):
     _name = 'res.organisation.function'
     _inherit = 'res.organisation.function'
 
-    def _check_unique_type(self, cr, uid, vals, context=None):
+    def _check_unique_type(self, cr, uid, ids, vals, context=None):
+        def get_functions():
+            new_ids = self.search(cr,uid,domain)
+            return [element for element in new_ids if element not in ids]
+        
         res_partner_obj = self.pool.get('res.partner')
         function_type_obj = self.pool.get('res.function.type')
         unique_type = function_type_obj.read(cr, uid, vals['function_type_id'], fields=['unique_type'], context=context)['unique_type']
         if unique_type and 'partner_id' in vals and vals['partner_id']:
-            ids = self.search(cr, uid, [('partner_id', '=', vals['partner_id']),('function_type_id', '=', vals['function_type_id'])])
-            if ids:
-                if self.browse(cr,uid,ids)[0].person_id.id != vals['person_id']:
-                    partner_name = res_partner_obj.read(cr, uid, vals['partner_id'], fields=['name'],context=context)['name']
-                    function_name = function_type_obj.read(cr, uid, vals['function_type_id'], fields=['name'], context=context)['name']
-                    raise osv.except_osv(_('Error!'), _('Function %s already exists for %s\nThis is an unique function'%(function_name,partner_name)))
-                else:
-                    res = True
+            domain = [
+                ('partner_id', '=', vals['partner_id']),
+                ('function_type_id', '=', 
+                vals['function_type_id'])
+            ]
+            new_ids = get_functions()
+            if new_ids:
+                partner_name = res_partner_obj.read(cr, uid, vals['partner_id'], fields=['name'],context=context)['name']
+                function_name = function_type_obj.read(cr, uid, vals['function_type_id'], fields=['name'], context=context)['name']
+                raise osv.except_osv(_('Error!'), _('Function %s already exists for %s\nThis is an unique function'%(function_name,partner_name)))
             else:
                 res = True
         else: 
@@ -275,9 +282,9 @@ class res_organisation_function(osv.osv):
                 ('function_type_id', '=', vals['function_type_id']),
                 ('partner_id.organisation_type_id','=',partner.organisation_type_id.id),
             ]
-            ids = self.search(cr,uid,domain)
-            if ids:
-                if len(ids):
+            new_ids = get_functions()
+            if new_ids:
+                if len(new_ids):
                     person_name = res_partner_obj.read(cr, uid, vals['person_id'], fields=['name'],context=context)['name']
                     function_name = function_type_obj.read(cr, uid, vals['function_type_id'], fields=['name'], context=context)['name']
                     raise osv.except_osv(_('Error!'), _('Function %s already exists for %s\nThis is an unique function'%(function_name,person_name)))
@@ -317,7 +324,7 @@ class res_organisation_function(osv.osv):
         return {'value': res}
     
     def create(self, cr, uid, vals, context=None):        
-        self._check_unique_type(cr, uid, vals=vals, context=context)
+        self._check_unique_type(cr, uid, [], vals=vals, context=context)
         self._check_organisation_type_ids(cr, uid, vals=vals, context=context)            
         return super(res_organisation_function, self).create(cr, uid, vals=vals, context=context)
     
@@ -328,8 +335,8 @@ class res_organisation_function(osv.osv):
             if not 'function_type_id' in vals:
                 vals['function_type_id'] = rof.function_type_id.id
             if not 'person_id' in vals:
-                vals['person_id'] = rof.person_id.id        
-        self._check_unique_type(cr, uid, vals=vals, context=context)
+                vals['person_id'] = rof.person_id.id
+        self._check_unique_type(cr, uid, ids, vals=vals, context=context)
         self._check_organisation_type_ids(cr, uid, vals=vals, context=context)        
         return super(res_organisation_function, self).write(cr, uid, ids, vals=vals, context=context)
 
