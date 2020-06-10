@@ -363,7 +363,7 @@ class res_partner(osv.osv):
         else:
             org_partner = self.browse(cr,uid,recruiting_organisation_id)
             if vals['zip_id'] and vals['zip_id'] not in org_partner.zip_ids:
-                vals['departement_choice_id'] = recruiting_organisation_id
+                vals['department_choice_id'] = recruiting_organisation_id
 
         # convert website membership + subscriptions to product
         only_magazine = datas.get('only_magazine', False)
