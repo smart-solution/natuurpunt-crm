@@ -30,7 +30,7 @@ import time
 import logging
 from functools import partial
 from itertools import groupby
-from natuurpunt_tools import get_included_product_ids
+from natuurpunt_tools import get_included_product_ids,sql_wrapper
 from openerp import netsvc
 
 logger = logging.getLogger(__name__)
@@ -336,7 +336,7 @@ class partner_create_third_payer_invoice(osv.osv_memory):
             fpos_id = partner.property_account_position and partner.property_account_position.id or False
 	    quantity = len(third_payer_invoice_line_ids)
             line_value = {
-                'name':'test',
+                'name':'lidmaatschap',
                 'account_id':lid_account_ids[0],
             }
 	    line_dict = invoice_line_obj.product_id_change(cr, uid, {},
@@ -347,11 +347,42 @@ class partner_create_third_payer_invoice(osv.osv_memory):
 	        tax_tab = [(6, 0, line_value['invoice_line_tax_id'])]
 		line_value['invoice_line_tax_id'] = tax_tab
 
+            ref_type = 'bba'
+            reference = invoice_obj.generate_bbacomm(cr, uid, ids, 'out_invoice', 'bba', partner.id, '', context={})
+            referenc2 = reference['value']['reference']
+
+            payment_term_id = None
+            mandate_id = None
+            partner_bank_id = None
+            sql_stat = '''
+                       select
+                       sdd_mandate.id as mandate_id,
+                       account_payment_term.id as payment_term_id,
+                       res_partner_bank.id as partner_bank_id
+                       from res_partner, res_partner_bank, sdd_mandate, account_payment_term
+                       where res_partner.id = res_partner_bank.partner_id
+                       and partner_bank_id = res_partner_bank.id
+                       and sdd_mandate.state = 'valid'
+                       and account_payment_term.name = 'Direct debit'
+                       and res_partner.id = {} order by signature_date desc
+                       '''
+            sql_res = sql_wrapper(sql_stat.format(partner.id), method='dictfetchone')(cr)
+            if sql_res and sql_res['payment_term_id']:
+                payment_term_id = sql_res['payment_term_id']
+                mandate_id = sql_res['mandate_id']
+                partner_bank_id = sql_res['partner_bank_id']
+
 	    invoice_id = invoice_obj.create(cr, uid, {
 		'partner_id': partner.id,
 		'account_id': account_id,
                 'journal_id': vf_journal_ids[0],
-		'fiscal_position': fpos_id or False
+                'membership_invoice': True,
+		'fiscal_position': fpos_id or False,
+                'payment_term': payment_term_id,
+                'sdd_mandate_id': mandate_id,
+                'partner_bank_id': partner_bank_id,
+                'reference_type': ref_type,
+                'reference': referenc2,
             }, context=context)
 	    line_value['invoice_id'] = invoice_id
             line_value['quantity'] = quantity
