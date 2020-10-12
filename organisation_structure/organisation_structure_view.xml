@@ -632,7 +632,7 @@
 			<group>
 			<field name="organisation_type_id"/>
 			<field name="analytic_account_id" attrs="{'invisible': [('display_analytic','=',False)]}"/>
-			<field name="regional_level" attrs="{'invisible': [('display_regional_level','=',False)]}"/>
+			<field name="regional_level" attrs="{'invisible': [('display_regional_level','=',False)]}" required="True"/>
 			<field name="regional_partnership" attrs="{'invisible': [('display_regional_partnership','=',False)]}"/>
 			<field name="building_function_id" attrs="{'invisible': [('display_building_function','=',False)]}"/>
 			<field name="building_capakey" attrs="{'invisible': [('display_building_capakey','=',False)]}"/>
@@ -734,7 +734,11 @@
                     </page>	
 		    <page string="Regionale Definitie" attrs="{'invisible': [('display_regional_definition_m2m','=',False)]}">   
                         <group colspan="1" col="2">
-			    <field name="m2m_zip_ids"/>
+			    <field name="m2m_zip_ids" attrs="{'invisible': [('regional_level','in',['P','G'])]}"/>
+			    <field name="state_id" 
+			           string="Provincie"
+                                   domain="[('country_id','=',21')]"
+				   attrs="{'invisible': [('regional_level','!=','P')]}"/>
                         </group>
                     </page>	
 		    
