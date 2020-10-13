@@ -101,6 +101,7 @@ class res_function_type(osv.osv):
         'categ_id': fields.many2one('res.function.categ', 'Functiecategorie', select=True, ondelete='cascade'),
                 'unique_for_person' : fields.boolean('Uniek voor persoon'),
                 'company_id': fields.many2one('res.company', 'Verantwoordelijke vzw'),
+                'comment': fields.text('Notes'),
 	}
 
         def write(self, cr, uid, ids, vals, context=None):

@@ -159,6 +159,9 @@
                                 <field name="unique_for_person"/>
 			    </group>
 			</group>
+			<group colspan="4" col="2">
+                            <field name="comment"/>
+			</group>
 			<group colspan="4">
 				<separator string="Organisatietypes" colspan="4"/>
 				<field name="organisation_type_ids" nolabel="1">
