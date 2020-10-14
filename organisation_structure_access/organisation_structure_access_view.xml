@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<openerp>
+    <data>
+
+        <record id="view_organisation_structure_access_tree" model="ir.ui.view">
+            <field name='name'>view.organisation.structure.access.tree</field>
+            <field name='model'>organisation.structure.access</field>
+            <field name='arch' type='xml'>
+                <tree string="Organisation Structure Access">
+                        <field name="name"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_organisation_structure_access_form" model="ir.ui.view">
+            <field name='name'>view.organisation.structure.access.form</field>
+            <field name='model'>organisation.structure.access</field>
+            <field name='arch' type='xml'>
+                <form string="Organisation Structure Access">
+		 <group col="2">
+                    <field name="name"/>
+                    <field name="function_type_access">
+                     <tree string="function_type_access_tree" editable="top">
+                        <field name="function_type_id"/>
+                        <field name="maintainable"/>
+                      </tree>
+                      <form string="function type Access Controls" version="7.0">
+                        <group col="4">
+                          <field name="function_type_id"/>
+                          <field name="maintainable"/>
+                        </group>
+                       </form>    
+		    </field>
+                    <field name="organisation_type_access">
+                     <tree string="organisation_type_access_tree" editable="top">
+                        <field name="organisation_type_id"/>
+                      </tree>
+                      <form string="organisation type Access Controls" version="7.0">
+                        <group col="4">
+                          <field name="organisation_type_id"/>
+                        </group>
+                       </form>
+                    </field>
+
+		  </group>
+                </form>
+            </field>
+        </record>
+
+        <record model="ir.actions.act_window" id="action_organisation_structure_access">
+            <field name="name">action organisation structure access</field>
+            <field name="res_model">organisation.structure.access</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <menuitem id="menu_organisation_structure_access" name="Organisation Structure Access"
+            parent="base.menu_organisation_configuration" sequence="40"
+            action="action_organisation_structure_access" />
+
+    </data>
+</openerp>
+
