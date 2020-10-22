@@ -36,7 +36,8 @@ class function_type_access(osv.osv):
     _columns = {
         'organisation_structure_access_id': fields.many2one('organisation.structure.access', 'organisation structure access', required=True, ondelete='cascade', select=True, readonly=True),
         'function_type_id': fields.many2one('res.function.type', 'Function Type', select=True, ondelete='cascade'),
-        'maintainable': fields.boolean('Maintainable')
+        'maintainable': fields.boolean('Maintainable'),
+        'access': fields.boolean('Access'),
     }
 
 function_type_access()

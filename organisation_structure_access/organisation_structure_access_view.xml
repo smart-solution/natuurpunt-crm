@@ -23,11 +23,13 @@
                      <tree string="function_type_access_tree" editable="top">
                         <field name="function_type_id"/>
                         <field name="maintainable"/>
+			<field name="access"/>
                       </tree>
                       <form string="function type Access Controls" version="7.0">
                         <group col="4">
                           <field name="function_type_id"/>
                           <field name="maintainable"/>
+			  <field name="access"/>
                         </group>
                        </form>    
 		    </field>
