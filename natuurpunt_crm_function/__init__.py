@@ -17,3 +17,4 @@
 ############################################################################## 
 
 import natuurpunt_crm_function
+import natuurpunt_crm_function_rest

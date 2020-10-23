@@ -31,6 +31,12 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
+def neighborhood(iterator):
+    prev = (-1,-1)
+    for current in iterator:
+        yield (prev,current)
+        prev = current
+
 class FunctionException(Exception):
     pass
 
@@ -64,6 +70,26 @@ class res_partner(osv.osv):
         (_check_org_function_parent_ids, 'Error validate_functions', ['organisation_function_parent_ids'])
     ]
 
+    def create_org_function_parent_ids(self, cr, uid, vals, context=None):
+        if not 'name' in vals:
+            vals['name'] = self.pool.get('res.function.type').read(cr, uid, vals['function_type_id'], fields=['name'], context=context)['name']
+        create_vals = [vals]
+        for partner in self.browse(cr,uid,[vals['partner_id']],context=context):
+            #assert 0...1 result
+            for dep in self.dependency_functions(cr,uid,partner):
+                if dep.function_type_id.id == vals['function_type_id'] and dep.depends_on_function_type_id:
+                    create_vals.append(
+                        {'partner_id':vals['partner_id'],
+                         'person_id':vals['person_id'],
+                         'function_type_id':dep.depends_on_function_type_id.id,
+                         'name':dep.depends_on_function_type_id.name,
+                         'valid_from_date': vals['valid_from_date'] if 'valid_from_date' in vals else False,
+                         'valid_to_date': vals['valid_to_date'] if 'valid_to_date' in vals else False,}
+                    ) 
+        create_one2many = [(0, 0, item) for item in create_vals]
+        data = {'organisation_function_parent_ids': create_one2many}
+        return self.write(cr, uid, [partner.id], data, context=context)
+
     def count_members(self,cr,uid,partner_id,context=None):
         sql_stat = """
             SELECT count(res_partner."id")
@@ -96,10 +122,24 @@ class res_partner(osv.osv):
         res = res + len(ids_kern)
         return res
 
+    def dependency_functions(self,cr,uid,partner,context=None):
+        organisation_type_id = partner.organisation_type_id.id
+        res_function_dependency_obj = self.pool.get('res.function.dependency')
+        categ_ids = [niche.categ_id.id for niche in partner.niche_ids]
+        dep_func_domain =  [
+            ('organisation_type_id','=',organisation_type_id),
+            ('regional_level','=',partner.regional_level),
+        ]
+        if categ_ids:
+            dep_func_domain.append(('categ_id','in',categ_ids))
+        ids = res_function_dependency_obj.search(cr,uid,dep_func_domain)
+        for dep in res_function_dependency_obj.browse(cr,uid,ids):
+            yield dep
+
     def validate_functions(self,cr,uid,partner,context=None):
         today = datetime.datetime.today().strftime('%Y-%m-%d')
         rof_obj = self.pool.get('res.organisation.function')
-
+        
         # validatie van contant ipv geleding
         if not (partner.organisation_type_id):
             domain = [
@@ -120,92 +160,90 @@ class res_partner(osv.osv):
                  '|',('valid_to_date', '=', False), ('valid_to_date', '>=', today),
             ]
 
-        organisation_type_id = partner.organisation_type_id.id
-        res_function_dependency_obj = self.pool.get('res.function.dependency')
-        categ_ids = [niche.categ_id.id for niche in partner.niche_ids]
-        dep_func_domain =  [
-            ('organisation_type_id','=',organisation_type_id),
-            ('regional_level','=',partner.regional_level),            
-        ]
-        if categ_ids:
-            dep_func_domain.append(('categ_id','in',categ_ids))
-        res_function_dependency_ids = res_function_dependency_obj.search(cr,uid,dep_func_domain)
-        if res_function_dependency_ids:
-            dependencies = []
-            dependency_functions = []
-            for dep in res_function_dependency_obj.browse(cr,uid,res_function_dependency_ids):
-                func1_id = dep.function_type_id.id
-                func2_id = dep.depends_on_function_type_id.id
-                # functional occurance
-                if dep.occurance:
-                    dependencies.append( (func1_id, func2_id, dep.occurance) )
-                else:
-                    dependencies.append( (func1_id, func2_id, self.occurance(cr,uid,partner) ) )
-                dependency_functions.append(func1_id)
-                dependency_functions.append(func2_id)
-            dependencies = sorted(dependencies,key=lambda x: x[1],reverse=True)
-            dep_matrix_domain = list(domain) #deep copy
-            dep_matrix_domain.append(('function_type_id', 'in', dependency_functions))
-            ids = rof_obj.search(cr,uid,dep_matrix_domain)
-            dependency_matrix = map(lambda rof: (rof.function_type_id.id, rof.person_id.id), rof_obj.browse(cr,uid,ids) )
+        dependencies = []
+        dependency_functions = []
+        for dep in self.dependency_functions(cr,uid,partner):
+            func1_id = dep.function_type_id.id
+            func2_id = dep.depends_on_function_type_id.id
+            # functional occurance
+            if dep.occurance:
+                dependencies.append( (func1_id, func2_id, dep.occurance) )
+            else:
+                dependencies.append( (func1_id, func2_id, self.occurance(cr,uid,partner) ) )
+            dependency_functions.append(func1_id)
+            dependency_functions.append(func2_id)
+        dependencies = sorted(dependencies,key=lambda x: x[1],reverse=True)
+        dep_matrix_domain = list(domain) #deep copy
+        dep_matrix_domain.append(('function_type_id', 'in', dependency_functions))
+        ids = rof_obj.search(cr,uid,dep_matrix_domain)
+        dependency_matrix = map(lambda rof: (rof.function_type_id.id, rof.person_id.id), rof_obj.browse(cr,uid,ids) )
 
-            def process_dependency_matrix():
-                sorter = sorted(dependency_matrix, key=itemgetter(1))
-                grouper = itertools.groupby(sorter, key=itemgetter(1))
-                d = {k: list(map(itemgetter(0), v)) for k, v in grouper}
-                res = []
-                for person_id, function_ids in d.items():
-                    dependencies_match = []
-                    for dep in dependencies:
-                        if dep[1]:
-                            if dep[0] in function_ids and dep[1] in function_ids:
-                                function_ids.remove(dep[0])
-                                function_ids.remove(dep[1])
-                                dependencies_match.append( (dep[0],dep[1]) )
-                        else:
-                            if dep[0] in function_ids:
-                                function_ids.remove(dep[0])
-                                dependencies_match.append( (dep[0], False) )
-                    res.append((person_id,dependencies_match,function_ids))
-                return res
-
-            def validate_occurances():
-                deps = map(lambda t: t[1], dependency_rofs)
-                deps_list = list(itertools.chain.from_iterable(deps))
-                counter = Counter(tup for tup in deps_list)
+        def process_dependency_matrix():
+            sorter = sorted(dependency_matrix, key=itemgetter(1))
+            grouper = itertools.groupby(sorter, key=itemgetter(1))
+            d = {k: list(map(itemgetter(0), v)) for k, v in grouper}
+            res = []
+            for person_id, function_ids in d.items():
+                dependencies_match = []
                 for dep in dependencies:
-                    count_occurance = counter[(dep[0],dep[1])]
-                    if count_occurance > dep[2]:
-                        rft = self.pool.get('res.function.type').browse(cr,uid,dep[0])
-                        from_function_name = rft.name
-                        if dep[1]:
-                            rft = self.pool.get('res.function.type').browse(cr,uid,dep[1])
-                            to_function_name = rft.name
-                            mess = _('%s:\n\nFunction %s depending on %s\ncan only have %s cccurances')
-                            raise FunctionException(mess%(partner.name,from_function_name,to_function_name,dep[2]))
-                        else:
-                            mess = _('%s:\n\nFunction %s\ncan only have %s cccurances')
-                            raise FunctionException(mess%(partner.name,from_function_name,dep[2]))
+                    if dep[1]:
+                        if dep[0] in function_ids and dep[1] in function_ids:
+                            function_ids.remove(dep[0])
+                            function_ids.remove(dep[1])
+                            dependencies_match.append( (dep[0],dep[1]) )
+                    else:
+                        if dep[0] in function_ids:
+                            function_ids.remove(dep[0])
+                            dependencies_match.append( (dep[0], False) )
+                res.append((person_id,dependencies_match,function_ids))
+            return res
 
-            if dependency_matrix:
-                dependency_rofs = process_dependency_matrix()
-                validate_occurances()
-                for person_rofs in dependency_rofs:
-                    if person_rofs[2]:
-                        func = person_rofs[2][0]
-                        rft = self.pool.get('res.function.type').browse(cr,uid,func)
-                        function_name = rft.name
-                        person = self.pool.get('res.partner').browse(cr,uid,person_rofs[0])
-                        pe = u'[{}] {}'.format(person.id,person.name)
-                        pa = u'[{}] {}'.format(partner.id,partner.name)
-                        mess = _('%s:\n\nFunction %s\nhas missing dependency\nfor %s')
-                        raise FunctionException(mess%(pa,function_name,pe))
-        else:
-            dependency_functions = []
+        def validate_occurances():
+            deps = map(lambda t: t[1], dependency_rofs)
+            deps_list = list(itertools.chain.from_iterable(deps))
+            counter = Counter(tup for tup in deps_list)
+            for dep in dependencies:
+                count_occurance = counter[(dep[0],dep[1])]
+                if count_occurance > dep[2]:
+                    rft = self.pool.get('res.function.type').browse(cr,uid,dep[0])
+                    from_function_name = rft.name
+                    if dep[1]:
+                        rft = self.pool.get('res.function.type').browse(cr,uid,dep[1])
+                        to_function_name = rft.name
+                        mess = _('%s:\n\nFunction %s depending on %s\ncan only have %s cccurances')
+                        raise FunctionException(mess%(partner.name,from_function_name,to_function_name,dep[2]))
+                    else:
+                        mess = _('%s:\n\nFunction %s\ncan only have %s cccurances')
+                        raise FunctionException(mess%(partner.name,from_function_name,dep[2]))
+
+        if dependency_matrix:
+            dependency_rofs = process_dependency_matrix()
+            validate_occurances()
+            for person_rofs in dependency_rofs:
+                if person_rofs[2]:
+                    func = person_rofs[2][0]
+                    rft = self.pool.get('res.function.type').browse(cr,uid,func)
+                    function_name = rft.name
+                    person = self.pool.get('res.partner').browse(cr,uid,person_rofs[0])
+                    pe = u'[{}] {}'.format(person.id,person.name)
+                    pa = u'[{}] {}'.format(partner.id,partner.name)
+                    mess = _('%s:\n\nFunction %s\nhas missing dependency\nfor %s')
+                    raise FunctionException(mess%(pa,function_name,pe))
             
         ids = rof_obj.search(cr,uid,domain)
         if ids:
-            function_type_ids = map(lambda rof: rof.function_type_id.id, rof_obj.browse(cr,uid,ids))
+            rofs = rof_obj.browse(cr,uid,ids)
+            unique_type = rof_obj._check_unique_type(cr, uid, rofs, context=context)
+            if unique_type:
+                raise FunctionException(_('Function %s already exists for %s\nThis is an unique function'%(unique_type[0][1].name,partner.name)))
+            unique_for_person = rof_obj._check_unique_for_person(cr, uid, ids, partner, rofs, context=context)
+            if unique_for_person:
+                function_name = unique_for_person.function_type_id.name
+                person_name   = unique_for_person.person_id.name
+                partner_name  = unique_for_person.partner_id.name
+                raise FunctionException(_('Function %s already exists for %s in %s\nThis is an unique function'%(function_name,person_name,partner_name)))
+
+            function_type_ids = map(lambda rof: rof.function_type_id.id, rofs)
             allowed_functions_type_ids = map(lambda rft: rft.id,partner.organisation_type_id.function_type_ids)
             allowed_functions_type_ids = allowed_functions_type_ids + dependency_functions
             for function_type_id in filter(lambda x:x not in allowed_functions_type_ids,function_type_ids):
@@ -251,70 +289,23 @@ class res_organisation_function(osv.osv):
     _name = 'res.organisation.function'
     _inherit = 'res.organisation.function'
 
-    def _check_unique_type(self, cr, uid, ids, vals, context=None):
-        def get_functions():
-            new_ids = self.search(cr,uid,domain)
-            return [element for element in new_ids if element not in ids]
-        
-        res_partner_obj = self.pool.get('res.partner')
-        function_type_obj = self.pool.get('res.function.type')
-        unique_type = function_type_obj.read(cr, uid, vals['function_type_id'], fields=['unique_type'], context=context)['unique_type']
-        if unique_type and 'partner_id' in vals and vals['partner_id']:
+    def _check_unique_type(self, cr, uid, rofs, context=None):
+        unique_types = filter(None,map(lambda rof: (rof.function_type_id.id,rof.function_type_id) if rof.function_type_id.unique_type else False,rofs))
+        return [c for p,c in neighborhood(sorted(unique_types)) if p[0]==c[0]][:1]
+ 
+    def _check_unique_for_person(self, cr, uid, ids, partner, rofs, context=None):
+        unique_for_person = filter(None,map(lambda rof: (rof.function_type_id.id,rof.person_id.id) if rof.function_type_id.unique_for_person else False,rofs))
+        for rof in unique_for_person:
             domain = [
-                ('partner_id', '=', vals['partner_id']),
-                ('function_type_id', '=', 
-                vals['function_type_id'])
-            ]
-            new_ids = get_functions()
-            if new_ids:
-                partner_name = res_partner_obj.read(cr, uid, vals['partner_id'], fields=['name'],context=context)['name']
-                function_name = function_type_obj.read(cr, uid, vals['function_type_id'], fields=['name'], context=context)['name']
-                raise osv.except_osv(_('Error!'), _('Function %s already exists for %s\nThis is an unique function'%(function_name,partner_name)))
-            else:
-                res = True
-        else: 
-            res = True
-        unique_for_person = function_type_obj.read(cr, uid, vals['function_type_id'], fields=['unique_for_person'], context=context)['unique_for_person']
-        if unique_for_person and 'person_id' in vals and vals['person_id']:
-            partner = res_partner_obj.browse(cr, uid, vals['partner_id'],context=context)       
-            domain = [
-                ('person_id', '=', vals['person_id']),
-                ('function_type_id', '=', vals['function_type_id']),
+                ('person_id', '=', rof[1]),
+                ('function_type_id', '=', rof[0]),
                 ('partner_id.organisation_type_id','=',partner.organisation_type_id.id),
             ]
-            new_ids = get_functions()
+            new_ids=[element for element in self.search(cr,uid,domain) if element not in ids]
             if new_ids:
-                if len(new_ids):
-                    person_name = res_partner_obj.read(cr, uid, vals['person_id'], fields=['name'],context=context)['name']
-                    function_name = function_type_obj.read(cr, uid, vals['function_type_id'], fields=['name'], context=context)['name']
-                    raise osv.except_osv(_('Error!'), _('Function %s already exists for %s\nThis is an unique function'%(function_name,person_name)))
-                else:
-                    res = True   
-            else: 
-                res = True
-        else:
-            res = True
-        return res
-        
-    def _check_organisation_type_ids(self, cr, uid, vals, context=None):
-        pass
-        """
-        function_type_obj = self.pool.get('res.function.type')        
-        organisation_type_ids = function_type_obj.read(cr, uid, vals['function_type_id'], fields=['organisation_type_ids'], context=context)['organisation_type_ids']
-        if organisation_type_ids and 'partner_id' in vals and vals['partner_id']:
-            res_partner_obj = self.pool.get('res.partner')
-            organisation_type_id = res_partner_obj.read(cr, uid, vals['partner_id'], fields=['organisation_type_id'], context=context)['organisation_type_id']
-            if not organisation_type_id[0] in organisation_type_ids:
-                res_partner_obj = self.pool.get('res.partner')
-                partner_name = res_partner_obj.read(cr, uid, vals['partner_id'], fields=['name'],context=context)['name']
-                function_name = function_type_obj.read(cr, uid, vals['function_type_id'], fields=['name'], context=context)['name']
-                raise osv.except_osv(_('Error!'), _('Function %s is not available for %s'%(function_name,partner_name)))
-            else:
-                return True
-        else:
-            return True        
-        """ 
-        
+                return self.browse(cr,uid,new_ids[0])
+        return False
+
     def onchange_organisation_function_id(self, cr, uid, ids, function_type_id, context=None):
         #The result will be stored in a dictionary  
         res = {}  
@@ -323,26 +314,41 @@ class res_organisation_function(osv.osv):
         res['name'] = function_type_obj.read(cr, uid, function_type_id, fields=['name'], context=context)['name']
         return {'value': res}
     
-    def create(self, cr, uid, vals, context=None):        
-        self._check_unique_type(cr, uid, [], vals=vals, context=context)
-        self._check_organisation_type_ids(cr, uid, vals=vals, context=context)            
-        return super(res_organisation_function, self).create(cr, uid, vals=vals, context=context)
-    
-    def write(self, cr, uid, ids, vals, context=None):        
-        for rof in self.browse(cr, uid, ids, context):
-            if not 'partner_id' in vals:
-                vals['partner_id'] = rof.partner_id.id
-            if not 'function_type_id' in vals:
-                vals['function_type_id'] = rof.function_type_id.id
-            if not 'person_id' in vals:
-                vals['person_id'] = rof.person_id.id
-        self._check_unique_type(cr, uid, ids, vals=vals, context=context)
-        self._check_organisation_type_ids(cr, uid, vals=vals, context=context)        
-        return super(res_organisation_function, self).write(cr, uid, ids, vals=vals, context=context)
-
     def sync_active(self, cr, uid, ids, active, context=None):
         vals = {'active':active}
         return super(res_organisation_function, self).write(cr, uid, ids, vals=vals, context=context)
+
+    def depends_on_function(self, cr, uid, rof, context=None):
+        for dep in self.pool.get('res.partner').dependency_functions(cr,uid,rof.partner_id):
+            if dep.function_type_id.id == rof.function_type_id.id and dep.depends_on_function_type_id:
+                domain = [
+                    ('person_id', '=', rof.person_id.id),
+                    ('function_type_id', '=', dep.depends_on_function_type_id.id),
+                    ('partner_id','=', rof.partner_id.id),
+                ]
+                return self.search(cr,uid,domain,context)
+        return []    
+
+    def write_res_organisation_function(self, cr, uid, ids, vals, context=None):
+        if not 'valid_from_date' in vals:
+            vals['valid_from_date'] = False
+        if not 'valid_to_date' in vals:
+            vals['valid_to_date'] = False
+        allowed_keys = ['valid_from_date','valid_to_date']
+        if [k for k in vals if k not in allowed_keys]:
+	    raise osv.except_osv(_('Error!'), _('Only valid_from_date or valid_to_date are allowed for update'))
+        for rof in self.browse(cr, uid, ids, context):
+            dep_rof_ids = self.depends_on_function(cr,uid,rof)
+            if dep_rof_ids:
+                return self.write(cr,uid,ids+dep_rof_ids,vals,context=context)
+        return self.write(cr,uid,ids,vals,context=context)
+
+    def unlink_res_organisation_function(self, cr, uid, ids, context=None):
+        for rof in self.browse(cr, uid, ids, context):
+            dep_rof_ids = self.depends_on_function(cr,uid,rof) 
+            if dep_rof_ids:
+                return self.unlink(cr,uid,ids+dep_rof_ids,context=context)
+        return self.unlink(cr,uid,ids,context=context)
 
     def get_partners(self, cr, uid, ids, context=None):
         sql_stat = """
