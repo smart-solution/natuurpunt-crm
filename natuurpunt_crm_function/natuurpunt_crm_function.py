@@ -136,11 +136,27 @@ class res_partner(osv.osv):
         for dep in res_function_dependency_obj.browse(cr,uid,ids):
             yield dep
 
+    def partner_dependencies(self,cr,uid,partner,context=None):
+        dependencies = []
+        dependency_functions = []
+        for dep in self.dependency_functions(cr,uid,partner):
+            func1_id = dep.function_type_id.id
+            func2_id = dep.depends_on_function_type_id.id
+            # functional occurance
+            if dep.occurance:
+                dependencies.append( (func1_id, func2_id, dep.occurance, dep.function_type_id) )
+            else:
+                dependencies.append( (func1_id, func2_id, self.occurance(cr,uid,partner), dep.function_type_id ) )
+            dependency_functions.append(func1_id)
+            dependency_functions.append(func2_id)
+        dependencies = sorted(dependencies,key=lambda x: x[1],reverse=True)
+        return dependencies, dependency_functions
+
     def validate_functions(self,cr,uid,partner,context=None):
         today = datetime.datetime.today().strftime('%Y-%m-%d')
         rof_obj = self.pool.get('res.organisation.function')
         
-        # validatie van contant ipv geleding
+        # validatie van contact ipv geleding
         if not (partner.organisation_type_id):
             domain = [
                 ('person_id', '=', partner.id),
@@ -160,19 +176,7 @@ class res_partner(osv.osv):
                  '|',('valid_to_date', '=', False), ('valid_to_date', '>=', today),
             ]
 
-        dependencies = []
-        dependency_functions = []
-        for dep in self.dependency_functions(cr,uid,partner):
-            func1_id = dep.function_type_id.id
-            func2_id = dep.depends_on_function_type_id.id
-            # functional occurance
-            if dep.occurance:
-                dependencies.append( (func1_id, func2_id, dep.occurance) )
-            else:
-                dependencies.append( (func1_id, func2_id, self.occurance(cr,uid,partner) ) )
-            dependency_functions.append(func1_id)
-            dependency_functions.append(func2_id)
-        dependencies = sorted(dependencies,key=lambda x: x[1],reverse=True)
+        dependencies, dependency_functions = self.partner_dependencies(cr,uid,partner)
         dep_matrix_domain = list(domain) #deep copy
         dep_matrix_domain.append(('function_type_id', 'in', dependency_functions))
         ids = rof_obj.search(cr,uid,dep_matrix_domain)

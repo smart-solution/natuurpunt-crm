@@ -384,18 +384,6 @@ class res_partner(osv.osv):
 		 			vals_partner = {'organisation_relation_ids': [partner_list]} 				
 		 			res = super(res_partner, self).write(cr, uid, partner, vals_partner, context=context)
 	 			
-	 		
-	 	
-  		if 'niche_ids' in vals:
- 			#append bijhorende niche_cat_ids
- 			print 'append niche_categ_ids to vals'
- 			niche_obj = self.pool.get('res.niche')
- 			cat_ids = []
- 			for niche in niche_obj.browse(cr,uid,vals['niche_ids'][0][2]):
-			 	cat_ids.append(niche.categ_id.id)
-			cat_ids = list(set(cat_ids))
-			cat_list = [6,False,cat_ids]
- 			vals['niche_categ_ids'] = [cat_list]
  		res = super(res_partner, self).write(cr, uid, ids, vals, context=context)
  		return res
 
