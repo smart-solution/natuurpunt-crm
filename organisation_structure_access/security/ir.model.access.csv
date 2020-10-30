@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_organisation_structure_access,access.organistation.structure.access,model_organisation_structure_access,organisation_structure.group_organisation_structure_manager,1,1,1,1
+access_function_type_access,access.function.type.access,model_function_type_access,organisation_structure.group_organisation_structure_manager,1,1,1,1
+access_organisation_type_access,access.organisation.type.access,model_organisation_type_access,organisation_structure.group_organisation_structure_manager,1,1,1,1
+
+

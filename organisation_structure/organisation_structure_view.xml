@@ -70,6 +70,25 @@
 					</form>
 				</field>
 			</group>
+                        <group colspan="4">
+                                <separator string="Function dependency" colspan="4"/>
+                                <field name="function_dependency_ids" nolabel="1">
+                                        <form string="Function dependency">
+                                                <field name="function_type_id"/>
+                                                <field name="depends_on_function_type_id"/>
+                                                <field name="regional_level"/>
+                                                <field name="categ_id"/>
+                                                <field name="occurance"/>
+                                        </form>
+                                        <tree string="Functie dependency">
+                                                <field name="function_type_id"/>
+                                                <field name="depends_on_function_type_id"/>
+                                                <field name="regional_level"/>
+                                                <field name="categ_id"/>
+                                                <field name="occurance"/>
+                                        </tree>
+                                </field>
+                        </group>
 		</form>
 	    </field>
         </record>
@@ -133,10 +152,15 @@
 			    <group>
 				<field name="name"/>
 				<field name="categ_id"/>
+                                <field name="company_id"/>
 			    </group>
 			    <group>
 				<field name="unique_type"/>
+                                <field name="unique_for_person"/>
 			    </group>
+			</group>
+			<group colspan="4" col="2">
+                            <field name="comment"/>
 			</group>
 			<group colspan="4">
 				<separator string="Organisatietypes" colspan="4"/>
@@ -611,11 +635,11 @@
 			<group>
 			<field name="organisation_type_id"/>
 			<field name="analytic_account_id" attrs="{'invisible': [('display_analytic','=',False)]}"/>
-			<field name="regional_level" attrs="{'invisible': [('display_regional_level','=',False)]}"/>
+			<field name="regional_level" attrs="{'invisible': [('display_regional_level','=',False)],'required': [('display_regional_level','=',True)]}"/>
 			<field name="regional_partnership" attrs="{'invisible': [('display_regional_partnership','=',False)]}"/>
 			<field name="building_function_id" attrs="{'invisible': [('display_building_function','=',False)]}"/>
-                        <field name="building_date_end" attrs="{'invisible': [('display_building_date_end','=',False)]}"/>
 			<field name="building_capakey" attrs="{'invisible': [('display_building_capakey','=',False)]}"/>
+			<field name="building_date_end" attrs="{'invisible': [('display_building_date_end','=',False)]}"/>
 			</group>
 			<group>
 			<field name="remittance_new_member" attrs="{'invisible': [('display_remittance','=',False)]}"/>
@@ -713,7 +737,11 @@
                     </page>	
 		    <page string="Regionale Definitie" attrs="{'invisible': [('display_regional_definition_m2m','=',False)]}">   
                         <group colspan="1" col="2">
-			    <field name="m2m_zip_ids"/>
+			    <field name="m2m_zip_ids" attrs="{'invisible': [('regional_level','in',['P','G'])]}"/>
+			    <field name="state_id" 
+			           string="Provincie"
+                                   domain="[('country_id','=',21')]"
+				   attrs="{'invisible': [('regional_level','!=','P')]}"/>
                         </group>
                     </page>	
 		    
@@ -838,9 +866,6 @@
 			    </field>
                         </group>
                     </page>	
-                    <page string="Internal Notes">
-                        <field name="comment" placeholder="Put an internal note..."/>
-                    </page>
 		    </notebook>
 		</form>
 	    </field>			   

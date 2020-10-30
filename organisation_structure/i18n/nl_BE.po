@@ -25,3 +25,8 @@ msgstr "Organisatiestructuur User"
 #: model:res.groups,name:organisation_structure.group_organisation_structure_manager
 msgid "Organisation Structure Manager"
 msgstr "Organisatiestructuur Manager"
+
+#. module: organisation_structure
+#: field:res.function.type,comment:0
+msgid "Notes"
+msgstr "Omschrijving"

@@ -1,0 +1,94 @@
+# Translation of OpenERP Server.
+# This file contains the translation of the following modules:
+#	* organisation_structure_access
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: OpenERP Server 7.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-10-14 08:23+0000\n"
+"PO-Revision-Date: 2020-10-14 08:23+0000\n"
+"Last-Translator: <>\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: organisation_structure_access
+#: field:function.type.access,organisation_structure_access_id:0
+#: field:organisation.type.access,organisation_structure_access_id:0
+msgid "organisation structure access"
+msgstr "organisation structure access"
+
+#. module: organisation_structure_access
+#: field:organisation.structure.access,name:0
+msgid "name"
+msgstr "Naam"
+
+#. module: organisation_structure_access
+#: field:function.type.access,maintainable:0
+msgid "Maintainable"
+msgstr "Wijzigbaar"
+
+#. module: organisation_structure_access
+#: field:organisation.structure.access,organisation_type_access:0
+msgid "Access Organisation Type"
+msgstr "Beschikbare Organisatietypes"
+
+#. module: organisation_structure_access
+#: field:function.type.access,function_type_id:0
+msgid "Function Type"
+msgstr "Functietype"
+
+#. module: organisation_structure_access
+#: model:ir.model,name:organisation_structure_access.model_organisation_type_access
+msgid "organisation.type.access"
+msgstr "organisation.type.access"
+
+#. module: organisation_structure_access
+#: field:organisation.type.access,organisation_type_id:0
+msgid "Organisation Type"
+msgstr "Organisatietype"
+
+#. module: organisation_structure_access
+#: model:ir.model,name:organisation_structure_access.model_function_type_access
+msgid "function.type.access"
+msgstr "function.type.access"
+
+#. module: organisation_structure_access
+#: view:organisation.structure.access:0
+msgid "function type Access Controls"
+msgstr "function type Access Controls"
+
+#. module: organisation_structure_access
+#: view:organisation.structure.access:0
+msgid "function_type_access_tree"
+msgstr "function_type_access_tree"
+
+#. module: organisation_structure_access
+#: model:ir.actions.act_window,name:organisation_structure_access.action_organisation_structure_access
+msgid "action organisation structure access"
+msgstr "action organisation structure access"
+
+#. module: organisation_structure_access
+#: view:organisation.structure.access:0
+msgid "organisation type Access Controls"
+msgstr "organisation type Access Controls"
+
+#. module: organisation_structure_access
+#: view:organisation.structure.access:0
+msgid "organisation_type_access_tree"
+msgstr "organisation_type_access_tree"
+
+#. module: organisation_structure_access
+#: model:ir.model,name:organisation_structure_access.model_organisation_structure_access
+#: model:ir.ui.menu,name:organisation_structure_access.menu_organisation_structure_access
+#: view:organisation.structure.access:0
+msgid "Organisation Structure Access"
+msgstr "Organisatie toegangsrechten"
+
+#. module: organisation_structure_access
+#: field:organisation.structure.access,function_type_access:0
+msgid "Access Function Type"
+msgstr "Beschikbare Functietypes"

@@ -360,6 +360,13 @@ class res_partner(osv.osv):
         recruiting_organisation_id = datas.get('recruiting_organisation_id', 0)
         if not(self._verify_recruiting_organisation(cr,uid,[recruiting_organisation_id],context=context)):
             datas.pop('recruiting_organisation_id', None)
+        else:
+            org_partner = self.browse(cr,uid,recruiting_organisation_id)
+            zip_ids = []
+            for z in org_partner.zip_ids:
+                zip_ids.append(z.id)
+            if vals['zip_id'] and vals['zip_id'] not in zip_ids:
+                vals['department_choice_id'] = recruiting_organisation_id
 
         # convert website membership + subscriptions to product
         only_magazine = datas.get('only_magazine', False)
@@ -430,7 +437,11 @@ class res_partner(osv.osv):
                 #    'date_created':time.strftime('%Y-%m-%d %H:%M:%S'),
                 #}
                 #ogone_log_obj.create(cr, uid, ogone_log_vals, context=context)
-                return {'id':invoice.partner_id.id,'invoice_id':invoice.id,'reference':invoice.reference}
+                if invoice.partner_id.id == invoice.membership_partner_id.id:
+                    partner_id = invoice.partner_id.id
+                else:
+                    partner_id = invoice.membership_partner_id.id
+                return {'id':partner_id,'invoice_id':invoice.id,'reference':invoice.reference}
         else:
             return {'id':ids[0]}
 

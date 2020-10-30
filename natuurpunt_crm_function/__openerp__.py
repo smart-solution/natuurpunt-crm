@@ -30,7 +30,7 @@
     - remove function tab on res_partner view when partner is organisation structure
     - method filter on organisation_function_child_ids
 """,
-    "depends" : ["natuurpunt_crm",],
+    "depends" : ["natuurpunt_crm","organisation_structure_access"],
     "data" : ["natuurpunt_crm_function_view.xml",],
     "init_xml" : [],
     "update_xml" : [],
