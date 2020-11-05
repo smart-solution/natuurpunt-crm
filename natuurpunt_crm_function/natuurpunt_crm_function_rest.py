@@ -71,6 +71,50 @@ class res_organisation_function(osv.osv):
         else:
             return filter(lambda rof: rof.person_id.id not in partner_ids,res)
 
+    def rest_get_person_afdeling(self,cr,uid,ids,membership_nbr,context=None):
+        res = []
+
+        person_domain = [
+            ('membership_nbr','=',membership_nbr),
+            ('iets_te_verbergen','=',False),
+            '|',('department_id','in',ids),('department_choice_id','in',ids),]       
+        domain = [('partner_id','in',ids)]
+        partner_obj = self.pool.get('res.partner')
+        for partner in partner_obj.browse(cr,uid,ids):
+            try:
+                partner_id = partner.id
+                person_ids = partner_obj.search(cr,uid,person_domain)
+                for person in partner_obj.browse(cr,uid,person_ids):
+                    mline, membership_state = partner_obj._np_membership_state(cr, uid, person, context=context)
+                    if membership_state in ['paid','invoiced','free','wait_member']:
+                        res.append({'id':person.id,'name':person.name,})
+            except ValueError:
+                pass
+        return res
+
+    def rest_get_person_werkgroep(self,cr,uid,ids,membership_nbr,context=None):
+        res = []
+
+        domain = [('partner_id','in',ids)]
+        partner_obj = self.pool.get('res.partner')
+        for partner in partner_obj.browse(cr,uid,ids):
+            try:
+                partner_id = partner.id
+                person_domain = filter(None,[
+                    ('membership_nbr','=',membership_nbr),
+                    ('iets_te_verbergen','=',False),
+                    ('state_id','=',partner.state_id.id) if partner.regional_level == 'P' else False,
+                    ('zip_id','in',map(lambda i:i.id,partner.m2m_zip_ids)) if partner.regional_level in ['L','R'] else False,
+                ]) 
+                person_ids = partner_obj.search(cr,uid,person_domain)
+                for person in partner_obj.browse(cr,uid,person_ids):
+                    mline, membership_state = partner_obj._np_membership_state(cr, uid, person, context=context)
+                    if membership_state in ['paid','invoiced','free','wait_member']:
+                        res.append({'id':person.id,'name':person.name,})
+            except ValueError:
+                pass
+        return res        
+
     def rest_list_cities(self,cr,uid,context=None):
         res = []
         res_country_city_obj = self.pool.get('res.country.city')
@@ -316,6 +360,16 @@ class res_organisation_function(osv.osv):
             except ValueError:
                 pass
         return res 
+
+    def rest_put_functions(self,cr,uid,ids,vals,context=None):
+        return self.write_res_organisation_function(cr,uid,ids,vals)
+
+    def rest_post_functions(self,cr,uid,vals,context=None):
+        partner_id = self.pool.get('res.partner').create_org_function_parent_ids(cr,uid,vals,context)
+        return self.rest_get_functions_assigned(cr,uid,[partner_id],context)
+
+    def rest_unlinkt_functions(self,cr,uid,ids,context=None):
+        return self.unlink_res_organisation_function(cr,uid,ids)
        
 res_organisation_function()
 

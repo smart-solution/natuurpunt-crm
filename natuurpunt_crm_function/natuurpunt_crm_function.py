@@ -88,7 +88,8 @@ class res_partner(osv.osv):
                     ) 
         create_one2many = [(0, 0, item) for item in create_vals]
         data = {'organisation_function_parent_ids': create_one2many}
-        return self.write(cr, uid, [partner.id], data, context=context)
+        self.write(cr, uid, [partner.id], data, context=context)
+        return partner.id
 
     def count_members(self,cr,uid,partner_id,context=None):
         sql_stat = """
@@ -220,27 +221,13 @@ class res_partner(osv.osv):
                         mess = _('%s:\n\nFunction %s\ncan only have %s cccurances')
                         raise FunctionException(mess%(partner.name,from_function_name,dep[2]))
 
-        if dependency_matrix:
-            dependency_rofs = process_dependency_matrix()
-            validate_occurances()
-            for person_rofs in dependency_rofs:
-                if person_rofs[2]:
-                    func = person_rofs[2][0]
-                    rft = self.pool.get('res.function.type').browse(cr,uid,func)
-                    function_name = rft.name
-                    person = self.pool.get('res.partner').browse(cr,uid,person_rofs[0])
-                    pe = u'[{}] {}'.format(person.id,person.name)
-                    pa = u'[{}] {}'.format(partner.id,partner.name)
-                    mess = _('%s:\n\nFunction %s\nhas missing dependency\nfor %s')
-                    raise FunctionException(mess%(pa,function_name,pe))
-            
         ids = rof_obj.search(cr,uid,domain)
         if ids:
             rofs = rof_obj.browse(cr,uid,ids)
             unique_type = rof_obj._check_unique_type(cr, uid, rofs, context=context)
             if unique_type:
                 raise FunctionException(_('Function %s already exists for %s\nThis is an unique function'%(unique_type[0][1].name,partner.name)))
-            unique_for_person = rof_obj._check_unique_for_person(cr, uid, ids, partner, rofs, context=context)
+            unique_for_person = rof_obj._check_unique_for_person(cr, uid, partner, rofs, context=context)
             if unique_for_person:
                 function_name = unique_for_person.function_type_id.name
                 person_name   = unique_for_person.person_id.name
@@ -254,6 +241,20 @@ class res_partner(osv.osv):
                 rft = self.pool.get('res.function.type').browse(cr,uid,function_type_id)
                 function_name = rft.name
                 raise FunctionException(_('%s:\n\nFunction %s is not available for %s'%(partner.name,function_name,partner.name)))
+
+        if dependency_matrix:
+            dependency_rofs = process_dependency_matrix()
+            validate_occurances()
+            for person_rofs in dependency_rofs:
+                if person_rofs[2]:
+                    func = person_rofs[2][0]
+                    rft = self.pool.get('res.function.type').browse(cr,uid,func)
+                    function_name = rft.name
+                    person = self.pool.get('res.partner').browse(cr,uid,person_rofs[0])
+                    pe = u'[{}] {}'.format(person.id,person.name)
+                    pa = u'[{}] {}'.format(partner.id,partner.name)
+                    mess = _('%s:\n\nFunction %s\nhas missing dependency\nfor %s')
+                    raise FunctionException(mess%(pa,function_name,pe))                
 
     def _replace_init_name(self, cr, uid, organisation_function_child_ids, context=None):
         """
@@ -297,17 +298,21 @@ class res_organisation_function(osv.osv):
         unique_types = filter(None,map(lambda rof: (rof.function_type_id.id,rof.function_type_id) if rof.function_type_id.unique_type else False,rofs))
         return [c for p,c in neighborhood(sorted(unique_types)) if p[0]==c[0]][:1]
  
-    def _check_unique_for_person(self, cr, uid, ids, partner, rofs, context=None):
+    def _check_unique_for_person(self, cr, uid, partner, rofs, context=None):
+        today = datetime.datetime.today().strftime('%Y-%m-%d')
         unique_for_person = filter(None,map(lambda rof: (rof.function_type_id.id,rof.person_id.id) if rof.function_type_id.unique_for_person else False,rofs))
         for rof in unique_for_person:
             domain = [
                 ('person_id', '=', rof[1]),
                 ('function_type_id', '=', rof[0]),
                 ('partner_id.organisation_type_id','=',partner.organisation_type_id.id),
+                 '&','|',('valid_from_date', '=', False), ('valid_from_date', '<=', today),
+                 '|',('valid_to_date', '=', False), ('valid_to_date', '>=', today),
             ]
-            new_ids=[element for element in self.search(cr,uid,domain) if element not in ids]
-            if new_ids:
-                return self.browse(cr,uid,new_ids[0])
+            ids = self.search(cr,uid,domain)
+            if len(ids) > 1:
+                res = [rof for rof in self.browse(cr,uid,ids) if rof not in rofs]
+                return res[0] if res else self.browse(cr,uid,ids)[0]
         return False
 
     def onchange_organisation_function_id(self, cr, uid, ids, function_type_id, context=None):
