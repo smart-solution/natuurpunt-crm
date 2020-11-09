@@ -309,15 +309,23 @@ class res_organisation_function(osv.osv):
                 partner_id = partner.id
                 dependencies, dependency_functions = partner_obj.partner_dependencies(cr,uid,partner)
                 domain = [('partner_id','in',[partner_id])]
-                if dependency_functions:
-                    domain.append(('function_type_id','not in',dependency_functions))
 
                 if 'organisation_structure_access' in context:
                     maintainable, a = function_type_access(self,cr,uid,context=context)
                     osa_function_type_ids = [k for k,v in maintainable.items()]
-                    domain.append( ('function_type_id','in',osa_function_type_ids) )
+                    domain.append( 
+                        ('function_type_id',
+                         'in',
+                         filter(lambda i: i not in dependency_functions,osa_function_type_ids))
+                    )
                     is_maintainable = lambda x: maintainable[x]
                 else:
+                    if dependency_functions:
+                        domain.append(
+                            ('function_type_id',
+                             'not in',
+                             filter(None,dependency_functions))
+                        )
                     is_maintainable = lambda x: True
 
                 rof_ids = self.search(cr,uid,domain)
