@@ -332,7 +332,10 @@ class res_organisation_function(osv.osv):
                 for rof in self.browse(cr,uid,rof_ids,context=context):
                     res.append(rof_to_dict())
                 for rof in self.deps_to_partner_deps(cr,uid,partner_id,dependencies):
-                    res.append(rof_to_dict())
+                    try:
+                        res.append(rof_to_dict())
+                    except KeyError:
+                        pass
             except ValueError:
                 pass
         return res
