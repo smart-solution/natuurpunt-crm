@@ -28,6 +28,7 @@ import itertools
 from operator import itemgetter
 from collections import Counter
 import logging
+from function_exceptions import FunctionOccuranceException
 
 _logger = logging.getLogger(__name__)
 
@@ -56,13 +57,15 @@ class res_partner(osv.osv):
             for partner in self.browse(cr,uid,ids):
                 try:
                     self.validate_functions(cr,uid,partner)
-                except FunctionException as e:
+                except Exception as e:
                     _logger.info(u"{} {}".format(partner.id,partner.name))
         else:
             try:
                 for partner in self.browse(cr,uid,ids):
                     self.validate_functions(cr,uid,partner)
-            except FunctionException as e:
+            except FunctionOccuranceException as err:
+                raise osv.except_osv(_('Error!'), str(err))
+            except Exception as e:
                 raise osv.except_osv(_('Error!'), e.args[0])
         return True
 
@@ -215,11 +218,10 @@ class res_partner(osv.osv):
                     if dep[1]:
                         rft = self.pool.get('res.function.type').browse(cr,uid,dep[1])
                         to_function_name = rft.name
-                        mess = _('%s:\n\nFunction %s depending on %s\ncan only have %s cccurances')
-                        raise FunctionException(mess%(partner.name,from_function_name,to_function_name,dep[2]))
+                        raise FunctionOccuranceException(
+                            partner.name,from_function_name,to_function_name,dep[2])
                     else:
-                        mess = _('%s:\n\nFunction %s\ncan only have %s cccurances')
-                        raise FunctionException(mess%(partner.name,from_function_name,dep[2]))
+                        raise FunctionOccuranceException(partner.name,from_function_name,False,dep[2])
 
         ids = rof_obj.search(cr,uid,domain)
         if ids:
