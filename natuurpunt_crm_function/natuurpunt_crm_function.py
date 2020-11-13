@@ -53,17 +53,13 @@ class res_partner(osv.osv):
     def _check_org_function_parent_ids(self, cr, uid, ids, context=None):
         if context == None:
             context = {}
-        if 'validate' in context:
+        try:
             for partner in self.browse(cr,uid,ids):
                 self.validate_functions(cr,uid,partner)
-        else:
-            try:
-                for partner in self.browse(cr,uid,ids):
-                    self.validate_functions(cr,uid,partner)
-            except FunctionOccuranceException as err:
-                raise osv.except_osv(_('Error!'), str(err))
-            except Exception as e:
-                raise osv.except_osv(_('Error!'), e.args[0])
+        except FunctionOccuranceException as err:
+            raise osv.except_osv(_('Error!'), str(err))
+        except Exception as e:
+            raise osv.except_osv(_('Error!'), e.args[0])
         return True
 
     _constraints = [
