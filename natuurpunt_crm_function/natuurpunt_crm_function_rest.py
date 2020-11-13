@@ -376,10 +376,16 @@ class res_organisation_function(osv.osv):
         return self.write_res_organisation_function(cr,uid,ids,vals)
 
     def rest_post_functions(self,cr,uid,vals,context=None):
-        partner_id = self.pool.get('res.partner').create_org_function_parent_ids(cr,uid,vals,context)
-        return self.rest_get_functions_assigned(cr,uid,[partner_id],context)
+        context = context or {}        
+        try:
+            context['validate'] = True
+            partner_id = self.pool.get('res.partner').create_org_function_parent_ids(cr,uid,vals,context)
+            res = self.rest_get_functions_assigned(cr,uid,[partner_id],context)
+        except Exception as err:
+            return (False, str(err))
+        return (True, res)
 
-    def rest_unlinkt_functions(self,cr,uid,ids,context=None):
+    def rest_unlink_functions(self,cr,uid,ids,context=None):
         return self.unlink_res_organisation_function(cr,uid,ids)
        
 res_organisation_function()

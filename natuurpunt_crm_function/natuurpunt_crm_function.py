@@ -55,10 +55,7 @@ class res_partner(osv.osv):
             context = {}
         if 'validate' in context:
             for partner in self.browse(cr,uid,ids):
-                try:
-                    self.validate_functions(cr,uid,partner)
-                except Exception as e:
-                    _logger.info(u"{} {}".format(partner.id,partner.name))
+                self.validate_functions(cr,uid,partner)
         else:
             try:
                 for partner in self.browse(cr,uid,ids):
