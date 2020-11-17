@@ -273,11 +273,11 @@ class res_organisation_function(osv.osv):
         def rof_to_dict():
             return {
                 'id': rof.person_id.id,
-                'first_name': rof.person_id.first_name,
+                'first_name': str(rof.person_id.first_name or ''),
                 'last_name': rof.person_id.last_name,
-                'mobile': rof.person_id.mobile,
-                'phone':rof.person_id.phone,
-                'email':rof.person_id.email,
+                'mobile': str(rof.person_id.mobile or ''),
+                'phone':str(rof.person_id.phone or ''),
+                'email':str(rof.person_id.email or ''),
                 'address': {
                     'city':rof.person_id.city,
                     'country':rof.person_id.country_id.name,
