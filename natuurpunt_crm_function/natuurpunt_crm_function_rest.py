@@ -53,6 +53,11 @@ def organisation_type_access(self,cr,uid,context=None):
         return map(lambda i: i.organisation_type_id.id, osa.organisation_type_access)
     return []
 
+def merge_two_dicts(x, y):
+    z = x.copy()   # start with x's keys and values
+    z.update(y)    # modifies z with y's keys and values & returns None
+    return z
+
 class res_organisation_function(osv.osv):
     _name = 'res.organisation.function'
     _inherit = 'res.organisation.function'
@@ -260,6 +265,66 @@ class res_organisation_function(osv.osv):
             except ValueError:
                 pass
         return res        
+
+    def rest_get_reservaten(self,cr,uid,ids,context=None):
+        res = []
+        rofs_dict = {}
+
+        def rof_to_dict():
+            return {
+                'id': rof.person_id.id,
+                'first_name': rof.person_id.first_name,
+                'last_name': rof.person_id.last_name,
+                'mobile': rof.person_id.mobile,
+                'phone':rof.person_id.phone,
+                'email':rof.person_id.email,
+                'address': {
+                    'city':rof.person_id.city,
+                    'country':rof.person_id.country_id.name,
+                    'country_id':rof.person_id.country_id.id,
+                    'street':rof.person_id.street_id.name,
+                    'street_bus':rof.person_id.street_bus,
+                    'street_id':rof.person_id.street_id.id,
+                    'street_nbr':rof.person_id.street_nbr,
+                    'zip':rof.person_id.zip,
+                    'zip_id':rof.person_id.zip_id.id,                   
+                }
+            }
+
+        partner_obj = self.pool.get('res.partner')
+        for partner in partner_obj.browse(cr,uid,ids):
+            try:
+                partner_id = partner.id
+                d = {
+                    'id': partner_id,
+                    'name': partner.name,
+                    'code': partner.analytic_account_id.code,
+                    'old_code': partner.analytic_account_id.old_code,
+                    'afdeling': [{ 
+                       'id': partner.partner_up_id.id,
+                       'name': partner.partner_up_id.name,}],
+
+                }
+                domain = [('partner_id','in',[partner_id])]
+
+                if 'organisation_structure_access' in context:
+                    maintainable, a = function_type_access(self,cr,uid,context=context)
+                    osa_function_type_ids = [k for k,v in maintainable.items()]
+                    domain.append(('function_type_id','in',osa_function_type_ids))
+
+                rof_ids = self.search(cr,uid,domain)
+                for rof in self.browse(cr,uid,rof_ids,context=context):
+                    if rof.function_type_id.name not in rofs_dict:
+                        rofs_dict[rof.function_type_id.name] = []
+                    rofs_dict[rof.function_type_id.name].append(rof_to_dict())
+                try:    
+                    rofs_dict['conservators'] = rofs_dict.pop('conservator')
+                except KeyError:
+                    pass
+                res.append(merge_two_dicts(d,rofs_dict))
+            except ValueError:
+                pass
+        return res
 
     def rest_get_organisations(self,cr,uid,ids,context=None):
         res = []
