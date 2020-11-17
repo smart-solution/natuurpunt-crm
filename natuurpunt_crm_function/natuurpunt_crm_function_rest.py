@@ -318,13 +318,14 @@ class res_organisation_function(osv.osv):
                         rofs_dict[rof.function_type_id.name] = []
                     rofs_dict[rof.function_type_id.name].append(rof_to_dict())
                 try:    
+                    # key in website is conservators ipv conservator...
                     rofs_dict['conservators'] = rofs_dict.pop('conservator')
                 except KeyError:
                     pass
                 res.append(merge_two_dicts(d,rofs_dict))
             except ValueError:
                 pass
-        return res
+        return res[0] if res else False
 
     def rest_get_organisations(self,cr,uid,ids,context=None):
         res = []
