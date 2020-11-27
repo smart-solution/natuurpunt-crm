@@ -53,6 +53,11 @@ def organisation_type_access(self,cr,uid,context=None):
         return map(lambda i: i.organisation_type_id.id, osa.organisation_type_access)
     return []
 
+def merge_two_dicts(x, y):
+    z = x.copy()   # start with x's keys and values
+    z.update(y)    # modifies z with y's keys and values & returns None
+    return z
+
 class res_organisation_function(osv.osv):
     _name = 'res.organisation.function'
     _inherit = 'res.organisation.function'
@@ -70,6 +75,50 @@ class res_organisation_function(osv.osv):
             return res + self.deps_to_partner_deps(cr,uid,partner_id,dependencies,partner_ids,split_filter=lambda i: not i[1])
         else:
             return filter(lambda rof: rof.person_id.id not in partner_ids,res)
+
+    def rest_get_person_afdeling(self,cr,uid,ids,membership_nbr,context=None):
+        res = []
+
+        person_domain = [
+            ('membership_nbr','=',membership_nbr),
+            ('iets_te_verbergen','=',False),
+            '|',('department_id','in',ids),('department_choice_id','in',ids),]       
+        domain = [('partner_id','in',ids)]
+        partner_obj = self.pool.get('res.partner')
+        for partner in partner_obj.browse(cr,uid,ids):
+            try:
+                partner_id = partner.id
+                person_ids = partner_obj.search(cr,uid,person_domain)
+                for person in partner_obj.browse(cr,uid,person_ids):
+                    mline, membership_state = partner_obj._np_membership_state(cr, uid, person, context=context)
+                    if membership_state in ['paid','invoiced','free','wait_member']:
+                        res.append({'id':person.id,'name':person.name,})
+            except ValueError:
+                pass
+        return res
+
+    def rest_get_person_werkgroep(self,cr,uid,ids,membership_nbr,context=None):
+        res = []
+
+        domain = [('partner_id','in',ids)]
+        partner_obj = self.pool.get('res.partner')
+        for partner in partner_obj.browse(cr,uid,ids):
+            try:
+                partner_id = partner.id
+                person_domain = filter(None,[
+                    ('membership_nbr','=',membership_nbr),
+                    ('iets_te_verbergen','=',False),
+                    ('state_id','=',partner.state_id.id) if partner.regional_level == 'P' else False,
+                    ('zip_id','in',map(lambda i:i.id,partner.m2m_zip_ids)) if partner.regional_level in ['L','R'] else False,
+                ]) 
+                person_ids = partner_obj.search(cr,uid,person_domain)
+                for person in partner_obj.browse(cr,uid,person_ids):
+                    mline, membership_state = partner_obj._np_membership_state(cr, uid, person, context=context)
+                    if membership_state in ['paid','invoiced','free','wait_member']:
+                        res.append({'id':person.id,'name':person.name,})
+            except ValueError:
+                pass
+        return res        
 
     def rest_list_cities(self,cr,uid,context=None):
         res = []
@@ -217,6 +266,67 @@ class res_organisation_function(osv.osv):
                 pass
         return res        
 
+    def rest_get_reservaten(self,cr,uid,ids,context=None):
+        res = []
+        rofs_dict = {}
+
+        def rof_to_dict():
+            return {
+                'id': rof.person_id.id,
+                'first_name': str(rof.person_id.first_name or ''),
+                'last_name': rof.person_id.last_name,
+                'mobile': str(rof.person_id.mobile or ''),
+                'phone':str(rof.person_id.phone or ''),
+                'email':str(rof.person_id.email or ''),
+                'address': {
+                    'city':rof.person_id.city,
+                    'country':rof.person_id.country_id.name,
+                    'country_id':rof.person_id.country_id.id,
+                    'street':rof.person_id.street_id.name,
+                    'street_bus':rof.person_id.street_bus,
+                    'street_id':rof.person_id.street_id.id,
+                    'street_nbr':rof.person_id.street_nbr,
+                    'zip':rof.person_id.zip,
+                    'zip_id':rof.person_id.zip_id.id,                   
+                }
+            }
+
+        partner_obj = self.pool.get('res.partner')
+        for partner in partner_obj.browse(cr,uid,ids):
+            try:
+                partner_id = partner.id
+                d = {
+                    'id': partner_id,
+                    'name': partner.name,
+                    'code': partner.analytic_account_id.code,
+                    'old_code': partner.analytic_account_id.old_code,
+                    'afdeling': [{ 
+                       'id': partner.partner_up_id.id,
+                       'name': partner.partner_up_id.name,}],
+
+                }
+                domain = [('partner_id','in',[partner_id])]
+
+                if 'organisation_structure_access' in context:
+                    maintainable, a = function_type_access(self,cr,uid,context=context)
+                    osa_function_type_ids = [k for k,v in maintainable.items()]
+                    domain.append(('function_type_id','in',osa_function_type_ids))
+
+                rof_ids = self.search(cr,uid,domain)
+                for rof in self.browse(cr,uid,rof_ids,context=context):
+                    if rof.function_type_id.name not in rofs_dict:
+                        rofs_dict[rof.function_type_id.name] = []
+                    rofs_dict[rof.function_type_id.name].append(rof_to_dict())
+                try:    
+                    # key in website is conservators ipv conservator...
+                    rofs_dict['conservators'] = rofs_dict.pop('conservator')
+                except KeyError:
+                    pass
+                res.append(merge_two_dicts(d,rofs_dict))
+            except ValueError:
+                pass
+        return res[0] if res else False
+
     def rest_get_organisations(self,cr,uid,ids,context=None):
         res = []
 
@@ -265,22 +375,33 @@ class res_organisation_function(osv.osv):
                 partner_id = partner.id
                 dependencies, dependency_functions = partner_obj.partner_dependencies(cr,uid,partner)
                 domain = [('partner_id','in',[partner_id])]
-                if dependency_functions:
-                    domain.append(('function_type_id','not in',dependency_functions))
 
                 if 'organisation_structure_access' in context:
                     maintainable, a = function_type_access(self,cr,uid,context=context)
                     osa_function_type_ids = [k for k,v in maintainable.items()]
-                    domain.append( ('function_type_id','in',osa_function_type_ids) )
+                    domain.append( 
+                        ('function_type_id',
+                         'in',
+                         filter(lambda i: i not in dependency_functions,osa_function_type_ids))
+                    )
                     is_maintainable = lambda x: maintainable[x]
                 else:
+                    if dependency_functions:
+                        domain.append(
+                            ('function_type_id',
+                             'not in',
+                             filter(None,dependency_functions))
+                        )
                     is_maintainable = lambda x: True
 
                 rof_ids = self.search(cr,uid,domain)
                 for rof in self.browse(cr,uid,rof_ids,context=context):
                     res.append(rof_to_dict())
                 for rof in self.deps_to_partner_deps(cr,uid,partner_id,dependencies):
-                    res.append(rof_to_dict())
+                    try:
+                        res.append(rof_to_dict())
+                    except KeyError:
+                        pass
             except ValueError:
                 pass
         return res
@@ -316,6 +437,16 @@ class res_organisation_function(osv.osv):
             except ValueError:
                 pass
         return res 
+
+    def rest_put_functions(self,cr,uid,ids,vals,context=None):
+        return self.write_res_organisation_function(cr,uid,ids,vals)
+
+    def rest_post_functions(self,cr,uid,vals,context=None):
+        partner_id = self.pool.get('res.partner').create_org_function_parent_ids(cr,uid,vals,context)
+        return self.rest_get_functions_assigned(cr,uid,[partner_id],context)
+
+    def rest_unlink_functions(self,cr,uid,ids,context=None):
+        return self.unlink_res_organisation_function(cr,uid,ids)
        
 res_organisation_function()
 

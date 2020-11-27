@@ -271,10 +271,10 @@ class membership_third_payer_invoice_line(osv.osv):
     _name = 'membership.third.payer.invoice.line'
 
     _columns = {
-        'membership_line_id': fields.many2one('membership.membership_line', 'membership line', select=True),
+        'membership_line_id': fields.many2one('membership.membership_line', 'membership line', select=True, ondelete='cascade'),
         'partner': fields.related('membership_line_id', 'partner', type='many2one', relation='res.partner', string='Leden',),
         'amount': fields.float('Bedrag'),
-        'third_payer_id': fields.many2one('res.partner', '3de Betaler Id', select=True),
+        'third_payer_id': fields.many2one('res.partner', '3de Betaler Id', select=True, ondelete='cascade'),
         'third_payer_invoice_id': fields.many2one('membership.third.payer.invoice', 'Third payer invoice', select=True, ondelete='set null'),
         'account_invoice_id': fields.related('third_payer_invoice_id', 'invoice_id', type='many2one', relation='account.invoice', string='Invoice', readonly=True),
         'third_payer_pay_date': fields.related('third_payer_invoice_id', 'date_processed', type='date', string='Datum 3de betaler'),
