@@ -85,7 +85,7 @@ def verify_if_customer_or_supplier(obj,cr,uid,data):
         else:
             log['alert'].append('Website hernieuwing van contact met klant/lev. status')
         if partner.donation_line_ids:
-           log['alert'] = log['alert'] + ' en giften'
+           log['alert'].append(' en giften')
     return partner, vals, log
 
 class mail_group(osv.osv):
