@@ -76,6 +76,21 @@ class res_organisation_function(osv.osv):
         else:
             return filter(lambda rof: rof.person_id.id not in partner_ids,res)
 
+    def rest_get_person_organisation(self,cr,uid,ids,membership_nbr,context=None):
+        res = []
+        domain = [('partner_id','in',ids)]
+        partner_obj = self.pool.get('res.partner')
+        for partner in partner_obj.browse(cr,uid,ids):
+            try:
+                organisation_type = partner.organisation_type.name
+                if organisation_type.lower() == 'afdeling':
+                    return self.rest_get_person_afdeling(cr,uid,ids,membership_nbr,context=context)
+                if organisation_type.lower() == 'werkgroep':
+                    return self.rest_get_person_werkgroep(cr,uid,ids,membership_nbr,context=context)
+            except ValueError:
+                pass
+        return res
+
     def rest_get_person_afdeling(self,cr,uid,ids,membership_nbr,context=None):
         res = []
 
