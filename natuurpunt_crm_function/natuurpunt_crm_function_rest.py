@@ -82,7 +82,7 @@ class res_organisation_function(osv.osv):
         partner_obj = self.pool.get('res.partner')
         for partner in partner_obj.browse(cr,uid,ids):
             try:
-                organisation_type = partner.organisation_type.name
+                organisation_type = partner.organisation_type_id.name
                 if organisation_type.lower() == 'afdeling':
                     return self.rest_get_person_afdeling(cr,uid,ids,membership_nbr,context=context)
                 if organisation_type.lower() == 'werkgroep':
@@ -108,6 +108,9 @@ class res_organisation_function(osv.osv):
                     mline, membership_state = partner_obj._np_membership_state(cr, uid, person, context=context)
                     if membership_state in ['paid','invoiced','free','wait_member']:
                         res.append({'id':person.id,'name':person.name,})
+                        if person.relation_partner_id:
+                           relation = person.relation_partner_id
+                           res.append({'id':relation.id, 'name':relation.name,})
             except ValueError:
                 pass
         return res
@@ -131,6 +134,9 @@ class res_organisation_function(osv.osv):
                     mline, membership_state = partner_obj._np_membership_state(cr, uid, person, context=context)
                     if membership_state in ['paid','invoiced','free','wait_member']:
                         res.append({'id':person.id,'name':person.name,})
+                        if person.relation_partner_id:
+                           relation = person.relation_partner_id
+                           res.append({'id':relation.id, 'name':relation.name,})
             except ValueError:
                 pass
         return res        
