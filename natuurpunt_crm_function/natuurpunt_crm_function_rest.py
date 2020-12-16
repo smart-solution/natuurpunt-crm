@@ -107,10 +107,10 @@ class res_organisation_function(osv.osv):
                 for person in partner_obj.browse(cr,uid,person_ids):
                     mline, membership_state = partner_obj._np_membership_state(cr, uid, person, context=context)
                     if membership_state in ['paid','invoiced','free','wait_member']:
-                        res.append({'id':person.id,'name':person.name,})
+                        res.append({'id':person.id,'first_name':person.first_name,'last_name':person.last_name})
                         if person.relation_partner_id:
                            relation = person.relation_partner_id
-                           res.append({'id':relation.id, 'name':relation.name,})
+                           res.append({'id':relation.id,'first_name':relation.first_name,'last_name':relation.last_name})
             except ValueError:
                 pass
         return res
@@ -133,10 +133,10 @@ class res_organisation_function(osv.osv):
                 for person in partner_obj.browse(cr,uid,person_ids):
                     mline, membership_state = partner_obj._np_membership_state(cr, uid, person, context=context)
                     if membership_state in ['paid','invoiced','free','wait_member']:
-                        res.append({'id':person.id,'name':person.name,})
+                        res.append({'id':person.id,'first_name':person.first_name,'last_name':person.last_name})
                         if person.relation_partner_id:
                            relation = person.relation_partner_id
-                           res.append({'id':relation.id, 'name':relation.name,})
+                           res.append({'id':relation.id,'first_name':relation.first_name,'last_name':relation.last_name})
             except ValueError:
                 pass
         return res        
@@ -382,7 +382,8 @@ class res_organisation_function(osv.osv):
                 'valid_to_date': rof.valid_to_date,
                 'person': {
                     'id': rof.person_id.id,
-                    'name': rof.person_id.name,
+                    'first_name': rof.person_id.first_name,
+                    'last_name':rof.person_id.last_name,
                 },
                 'function': {
                     'id': rof.function_type_id.id,
